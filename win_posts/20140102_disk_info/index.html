@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    获取硬盘信息 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/win_posts/20140102_disk_info/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/win_posts/">Win_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/win_posts/20140102_disk_info/">获取硬盘信息</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">获取硬盘信息</h1>
+    
+    <p class="single-summary">获取硬盘信息</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2014-01-02T00:00:00&#43;00:00">January 2, 2014</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#代码">代码</a></li>
+    <li><a href="#结果">结果</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="代码">代码</h2>
+<pre tabindex="0"><code>// testdisk.cpp : 定义控制台应用程序的入口点。
+//
+
+#include &#34;stdafx.h&#34;
+#include &lt;windows.h&gt;
+#include &lt;iostream&gt;
+
+#include &#34;BeaEngine.h&#34;
+#pragma comment(lib,&#34;BeaEngine.lib&#34;)
+
+using namespace std;
+
+#pragma pack(push,1)
+
+typedef struct _ON_DISK_PTE 
+{
+        UCHAR ActiveFlag;//引导标识，是否活动分区
+        UCHAR StartHead;//开始磁头
+        UCHAR StartSector;//开始扇区
+        UCHAR StartCylinder;//开始柱面 使用StartSector后2位
+        UCHAR SystemId;//分区类型
+        UCHAR EndHead;//结束磁头
+        UCHAR EndSector;//结束扇区
+        UCHAR EndCylinder;//结束柱面 使用EndSector后2位
+        ULONG RelativeSectors;//本分区之前的扇区数
+        ULONG SectorCount;//分区总扇区数
+} ON_DISK_PTE, *PON_DISK_PTE;
+
+typedef struct _ON_DISK_MBR 
+{
+#define PTABLE_DIMENSION     4//分区数
+        UCHAR       BootCode[440];//启动代码
+        UCHAR       NTFTSignature[4];//磁盘标志
+        UCHAR       Filler[2];
+        ON_DISK_PTE PartitionTable[PTABLE_DIMENSION];//主分区表
+        UCHAR       AA55Signature[2];//AA55标志
+} ON_DISK_MBR, *PON_DISK_MBR;
+
+#pragma pack(pop)
+
+#define SECTORSIZE 0x200
+
+#define PARTITION_ENTRY_UNUSED          0x00      // 不使用
+#define PARTITION_FAT_12                0x01      // FAT12
+#define PARTITION_XENIX_1               0x02      // Xenix
+#define PARTITION_XENIX_2               0x03      // Xenix
+#define PARTITION_FAT_16                0x04      // FAT16
+#define PARTITION_EXTENDED              0x05      // 扩展分区
+#define PARTITION_HUGE                  0x06      // MS-DOS V4大分区
+#define PARTITION_IFS                   0x07      // NTFS/HPFS分区
+#define PARTITION_FAT32                 0x0B      // FAT32
+#define PARTITION_FAT32_XINT13          0x0C      // FAT32 使用int13服务
+#define PARTITION_XINT13                0x0E      // Win95分区 使用int13服务
+#define PARTITION_XINT13_EXTENDED       0x0F      // 扩展分区 使用int13服务
+
+void DisasmAndShow(UCHAR* codebuf, int codesize)
+{
+        DISASM bootcode;
+        int len=0,i=0,Error=0,totallen=0;
+        memset(&amp;bootcode,0,sizeof(bootcode));
+        bootcode.EIP = (UIntPtr)codebuf;
+        while((!Error) &amp;&amp; totallen&lt;codesize)
+        {
+                len=Disasm(&amp;bootcode);
+                cout&lt;&lt;hex&lt;&lt;&#34;0x&#34;&lt;&lt;totallen&lt;&lt;dec&lt;&lt;&#34;\t\t&#34;&lt;&lt;bootcode.CompleteInstr&lt;&lt;endl;
+                bootcode.EIP += len;
+                totallen += len;
+        }
+}
+
+void ShowPartion(PON_DISK_PTE PartitionTable)
+{
+        cout&lt;&lt;&#34;\t\t&#34;;
+        if(PartitionTable-&gt;ActiveFlag == 0x80)
+        {
+                cout&lt;&lt;&#34;活动分区&#34;&lt;&lt;endl;
+        }
+        else
+        {
+                cout&lt;&lt;&#34;不活动分区&#34;&lt;&lt;endl;
+        }
+        cout&lt;&lt;&#34;分区类型:&#34;;
+        switch(PartitionTable-&gt;SystemId)
+        {
+        case PARTITION_EXTENDED:
+        case PARTITION_XINT13_EXTENDED:
+                //遇到扩展分区，下面又是一层分区表，给你们实现吧
+                break;
+        case PARTITION_IFS:
+                cout&lt;&lt;&#34;NTFS&#34;;
+                break;
+        case PARTITION_FAT32:
+        case PARTITION_FAT32_XINT13:
+                cout&lt;&lt;&#34;FAT32&#34;;
+                break;
+        }
+        cout&lt;&lt;endl;
+
+        //以下为物理属性
+        cout&lt;&lt;&#34;开始磁头:&#34;&lt;&lt;(int)PartitionTable-&gt;StartHead&lt;&lt;endl;
+        cout&lt;&lt;&#34;结束磁头:&#34;&lt;&lt;(int)PartitionTable-&gt;EndHead&lt;&lt;endl;
+        cout&lt;&lt;&#34;起始柱面:&#34;&lt;&lt;(int)PartitionTable-&gt;StartCylinder&lt;&lt;endl;
+        cout&lt;&lt;&#34;结束柱面:&#34;&lt;&lt;(int)PartitionTable-&gt;EndCylinder&lt;&lt;endl;
+        cout&lt;&lt;&#34;起始扇区:&#34;&lt;&lt;(int)PartitionTable-&gt;StartSector&lt;&lt;endl;
+        cout&lt;&lt;&#34;结束扇区:&#34;&lt;&lt;(int)PartitionTable-&gt;EndSector&lt;&lt;endl;
+        //以下为逻辑属性
+        cout&lt;&lt;&#34;分区起始逻辑偏移:&#34;&lt;&lt;hex&lt;&lt;PartitionTable-&gt;RelativeSectors*SECTORSIZE&lt;&lt;dec&lt;&lt;endl;
+        cout&lt;&lt;&#34;分区大小(B):&#34;&lt;&lt;PartitionTable-&gt;SectorCount*SECTORSIZE&lt;&lt;endl;
+        cout&lt;&lt;endl;
+}
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+        int physicaldrivenum = 0;//硬盘数
+        char buf[0x200];
+        for(physicaldrivenum=0; physicaldrivenum &lt; 16;physicaldrivenum++)
+        {
+                sprintf(buf,&#34;\\\\.\\PhysicalDrive%d&#34;,physicaldrivenum);
+                HANDLE hPhysical = CreateFileA(buf,GENERIC_READ,FILE_SHARE_READ|FILE_SHARE_WRITE,NULL,
+                        OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,NULL);
+                if(hPhysical == INVALID_HANDLE_VALUE)
+                {
+                        int error = GetLastError();
+                        if(error == ERROR_ACCESS_DENIED)
+                        {
+                                cout&lt;&lt;&#34;访问权限不够&#34;&lt;&lt;endl;
+                                continue;
+                        }
+                        else if(ERROR_FILE_NOT_FOUND)
+                        {//已经是最后一个硬盘
+                                break;
+                        }
+                }
+
+                ON_DISK_MBR curmbr;
+                DWORD readnum;
+                ReadFile(hPhysical,&amp;curmbr,sizeof(curmbr),&amp;readnum,NULL);
+                cout&lt;&lt;&#34;硬盘&#34;&lt;&lt;physicaldrivenum+1&lt;&lt;&#34;:&#34;&lt;&lt;endl;
+                cout&lt;&lt;&#34;\t启动代码：&#34;&lt;&lt;endl;
+                DisasmAndShow(curmbr.BootCode,sizeof(curmbr.BootCode));
+                cout&lt;&lt;&#34;\t硬盘签名：&#34;&lt;&lt;hex&lt;&lt;(int)curmbr.BootCode[0]&lt;&lt;&#34; &#34;&lt;&lt;(int)curmbr.BootCode[1]&lt;&lt;&#34; &#34;&lt;&lt;
+                        (int)curmbr.BootCode[2]&lt;&lt;&#34; &#34;&lt;&lt;(int)curmbr.BootCode[3]&lt;&lt;dec&lt;&lt;endl;
+                for(int mainpartition=0;mainpartition&lt;PTABLE_DIMENSION;mainpartition++)//遍历主分区
+                {
+                        if(curmbr.PartitionTable[mainpartition].StartSector == 0)
+                                break;
+                        ShowPartion(&amp;curmbr.PartitionTable[mainpartition]);
+                }
+                CloseHandle(hPhysical);
+        }
+
+        return 0;
+}
+</code></pre><h2 id="结果">结果</h2>
+<pre tabindex="0"><code>硬盘1:
+        启动代码：
+0x0                xor eax, eax
+0x2                mov ss, ax
+0x4                mov esp, 50FB7C00h
+0x9                pop es
+0xa                push eax
+0xb                pop ds
+0xc                cld
+0xd                mov esi, 1BBF7C1Bh
+0x12                push es
+0x13                push eax
+0x14                push edi
+0x15                mov ecx, A4F301E5h
+0x1a                retf
+0x1b                mov ebp, 04B107BEh
+0x20                cmp byte ptr [esi+00h], ch
+0x23                jl 0070F406h
+0x25                jne 0070F412h
+0x27                add ebp, 10h
+0x2a                loop 0070F3F8h
+0x2c                int 18h
+0x2e                mov esi, ebp
+0x30                add esi, 10h
+0x33                dec ecx
+0x34                je 0070F427h
+0x36                cmp byte ptr [esp+esi*2], ch
+0x39                mul byte ptr [eax+07B407B5h]
+0x3f                mov esi, eax
+0x41                lodsb
+0x42                cmp al, 00h
+0x44                je 0070F41Ah
+0x46                mov ebx, 0EB40007h
+0x4b                int 10h
+0x4d                jmp 0070F419h
+0x4f                mov byte ptr [esi+10h], cl
+0x52                call 2AE3F475h
+0x57                inc byte ptr [esi+10h]
+0x5a                cmp byte ptr [esi+04h], 0Bh
+0x5e                je 0070F443h
+0x60                cmp byte ptr [esi+04h], 0Ch
+0x64                je 0070F443h
+0x66                mov al, byte ptr [D27507B6h]
+0x6b                add byte ptr [esi+02h], 06h
+0x6f                add dword ptr [esi+08h], 06h
+0x73                adc dword ptr [esi+0Ah], 00000000h
+0x77                call 05E3F475h
+0x7c                mov al, byte ptr [BCEB07B6h]
+0x81                cmp dword ptr [esi], AA557DFEh
+0x87                je 0070F46Ch
+0x89                cmp byte ptr [esi+10h], 00h
+0x8d                je 0070F42Fh
+0x8f                mov al, byte ptr [A9EB07B7h]
+0x94                mov edi, esp
+0x96                push ds
+0x97                push edi
+0x98                mov esi, ebp
+0x9a                retf
+0x9b                mov edi, 568A0005h
+0xa0                add byte ptr [eax+ecx+237213CDh], dh
+0xa7                mov al, cl
+0xa9                and al, 3Fh
+0xab                cwde
+0xac                mov bl, dh
+0xae                mov bh, ah
+0xb0                inc ebx
+0xb1                mul ebx
+0xb3                mov edx, ecx
+0xb5                xchg dh, dl
+0xb7                mov cl, 06h
+0xb9                shr dh, cl
+0xbb                inc edx
+0xbc                mul edx
+0xbe                cmp dword ptr [esi+0Ah], edx
+0xc1                jnbe 0070F4BEh
+0xc3                jc 0070F4A2h
+0xc5                cmp dword ptr [esi+08h], eax
+0xc8                jnc 0070F4BEh
+0xca                mov eax, 00BB0201h
+0xcf                jl 0070F434h
+0xd1                dec esi
+0xd2                add cl, byte ptr [ebx+13CD0056h]
+0xd8                jnc 0070F503h
+0xda                dec edi
+0xdb                je 0070F503h
+0xdd                xor ah, ah
+0xdf                mov dl, byte ptr [esi+00h]
+0xe2                int 13h
+0xe4                jmp 0070F4A2h
+0xe6                mov dl, byte ptr [esi+00h]
+0xe9                pushad
+0xea                mov ebx, 41B455AAh
+0xef                int 13h
+0xf1                jc 0070F501h
+0xf3                cmp ebx, 3075AA55h
+0xf9                test cl, 01h
+0xfc                je 0070F501h
+0xfe                popad
+0xff                pushad
+0x100                push 00000000h
+0x102                push 00000000h
+0x104                push dword ptr [esi+0Ah]
+0x107                push dword ptr [esi+08h]
+0x10a                push 00000000h
+0x10c                push 016A7C00h
+0x111                push 00000010h
+0x113                mov ah, 42h
+0x115                mov esi, esp
+0x117                int 13h
+0x119                popad
+0x11a                popad
+0x11b                jnc 0070F503h
+0x11d                dec edi
+0x11e                je 0070F503h
+0x120                xor ah, ah
+0x122                mov dl, byte ptr [esi+00h]
+0x125                int 13h
+0x127                jmp 0070F4D7h
+0x129                popad
+0x12a                stc
+0x12b                ret
+0x12c                dec ecx
+0x12d                outsb
+0x12e                jbe 0070F569h
+0x130                insb
+0x131                imul esp, dword ptr [eax+70h], 69747261h
+0x139                je 0070F57Ch
+0x13b                outsd
+0x13c                outsb
+0x13d                and byte ptr [ecx+62h], dh
+0x141                insb
+0x142                add byte ptr [ebp+72h], al
+0x146                jc 0070F58Fh
+0x148                jc 0070F542h
+0x14a                insb
+0x14b                outsd
+0x14c                popad
+0x14d                imul ebp, dword ptr fs:[esi+67h], 65706F20h
+0x155                jc 0070F590h
+0x157                je 0070F59Ah
+0x159                outsb
+0x15a                and byte ptr [bp+di+79h], dh
+0x15e                jnc 0070F5ACh
+0x160                insd
+0x162                add byte ptr [ebp+69h], cl
+0x165                jnc 0070F5B2h
+0x167                imul ebp, dword ptr [esi+67h], 65706F20h
+0x16e                jc 0070F5A9h
+0x170                je 0070F5B3h
+0x172                outsb
+0x173                and byte ptr [bp+di+79h], dh
+0x177                jnc 0070F5C5h
+0x179                insd
+0x17b                add byte ptr [eax], al
+0x17d                add byte ptr [eax], al
+0x17f                add byte ptr [eax], al
+0x181                add byte ptr [eax], al
+0x183                add byte ptr [eax], al
+0x185                add byte ptr [eax], al
+0x187                add byte ptr [eax], al
+0x189                add byte ptr [eax], al
+0x18b                add byte ptr [eax], al
+0x18d                add byte ptr [eax], al
+0x18f                add byte ptr [eax], al
+0x191                add byte ptr [eax], al
+0x193                add byte ptr [eax], al
+0x195                add byte ptr [eax], al
+0x197                add byte ptr [eax], al
+0x199                add byte ptr [eax], al
+0x19b                add byte ptr [eax], al
+0x19d                add byte ptr [eax], al
+0x19f                add byte ptr [eax], al
+0x1a1                add byte ptr [eax], al
+0x1a3                add byte ptr [eax], al
+0x1a5                add byte ptr [eax], al
+0x1a7                add byte ptr [eax], al
+0x1a9                add byte ptr [eax], al
+0x1ab                add byte ptr [eax], al
+0x1ad                add byte ptr [eax], al
+0x1af                add byte ptr [eax], al
+0x1b1                add byte ptr [eax], al
+0x1b3                add byte ptr [eax], al
+0x1b5                add byte ptr [eax], al
+0x1b7                add al, ch
+        硬盘签名：33 c0 8e d0
+                活动分区
+分区类型:NTFS
+开始磁头:32
+结束磁头:254
+起始柱面:0
+结束柱面:255
+起始扇区:33
+结束扇区:255
+分区起始逻辑偏移:100000
+分区大小(B):120030494720
+</code></pre>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20140101_pe_encrypt/">
+                        可执行文件另类加密
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20140327_winmine/">
+                        XP/Win7扫雷逆向分析
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

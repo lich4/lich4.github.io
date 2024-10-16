@@ -1,0 +1,607 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Home on 超哥的博客</title>
+    <link>https://lich4.github.io/</link>
+    <description>Recent content in Home on 超哥的博客</description>
+    <generator>Hugo</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Mon, 26 Aug 2024 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://lich4.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>OLLVM学习</title>
+      <link>https://lich4.github.io/cpp_posts/20240826_ollvm/</link>
+      <pubDate>Mon, 26 Aug 2024 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20240826_ollvm/</guid>
+      <description>OLLVM学习</description>
+    </item>
+    <item>
+      <title>json对象平坦化</title>
+      <link>https://lich4.github.io/js_posts/20240609_json_flatten/</link>
+      <pubDate>Sun, 09 Jun 2024 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/js_posts/20240609_json_flatten/</guid>
+      <description>json对象平坦化</description>
+    </item>
+    <item>
+      <title>Python封装rest_rpc</title>
+      <link>https://lich4.github.io/py_posts/20240608_pybind_rpc/</link>
+      <pubDate>Sat, 08 Jun 2024 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/py_posts/20240608_pybind_rpc/</guid>
+      <description>Python封装rest_rpc</description>
+    </item>
+    <item>
+      <title>C&#43;&#43;调用Rust</title>
+      <link>https://lich4.github.io/cpp_posts/20230924_cpp_call_rust/</link>
+      <pubDate>Sun, 24 Sep 2023 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20230924_cpp_call_rust/</guid>
+      <description>C++调用Rust</description>
+    </item>
+    <item>
+      <title>Cloudflare之Workers初试使用</title>
+      <link>https://lich4.github.io/misc/20230821_cloudflare_workers/</link>
+      <pubDate>Mon, 21 Aug 2023 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/misc/20230821_cloudflare_workers/</guid>
+      <description>Cloudflare之Workers初试使用</description>
+    </item>
+    <item>
+      <title>XCode调试越狱iOS任意进程</title>
+      <link>https://lich4.github.io/ios_posts/20230715_debug_ios_with_xcode/</link>
+      <pubDate>Sat, 15 Jul 2023 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20230715_debug_ios_with_xcode/</guid>
+      <description>XCode调试越狱iOS任意进程</description>
+    </item>
+    <item>
+      <title>C&#43;&#43;调用Golang</title>
+      <link>https://lich4.github.io/cpp_posts/20230322_cpp_call_go/</link>
+      <pubDate>Wed, 22 Mar 2023 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20230322_cpp_call_go/</guid>
+      <description>C++调用Golang</description>
+    </item>
+    <item>
+      <title>Python封装TinyAES</title>
+      <link>https://lich4.github.io/py_posts/20230319_pybind_tinyaes/</link>
+      <pubDate>Sun, 19 Mar 2023 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/py_posts/20230319_pybind_tinyaes/</guid>
+      <description>Python封装TinyAES</description>
+    </item>
+    <item>
+      <title>iOS一种隐式调用svc的方式</title>
+      <link>https://lich4.github.io/ios_posts/20220705_svc_call/</link>
+      <pubDate>Tue, 05 Jul 2022 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20220705_svc_call/</guid>
+      <description>iOS一种隐式调用svc的方式</description>
+    </item>
+    <item>
+      <title>常见的序列化方式性能测试</title>
+      <link>https://lich4.github.io/py_posts/20211019_serial_lib_benchmark/</link>
+      <pubDate>Tue, 19 Oct 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/py_posts/20211019_serial_lib_benchmark/</guid>
+      <description>常见的序列化方式性能测试</description>
+    </item>
+    <item>
+      <title>使用IDA&#43;LLDB&#43;RetSync调试iOS</title>
+      <link>https://lich4.github.io/ios_posts/20211002_retsync/</link>
+      <pubDate>Sat, 02 Oct 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20211002_retsync/</guid>
+      <description>使用IDA+LLDB+RetSync调试iOS</description>
+    </item>
+    <item>
+      <title>Python调用C&#43;&#43;</title>
+      <link>https://lich4.github.io/cpp_posts/20210919_py_call_cpp/</link>
+      <pubDate>Sun, 19 Sep 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20210919_py_call_cpp/</guid>
+      <description>Python调用C++</description>
+    </item>
+    <item>
+      <title>Python的几个http库性能测试</title>
+      <link>https://lich4.github.io/py_posts/20210904_http_lib_benchmark/</link>
+      <pubDate>Sat, 04 Sep 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/py_posts/20210904_http_lib_benchmark/</guid>
+      <description>Python的几个http库性能测试</description>
+    </item>
+    <item>
+      <title>C/ObjC调用Swift函数</title>
+      <link>https://lich4.github.io/ios_posts/20210806_objc_call_swift/</link>
+      <pubDate>Fri, 06 Aug 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20210806_objc_call_swift/</guid>
+      <description>C/ObjC调用Swift函数</description>
+    </item>
+    <item>
+      <title>搭建简单Cydia源</title>
+      <link>https://lich4.github.io/ios_posts/20210805_cydia_repo/</link>
+      <pubDate>Thu, 05 Aug 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20210805_cydia_repo/</guid>
+      <description>搭建简单Cydia源</description>
+    </item>
+    <item>
+      <title>Swift逆向</title>
+      <link>https://lich4.github.io/ios_posts/20210804_swift_re/</link>
+      <pubDate>Wed, 04 Aug 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20210804_swift_re/</guid>
+      <description>Swift逆向</description>
+    </item>
+    <item>
+      <title>UUID简介</title>
+      <link>https://lich4.github.io/ios_posts/20210804_uuid/</link>
+      <pubDate>Wed, 04 Aug 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20210804_uuid/</guid>
+      <description>UUID简介</description>
+    </item>
+    <item>
+      <title>iOS越狱</title>
+      <link>https://lich4.github.io/ios_posts/20210731_howto_jb/</link>
+      <pubDate>Sat, 31 Jul 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20210731_howto_jb/</guid>
+      <description>iOS越狱</description>
+    </item>
+    <item>
+      <title>使用Letsencrypt免费证书搭建tornado的https服务</title>
+      <link>https://lich4.github.io/misc/20210731_letsencrypt/</link>
+      <pubDate>Sat, 31 Jul 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/misc/20210731_letsencrypt/</guid>
+      <description>使用Letsencrypt免费证书搭建tornado的https服务</description>
+    </item>
+    <item>
+      <title>IDFA生成过程分析</title>
+      <link>https://lich4.github.io/ios_posts/20200517_idfa_re/</link>
+      <pubDate>Sun, 17 May 2020 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20200517_idfa_re/</guid>
+      <description>IDFA生成过程分析</description>
+    </item>
+    <item>
+      <title>佐罗(Zorro)改机改串一键新机原理分析</title>
+      <link>https://lich4.github.io/re_posts/20200516_zorro/</link>
+      <pubDate>Sat, 16 May 2020 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20200516_zorro/</guid>
+      <description>佐罗(Zorro)改机改串一键新机原理分析</description>
+    </item>
+    <item>
+      <title>361改机改串一键新机原理分析</title>
+      <link>https://lich4.github.io/re_posts/20191212_361/</link>
+      <pubDate>Thu, 12 Dec 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20191212_361/</guid>
+      <description>361改机改串一键新机原理分析</description>
+    </item>
+    <item>
+      <title>抖音越狱检测深度分析</title>
+      <link>https://lich4.github.io/re_posts/20191201_douyin_jb_detect/</link>
+      <pubDate>Sun, 01 Dec 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20191201_douyin_jb_detect/</guid>
+      <description>抖音越狱检测深度分析</description>
+    </item>
+    <item>
+      <title>iOS11上使用lldb调试App</title>
+      <link>https://lich4.github.io/ios_posts/20190830_ios11_debug/</link>
+      <pubDate>Fri, 30 Aug 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20190830_ios11_debug/</guid>
+      <description>iOS11上使用lldb调试App</description>
+    </item>
+    <item>
+      <title>爱伪装(AWZ)改机改串一键新机原理分析</title>
+      <link>https://lich4.github.io/re_posts/20190827_awz/</link>
+      <pubDate>Tue, 27 Aug 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20190827_awz/</guid>
+      <description>爱伪装(AWZ)改机改串一键新机原理分析</description>
+    </item>
+    <item>
+      <title>利用nc分析网络协议</title>
+      <link>https://lich4.github.io/linux_posts/20190816_nc/</link>
+      <pubDate>Fri, 16 Aug 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/linux_posts/20190816_nc/</guid>
+      <description>利用nc分析网络协议</description>
+    </item>
+    <item>
+      <title>Python爬虫笔记</title>
+      <link>https://lich4.github.io/py_posts/20190729_scrawler/</link>
+      <pubDate>Mon, 29 Jul 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/py_posts/20190729_scrawler/</guid>
+      <description>Python爬虫笔记</description>
+    </item>
+    <item>
+      <title>某缘App越狱检测分析</title>
+      <link>https://lich4.github.io/ios_posts/20190717_jb_detect/</link>
+      <pubDate>Wed, 17 Jul 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20190717_jb_detect/</guid>
+      <description>某缘App越狱检测分析</description>
+    </item>
+    <item>
+      <title>动态修改iOS网络配置</title>
+      <link>https://lich4.github.io/ios_posts/20170903_net_conf/</link>
+      <pubDate>Wed, 03 Jul 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20170903_net_conf/</guid>
+      <description>动态修改iOS网络配置</description>
+    </item>
+    <item>
+      <title>Linux Shell参考</title>
+      <link>https://lich4.github.io/linux_posts/20190623_shell/</link>
+      <pubDate>Sun, 23 Jun 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/linux_posts/20190623_shell/</guid>
+      <description>Linux Shell参考</description>
+    </item>
+    <item>
+      <title>Theos环境搭建</title>
+      <link>https://lich4.github.io/ios_posts/20190516_theos/</link>
+      <pubDate>Thu, 16 May 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20190516_theos/</guid>
+      <description>Theos环境搭建</description>
+    </item>
+    <item>
+      <title>常见反越狱检测插件实现原理</title>
+      <link>https://lich4.github.io/ios_posts/20190511_jb_detect/</link>
+      <pubDate>Sat, 11 May 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20190511_jb_detect/</guid>
+      <description>常见反越狱检测插件实现原理</description>
+    </item>
+    <item>
+      <title>系统调用号</title>
+      <link>https://lich4.github.io/ios_posts/20190328_syscall/</link>
+      <pubDate>Thu, 28 Mar 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20190328_syscall/</guid>
+      <description>系统调用号</description>
+    </item>
+    <item>
+      <title>编译iOS可用lsof</title>
+      <link>https://lich4.github.io/ios_posts/20181227_fix_lsof/</link>
+      <pubDate>Thu, 27 Dec 2018 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20181227_fix_lsof/</guid>
+      <description>编译iOS可用lsof</description>
+    </item>
+    <item>
+      <title>Preload Hook原理与实践</title>
+      <link>https://lich4.github.io/linux_posts/20181212_preload_hook/</link>
+      <pubDate>Wed, 12 Dec 2018 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/linux_posts/20181212_preload_hook/</guid>
+      <description>Preload Hook原理与实践</description>
+    </item>
+    <item>
+      <title>IPSet策略设计</title>
+      <link>https://lich4.github.io/linux_posts/20181113_ipset_policy/</link>
+      <pubDate>Tue, 13 Nov 2018 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/linux_posts/20181113_ipset_policy/</guid>
+      <description>IPSet策略设计</description>
+    </item>
+    <item>
+      <title>iOS逆向分析笔记</title>
+      <link>https://lich4.github.io/re_posts/20180101_ios_re/</link>
+      <pubDate>Mon, 01 Jan 2018 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20180101_ios_re/</guid>
+      <description>iOS逆向分析笔记</description>
+    </item>
+    <item>
+      <title>Android Hook框架总结</title>
+      <link>https://lich4.github.io/android_posts/20170612_hook_framework/</link>
+      <pubDate>Mon, 12 Jun 2017 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/android_posts/20170612_hook_framework/</guid>
+      <description>Android Hook框架总结</description>
+    </item>
+    <item>
+      <title>Android逆向分析笔记</title>
+      <link>https://lich4.github.io/re_posts/20170110_android_re/</link>
+      <pubDate>Tue, 10 Jan 2017 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20170110_android_re/</guid>
+      <description>Android逆向分析笔记</description>
+    </item>
+    <item>
+      <title>咪咕sdk反调试分析</title>
+      <link>https://lich4.github.io/android_posts/20170104_migusdk/</link>
+      <pubDate>Wed, 04 Jan 2017 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/android_posts/20170104_migusdk/</guid>
+      <description>咪咕sdk反调试分析</description>
+    </item>
+    <item>
+      <title>动态生成dalvik字节码——dexmaker</title>
+      <link>https://lich4.github.io/android_posts/20170103_dexmaker/</link>
+      <pubDate>Tue, 03 Jan 2017 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/android_posts/20170103_dexmaker/</guid>
+      <description>动态生成dalvik字节码——dexmaker</description>
+    </item>
+    <item>
+      <title>动态注入并执行Android代码到进程</title>
+      <link>https://lich4.github.io/android_posts/20170102_java_inject/</link>
+      <pubDate>Mon, 02 Jan 2017 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/android_posts/20170102_java_inject/</guid>
+      <description>动态注入并执行Android代码到进程</description>
+    </item>
+    <item>
+      <title>Android新攻防技术研究与应用</title>
+      <link>https://lich4.github.io/android_posts/20170101_android_newad/</link>
+      <pubDate>Sun, 01 Jan 2017 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/android_posts/20170101_android_newad/</guid>
+      <description>Android新攻防技术研究与应用</description>
+    </item>
+    <item>
+      <title>使用Fiddler调试http/https协议</title>
+      <link>https://lich4.github.io/win_posts/20170101_fiddler/</link>
+      <pubDate>Sun, 01 Jan 2017 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20170101_fiddler/</guid>
+      <description>使用Fiddler调试http/https协议</description>
+    </item>
+    <item>
+      <title>LLDB&amp;GDB通信协议分析</title>
+      <link>https://lich4.github.io/ios_posts/20161227_lldb_proto/</link>
+      <pubDate>Tue, 27 Dec 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20161227_lldb_proto/</guid>
+      <description>LLDB&amp;amp;GDB通信协议分析</description>
+    </item>
+    <item>
+      <title>使用burpsuite验证https证书是否安全</title>
+      <link>https://lich4.github.io/misc/20161215_verify_https_cert/</link>
+      <pubDate>Thu, 15 Dec 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/misc/20161215_verify_https_cert/</guid>
+      <description>使用burpsuite验证https证书是否安全</description>
+    </item>
+    <item>
+      <title>Win/Linux/Mac遍历进程模块</title>
+      <link>https://lich4.github.io/linux_posts/20160909_iter_mod/</link>
+      <pubDate>Fri, 09 Sep 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/linux_posts/20160909_iter_mod/</guid>
+      <description>Win/Linux/Mac遍历进程模块</description>
+    </item>
+    <item>
+      <title>增强jdb调试功能</title>
+      <link>https://lich4.github.io/android_posts/20160716_jdb_enhance/</link>
+      <pubDate>Sat, 16 Jul 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/android_posts/20160716_jdb_enhance/</guid>
+      <description>增强jdb调试功能</description>
+    </item>
+    <item>
+      <title>使用C&#43;&#43;模板元实现字符串编译期加密</title>
+      <link>https://lich4.github.io/cpp_posts/20160715_string_enc/</link>
+      <pubDate>Fri, 15 Jul 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20160715_string_enc/</guid>
+      <description>使用C++模板元实现字符串编译期加密</description>
+    </item>
+    <item>
+      <title>010editor脚本语法深入分析</title>
+      <link>https://lich4.github.io/re_posts/20160710_010editor/</link>
+      <pubDate>Sun, 10 Jul 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20160710_010editor/</guid>
+      <description>010editor脚本语法深入分析</description>
+    </item>
+    <item>
+      <title>记脱壳百度钱包app</title>
+      <link>https://lich4.github.io/android_posts/20160705_dump_bdwallet/</link>
+      <pubDate>Tue, 05 Jul 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/android_posts/20160705_dump_bdwallet/</guid>
+      <description>记脱壳百度钱包app</description>
+    </item>
+    <item>
+      <title>Linux ptrace实验</title>
+      <link>https://lich4.github.io/linux_posts/20160501_ptrace/</link>
+      <pubDate>Sun, 01 May 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/linux_posts/20160501_ptrace/</guid>
+      <description>Linux ptrace实验</description>
+    </item>
+    <item>
+      <title>强制修改apk可调试性</title>
+      <link>https://lich4.github.io/android_posts/20160203_apk_debug/</link>
+      <pubDate>Wed, 03 Feb 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/android_posts/20160203_apk_debug/</guid>
+      <description>强制修改apk可调试性</description>
+    </item>
+    <item>
+      <title>提取动态链接库ntdll的函数到静态lib</title>
+      <link>https://lich4.github.io/win_posts/20151116_ntdll_staticlib/</link>
+      <pubDate>Mon, 16 Nov 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20151116_ntdll_staticlib/</guid>
+      <description>提取动态链接库ntdll的函数到静态lib</description>
+    </item>
+    <item>
+      <title>Windbg K命令分析</title>
+      <link>https://lich4.github.io/win_posts/20150809_windbg_k/</link>
+      <pubDate>Sun, 09 Aug 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150809_windbg_k/</guid>
+      <description>Windbg K命令分析</description>
+    </item>
+    <item>
+      <title>探究为何32位程序无法远程注入64位程序</title>
+      <link>https://lich4.github.io/win_posts/20150726_wow/</link>
+      <pubDate>Sun, 26 Jul 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150726_wow/</guid>
+      <description>探究为何32位程序无法远程注入64位程序</description>
+    </item>
+    <item>
+      <title>Windbg内核调试协议分析</title>
+      <link>https://lich4.github.io/win_posts/20150709_windbg_proto/</link>
+      <pubDate>Sun, 19 Jul 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150709_windbg_proto/</guid>
+      <description>Windbg内核调试协议分析</description>
+    </item>
+    <item>
+      <title>Windows用户态调试</title>
+      <link>https://lich4.github.io/win_posts/20150706_usermod_debug/</link>
+      <pubDate>Mon, 06 Jul 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150706_usermod_debug/</guid>
+      <description>Windows用户态调试</description>
+    </item>
+    <item>
+      <title>Dll入口函数中Wait系函数死锁的解决</title>
+      <link>https://lich4.github.io/win_posts/20150623_dllentry_deadlock/</link>
+      <pubDate>Mon, 29 Jun 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150623_dllentry_deadlock/</guid>
+      <description>Dll入口函数中Wait系函数死锁的解决</description>
+    </item>
+    <item>
+      <title>MFC消息响应函数逆向分析</title>
+      <link>https://lich4.github.io/win_posts/20150629_mfc_msgcb/</link>
+      <pubDate>Mon, 29 Jun 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150629_mfc_msgcb/</guid>
+      <description>MFC消息响应函数逆向分析</description>
+    </item>
+    <item>
+      <title>实现磁盘内存映射</title>
+      <link>https://lich4.github.io/win_posts/20150628_disk_mmap/</link>
+      <pubDate>Sun, 28 Jun 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150628_disk_mmap/</guid>
+      <description>实现磁盘内存映射</description>
+    </item>
+    <item>
+      <title>强删正在运行文件</title>
+      <link>https://lich4.github.io/win_posts/20150526_force_del_file/</link>
+      <pubDate>Tue, 26 May 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150526_force_del_file/</guid>
+      <description>强删正在运行文件</description>
+    </item>
+    <item>
+      <title>NtQuerySystemInformation用法</title>
+      <link>https://lich4.github.io/win_posts/20150429_ntquerysystem/</link>
+      <pubDate>Wed, 29 Apr 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150429_ntquerysystem/</guid>
+      <description>NtQuerySystemInformation用法</description>
+    </item>
+    <item>
+      <title>Windbg符号文件夹中像MD5的文件夹名如何生成</title>
+      <link>https://lich4.github.io/win_posts/20150224_windbg_dir/</link>
+      <pubDate>Tue, 24 Feb 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150224_windbg_dir/</guid>
+      <description>Windbg符号文件夹中像MD5的文件夹名如何生成</description>
+    </item>
+    <item>
+      <title>对彗星DNS加速器的分析</title>
+      <link>https://lich4.github.io/win_posts/20150222_fastdns/</link>
+      <pubDate>Sun, 22 Feb 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150222_fastdns/</guid>
+      <description>对彗星DNS加速器的分析</description>
+    </item>
+    <item>
+      <title>变速齿轮原理浅析</title>
+      <link>https://lich4.github.io/win_posts/20150208_gearnt/</link>
+      <pubDate>Sun, 08 Feb 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150208_gearnt/</guid>
+      <description>变速齿轮原理浅析</description>
+    </item>
+    <item>
+      <title>虚拟机检测程序的分析</title>
+      <link>https://lich4.github.io/win_posts/20150208_vm_detect/</link>
+      <pubDate>Sun, 08 Feb 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150208_vm_detect/</guid>
+      <description>虚拟机检测程序的分析</description>
+    </item>
+    <item>
+      <title>星号密码查看器逆向分析</title>
+      <link>https://lich4.github.io/win_posts/20150117_pwd_viewer/</link>
+      <pubDate>Sat, 17 Jan 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150117_pwd_viewer/</guid>
+      <description>星号密码查看器逆向分析</description>
+    </item>
+    <item>
+      <title>Spy&#43;&#43;如何获取窗口的WndProc回调地址</title>
+      <link>https://lich4.github.io/win_posts/20150116_spyxx/</link>
+      <pubDate>Fri, 16 Jan 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150116_spyxx/</guid>
+      <description>Spy++如何获取窗口的WndProc回调地址</description>
+    </item>
+    <item>
+      <title>Windows驱动开发中使用STL</title>
+      <link>https://lich4.github.io/win_posts/20150104_driver_stl/</link>
+      <pubDate>Sun, 04 Jan 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150104_driver_stl/</guid>
+      <description>Windows驱动开发中使用STL</description>
+    </item>
+    <item>
+      <title>记一次木马分析</title>
+      <link>https://lich4.github.io/win_posts/20150103_trojan_analysis/</link>
+      <pubDate>Sat, 03 Jan 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150103_trojan_analysis/</guid>
+      <description>记一次木马分析</description>
+    </item>
+    <item>
+      <title>QQ管家驱动分析</title>
+      <link>https://lich4.github.io/win_posts/20150102_qqmgr/</link>
+      <pubDate>Fri, 02 Jan 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150102_qqmgr/</guid>
+      <description>QQ管家驱动分析</description>
+    </item>
+    <item>
+      <title>Windbg调试笔记</title>
+      <link>https://lich4.github.io/win_posts/20150101_windbg_note/</link>
+      <pubDate>Thu, 01 Jan 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150101_windbg_note/</guid>
+      <description>Windbg调试笔记</description>
+    </item>
+    <item>
+      <title>OllyDbg插件开发及逆向分析</title>
+      <link>https://lich4.github.io/win_posts/20141230_ollydbg_plugin/</link>
+      <pubDate>Tue, 30 Dec 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20141230_ollydbg_plugin/</guid>
+      <description>OllyDbg插件开发及逆向分析</description>
+    </item>
+    <item>
+      <title>重识new</title>
+      <link>https://lich4.github.io/cpp_posts/20141012_relearn_new/</link>
+      <pubDate>Sun, 12 Oct 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20141012_relearn_new/</guid>
+      <description>重识new</description>
+    </item>
+    <item>
+      <title>C&#43;&#43;逆向分析技巧</title>
+      <link>https://lich4.github.io/re_posts/20141010_pe_re/</link>
+      <pubDate>Fri, 10 Oct 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20141010_pe_re/</guid>
+      <description>C++逆向分析技巧</description>
+    </item>
+    <item>
+      <title>实现大整数运算</title>
+      <link>https://lich4.github.io/cpp_posts/20140419_bignum/</link>
+      <pubDate>Sat, 19 Apr 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20140419_bignum/</guid>
+      <description>实现大整数运算</description>
+    </item>
+    <item>
+      <title>Win7磁盘读写操作</title>
+      <link>https://lich4.github.io/win_posts/20140418_win7_disk/</link>
+      <pubDate>Fri, 18 Apr 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20140418_win7_disk/</guid>
+      <description>Win7磁盘读写操作</description>
+    </item>
+    <item>
+      <title>开发爬虫获取医院信息和疾病病症医学数据库</title>
+      <link>https://lich4.github.io/android_posts/20140406_hospital/</link>
+      <pubDate>Fri, 18 Apr 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/android_posts/20140406_hospital/</guid>
+      <description>开发爬虫获取医院信息和疾病病症医学数据库</description>
+    </item>
+    <item>
+      <title>XP/Win7扫雷逆向分析</title>
+      <link>https://lich4.github.io/win_posts/20140327_winmine/</link>
+      <pubDate>Thu, 27 Mar 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20140327_winmine/</guid>
+      <description>XP/Win7扫雷逆向分析</description>
+    </item>
+    <item>
+      <title>凸轮曲线计算工具</title>
+      <link>https://lich4.github.io/cpp_posts/20140311_tulun/</link>
+      <pubDate>Tue, 11 Mar 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20140311_tulun/</guid>
+      <description>凸轮曲线计算工具</description>
+    </item>
+    <item>
+      <title>获取硬盘信息</title>
+      <link>https://lich4.github.io/win_posts/20140102_disk_info/</link>
+      <pubDate>Thu, 02 Jan 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20140102_disk_info/</guid>
+      <description>获取硬盘信息</description>
+    </item>
+    <item>
+      <title>可执行文件另类加密</title>
+      <link>https://lich4.github.io/win_posts/20140101_pe_encrypt/</link>
+      <pubDate>Wed, 01 Jan 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20140101_pe_encrypt/</guid>
+      <description>可执行文件另类加密</description>
+    </item>
+    <item>
+      <title>安卓布局适应任意分辨率</title>
+      <link>https://lich4.github.io/android_posts/20140101_android_resolution/</link>
+      <pubDate>Wed, 01 Jan 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/android_posts/20140101_android_resolution/</guid>
+      <description>安卓布局适应任意分辨率</description>
+    </item>
+    <item>
+      <title>卷积码的viterbi译码</title>
+      <link>https://lich4.github.io/cpp_posts/20110101_viterbi/</link>
+      <pubDate>Sat, 01 Jan 2011 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20110101_viterbi/</guid>
+      <description>卷积码的viterbi译码</description>
+    </item>
+  </channel>
+</rss>

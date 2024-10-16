@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    可执行文件另类加密 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/win_posts/20140101_pe_encrypt/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/win_posts/">Win_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/win_posts/20140101_pe_encrypt/">可执行文件另类加密</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">可执行文件另类加密</h1>
+    
+    <p class="single-summary">可执行文件另类加密</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2014-01-01T00:00:00&#43;00:00">January 1, 2014</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents"></nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <p>操作方法：给定A.exe进行保护</p>
+<ul>
+<li>1.使用生成工具去除A.exe所有段内容，例如</li>
+</ul>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">fileoff</th>
+          <th style="text-align: left">memoff</th>
+          <th style="text-align: left">segname</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: left">00000400</td>
+          <td style="text-align: left">123C00</td>
+          <td style="text-align: left">text</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">00124000</td>
+          <td style="text-align: left">042E00</td>
+          <td style="text-align: left">rdata</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">00166E00</td>
+          <td style="text-align: left">009000</td>
+          <td style="text-align: left">data</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">0016FE00</td>
+          <td style="text-align: left">00F200</td>
+          <td style="text-align: left">rsrc</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">0017F000</td>
+          <td style="text-align: left">01E200</td>
+          <td style="text-align: left">reloc</td>
+      </tr>
+  </tbody>
+</table>
+<p>  工具会把这些段指向的文件内容置0，生成Afix.exe，这个文件无法运行，因为已经挖空了</p>
+<ul>
+<li>2.把A.exe用可逆算法加密成其他文件</li>
+<li>3.用启动工具以挂起模式启动Afix.exe</li>
+<li>4.将A.exe各个段加载到缓冲区中，对各个段进行重定位</li>
+<li>5.将缓冲区中各个段内容动态填充到挂起的Afix.exe的各个段中</li>
+<li>6.恢复Afix.exe此时可以运行</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>#include &lt;stdio.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;Windows.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;tchar.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;shlwapi.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;winternl.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;zlib.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;zconf.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;list&gt;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">using</span> <span style="color:#ec0000">namespace</span> std;
+</span></span><span style="display:flex;"><span>#pragma comment(lib,&#34;shlwapi.lib&#34;)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">class</span> <span style="color:#5f5fff">MySection</span>
+</span></span><span style="display:flex;"><span>{                                       /* 记录PE各个段数据 */
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">public</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>	IMAGE_SECTION_HEADER header;    /* 段头 */
+</span></span><span style="display:flex;"><span>	BYTE<span style="color:#ec0000">*</span> data;                     /* 段数据 */
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">public</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>	MySection()
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		data <span style="color:#ec0000">=</span> <span style="color:#ec0000">NULL</span>;
+</span></span><span style="display:flex;"><span>		memset( <span style="color:#ec0000">&amp;</span>header, <span style="color:#008900">0</span>, <span style="color:#ec0000">sizeof</span>(header) );
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">void</span> <span style="color:#5f5fff">SetHeader</span>( IMAGE_SECTION_HEADER <span style="color:#ec0000">&amp;</span> header )
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		memcpy( <span style="color:#ec0000">&amp;</span><span style="color:#ec0000">this</span><span style="color:#ec0000">-&gt;</span>header, <span style="color:#ec0000">&amp;</span>header, <span style="color:#ec0000">sizeof</span>(IMAGE_SECTION_HEADER) );
+</span></span><span style="display:flex;"><span>		data <span style="color:#ec0000">=</span> <span style="color:#ec0000">new</span> BYTE[header.SizeOfRawData];
+</span></span><span style="display:flex;"><span>		memset( data, <span style="color:#008900">0</span>, header.SizeOfRawData );
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">~</span>MySection()
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> ( data )
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">delete</span>[]data;
+</span></span><span style="display:flex;"><span>			data <span style="color:#ec0000">=</span> <span style="color:#ec0000">NULL</span>;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>list<span style="color:#ec0000">&lt;</span>MySection<span style="color:#ec0000">&gt;</span> Sections;
+</span></span><span style="display:flex;"><span>BOOL <span style="color:#5f5fff">InjectProcess</span>( LPTSTR VictimFile, LPBYTE pInjectFileBuf )
+</span></span><span style="display:flex;"><span>{       /* VictimFile宿主文件   IndectFile注入文件(原始文件) */
+</span></span><span style="display:flex;"><span>	IMAGE_DOS_HEADER DosHeaders, DosHeadero;
+</span></span><span style="display:flex;"><span>	IMAGE_NT_HEADERS NtHeaders, NtHeadero;
+</span></span><span style="display:flex;"><span>	PROCESS_INFORMATION pi;
+</span></span><span style="display:flex;"><span>	STARTUPINFO si;
+</span></span><span style="display:flex;"><span>	CONTEXT context;
+</span></span><span style="display:flex;"><span>	PVOID ImageBase;
+</span></span><span style="display:flex;"><span>	SIZE_T BaseAddr;
+</span></span><span style="display:flex;"><span>	LONG offset;
+</span></span><span style="display:flex;"><span>	DWORD dwBytes;
+</span></span><span style="display:flex;"><span>	HMODULE hNtDll <span style="color:#ec0000">=</span> GetModuleHandle( <span style="color:#008900">&#34;ntdll.dll&#34;</span> );
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>hNtDll )
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">return</span>(FALSE);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	memset( <span style="color:#ec0000">&amp;</span>si, <span style="color:#008900">0</span>, <span style="color:#ec0000">sizeof</span>(si) );
+</span></span><span style="display:flex;"><span>	memset( <span style="color:#ec0000">&amp;</span>pi, <span style="color:#008900">0</span>, <span style="color:#ec0000">sizeof</span>(pi) );
+</span></span><span style="display:flex;"><span>	si.cb <span style="color:#ec0000">=</span> <span style="color:#ec0000">sizeof</span>(si);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	CopyMemory( (<span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>) <span style="color:#ec0000">&amp;</span>DosHeadero, pInjectFileBuf, <span style="color:#ec0000">sizeof</span>(IMAGE_DOS_HEADER) );
+</span></span><span style="display:flex;"><span>	CopyMemory( (<span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>) <span style="color:#ec0000">&amp;</span>NtHeadero, pInjectFileBuf <span style="color:#ec0000">+</span> DosHeadero.e_lfanew, <span style="color:#ec0000">sizeof</span>(IMAGE_NT_HEADERS) );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	/* 检查PE结构 */
+</span></span><span style="display:flex;"><span>	/* 以挂起方式进程 */
+</span></span><span style="display:flex;"><span>	BOOL res <span style="color:#ec0000">=</span> CreateProcess( <span style="color:#ec0000">NULL</span>, VictimFile, <span style="color:#ec0000">NULL</span>, <span style="color:#ec0000">NULL</span>, FALSE, CREATE_SUSPENDED, <span style="color:#ec0000">NULL</span>, <span style="color:#ec0000">NULL</span>, <span style="color:#ec0000">&amp;</span>si, <span style="color:#ec0000">&amp;</span>pi );
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">if</span> ( res )
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		context.ContextFlags <span style="color:#ec0000">=</span> CONTEXT_FULL;
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>GetThreadContext( pi.hThread, <span style="color:#ec0000">&amp;</span>context ) ) /* 如果调用失败 */
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			CloseHandle( pi.hThread );
+</span></span><span style="display:flex;"><span>			CloseHandle( pi.hProcess );
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">return</span>(FALSE);
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		ReadProcessMemory( pi.hProcess, (<span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>) (context.Ebx <span style="color:#ec0000">+</span> <span style="color:#008900">8</span>), <span style="color:#ec0000">&amp;</span>BaseAddr, <span style="color:#ec0000">sizeof</span>(<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">long</span>), <span style="color:#ec0000">NULL</span> );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>BaseAddr )
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			CloseHandle( pi.hThread );
+</span></span><span style="display:flex;"><span>			CloseHandle( pi.hProcess );
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">return</span>(FALSE);
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		/* 计算FS的基址 */
+</span></span><span style="display:flex;"><span>		LDT_ENTRY SelEntry;
+</span></span><span style="display:flex;"><span>		PTEB pteb <span style="color:#ec0000">=</span> <span style="color:#ec0000">new</span> TEB;
+</span></span><span style="display:flex;"><span>		PPEB ppeb <span style="color:#ec0000">=</span> <span style="color:#ec0000">new</span> PEB;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		GetThreadSelectorEntry( pi.hThread, context.SegFs, <span style="color:#ec0000">&amp;</span>SelEntry );
+</span></span><span style="display:flex;"><span>		DWORD dwFSBase <span style="color:#ec0000">=</span> (SelEntry.HighWord.Bits.BaseHi <span style="color:#ec0000">&lt;&lt;</span> <span style="color:#008900">24</span>) <span style="color:#ec0000">|</span> (SelEntry.HighWord.Bits.BaseMid <span style="color:#ec0000">&lt;&lt;</span> <span style="color:#008900">16</span>) <span style="color:#ec0000">|</span> SelEntry.BaseLow;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		ReadProcessMemory( pi.hProcess, (LPCVOID) dwFSBase, pteb, <span style="color:#ec0000">sizeof</span>(TEB), <span style="color:#ec0000">&amp;</span>dwBytes );
+</span></span><span style="display:flex;"><span>		ReadProcessMemory( pi.hProcess, (LPCVOID) <span style="color:#ec0000">*</span>(DWORD <span style="color:#ec0000">*</span>) ( (BYTE <span style="color:#ec0000">*</span>) pteb <span style="color:#ec0000">+</span> <span style="color:#008900">0x30</span>), ppeb, <span style="color:#ec0000">sizeof</span>(PEB), <span style="color:#ec0000">&amp;</span>dwBytes );    /* pteb-&gt;Peb */
+</span></span><span style="display:flex;"><span>		ImageBase <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(PVOID <span style="color:#ec0000">*</span>) ( (BYTE <span style="color:#ec0000">*</span>) ppeb <span style="color:#ec0000">+</span> <span style="color:#008900">0x08</span>);                                                                 /* ppeb-&gt;ImageBaseAddress; */
+</span></span><span style="display:flex;"><span>		ReadProcessMemory( pi.hProcess, ImageBase, <span style="color:#ec0000">&amp;</span>DosHeaders, <span style="color:#ec0000">sizeof</span>(IMAGE_DOS_HEADER), <span style="color:#ec0000">&amp;</span>dwBytes );
+</span></span><span style="display:flex;"><span>		ReadProcessMemory( pi.hProcess, (LPVOID) ( (BYTE <span style="color:#ec0000">*</span>) ImageBase <span style="color:#ec0000">+</span> DosHeaders.e_lfanew), <span style="color:#ec0000">&amp;</span>NtHeaders, <span style="color:#ec0000">sizeof</span>(IMAGE_NT_HEADERS), <span style="color:#ec0000">&amp;</span>dwBytes );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">delete</span> pteb;
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">delete</span> ppeb;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		offset <span style="color:#ec0000">=</span> DosHeaders.e_lfanew <span style="color:#ec0000">+</span> <span style="color:#ec0000">sizeof</span>(IMAGE_NT_HEADERS);
+</span></span><span style="display:flex;"><span>		IMAGE_SECTION_HEADER curHeader; /* .text和.reloc的信息 */
+</span></span><span style="display:flex;"><span>		WORD i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">for</span> ( i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> NtHeaders.FileHeader.NumberOfSections; i<span style="color:#ec0000">++</span> )
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			MySection section;
+</span></span><span style="display:flex;"><span>			ReadProcessMemory( pi.hProcess, (LPVOID) ( (BYTE <span style="color:#ec0000">*</span>) ImageBase <span style="color:#ec0000">+</span> offset <span style="color:#ec0000">+</span> i <span style="color:#ec0000">*</span> <span style="color:#ec0000">sizeof</span>(IMAGE_SECTION_HEADER) ), (<span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>) <span style="color:#ec0000">&amp;</span>curHeader, <span style="color:#ec0000">sizeof</span>(IMAGE_SECTION_HEADER), <span style="color:#ec0000">&amp;</span>dwBytes );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>			/*下面四行代码获取各个段信息 */
+</span></span><span style="display:flex;"><span>			/* .reloc段在CreateProcess后就已经被系统重定向应用到各个段里去了，如果要自己处理，就要取出这个段，并自己应用reloc */
+</span></span><span style="display:flex;"><span>			curHeader.SizeOfRawData <span style="color:#ec0000">=</span> curHeader.Misc.VirtualSize; /* 用SizeOfRawData在写入的时候会发生堆溢出，目前不知道原因 */
+</span></span><span style="display:flex;"><span>			section.SetHeader( curHeader );
+</span></span><span style="display:flex;"><span>			CopyMemory( section.data, pInjectFileBuf <span style="color:#ec0000">+</span> curHeader.PointerToRawData, curHeader.SizeOfRawData );
+</span></span><span style="display:flex;"><span>			Sections.push_back( section );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>StrCmp( (<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>) curHeader.Name, <span style="color:#008900">&#34;.reloc&#34;</span> ) )     /* 确保reloc是最后一个段 */
+</span></span><span style="display:flex;"><span>			{                                                       /* 实现重定位 */
+</span></span><span style="display:flex;"><span>				BYTE<span style="color:#ec0000">*</span> relocdata <span style="color:#ec0000">=</span> section.data;
+</span></span><span style="display:flex;"><span>				IMAGE_BASE_RELOCATION CurReloc;
+</span></span><span style="display:flex;"><span>				CopyMemory( (<span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>) <span style="color:#ec0000">&amp;</span>CurReloc, relocdata, <span style="color:#ec0000">sizeof</span>(CurReloc) );
+</span></span><span style="display:flex;"><span>				DWORD offset <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>				<span style="color:#ec0000">while</span> ( CurReloc.VirtualAddress )
+</span></span><span style="display:flex;"><span>				{
+</span></span><span style="display:flex;"><span>					<span style="color:#5f5fff">int</span> num <span style="color:#ec0000">=</span> (CurReloc.SizeOfBlock <span style="color:#ec0000">-</span> <span style="color:#ec0000">sizeof</span>(IMAGE_BASE_RELOCATION) ) <span style="color:#ec0000">/</span> <span style="color:#008900">2</span>;
+</span></span><span style="display:flex;"><span>					WORD<span style="color:#ec0000">*</span> pData <span style="color:#ec0000">=</span> (WORD <span style="color:#ec0000">*</span>) (relocdata <span style="color:#ec0000">+</span> <span style="color:#ec0000">sizeof</span>(IMAGE_BASE_RELOCATION) <span style="color:#ec0000">+</span> offset);
+</span></span><span style="display:flex;"><span>					<span style="color:#ec0000">for</span> ( <span style="color:#5f5fff">int</span> j <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; j <span style="color:#ec0000">&lt;</span> num; j<span style="color:#ec0000">++</span> )
+</span></span><span style="display:flex;"><span>					{
+</span></span><span style="display:flex;"><span>						<span style="color:#ec0000">switch</span> ( pData[j] <span style="color:#ec0000">&gt;&gt;</span> <span style="color:#008900">12</span> )
+</span></span><span style="display:flex;"><span>						{
+</span></span><span style="display:flex;"><span>						<span style="color:#ec0000">case</span> <span style="color:#ec0000">IMAGE_REL_BASED_ABSOLUTE</span>: /* 什么都不做 */
+</span></span><span style="display:flex;"><span>							<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>						<span style="color:#ec0000">case</span> <span style="color:#ec0000">IMAGE_REL_BASED_HIGHLOW</span>:
+</span></span><span style="display:flex;"><span>						{
+</span></span><span style="display:flex;"><span>							list<span style="color:#ec0000">&lt;</span>MySection<span style="color:#ec0000">&gt;::</span>iterator itor <span style="color:#ec0000">=</span> Sections.begin();
+</span></span><span style="display:flex;"><span>							<span style="color:#ec0000">while</span> ( itor <span style="color:#ec0000">!=</span> Sections.end() )
+</span></span><span style="display:flex;"><span>							{
+</span></span><span style="display:flex;"><span>								<span style="color:#5f5fff">int</span> inneroffset <span style="color:#ec0000">=</span> CurReloc.VirtualAddress <span style="color:#ec0000">+</span> (pData[j] <span style="color:#ec0000">&amp;</span> <span style="color:#008900">0xFFF</span>) <span style="color:#ec0000">-</span> (<span style="color:#ec0000">*</span>itor).header.VirtualAddress;
+</span></span><span style="display:flex;"><span>								<span style="color:#ec0000">if</span> ( inneroffset <span style="color:#ec0000">&gt;=</span> <span style="color:#008900">0</span> <span style="color:#ec0000">&amp;&amp;</span> inneroffset <span style="color:#ec0000">&lt;=</span> (<span style="color:#ec0000">*</span>itor).header.SizeOfRawData )
+</span></span><span style="display:flex;"><span>								{
+</span></span><span style="display:flex;"><span>									<span style="color:#ec0000">*</span>(DWORD <span style="color:#ec0000">*</span>) ( (<span style="color:#ec0000">*</span>itor).data <span style="color:#ec0000">+</span> inneroffset) <span style="color:#ec0000">+=</span> NtHeaders.OptionalHeader.ImageBase <span style="color:#ec0000">-</span> NtHeadero.OptionalHeader.ImageBase;
+</span></span><span style="display:flex;"><span>									<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>								}
+</span></span><span style="display:flex;"><span>								<span style="color:#ec0000">++</span>itor;
+</span></span><span style="display:flex;"><span>							}
+</span></span><span style="display:flex;"><span>						}
+</span></span><span style="display:flex;"><span>						<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>						<span style="color:#ec0000">default</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>							printf( <span style="color:#008900">&#34;unknown!!!!!!!!!!!!!!&#34;</span> );
+</span></span><span style="display:flex;"><span>							<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>						}
+</span></span><span style="display:flex;"><span>					}
+</span></span><span style="display:flex;"><span>					offset <span style="color:#ec0000">+=</span> CurReloc.SizeOfBlock;
+</span></span><span style="display:flex;"><span>					CopyMemory( (<span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>) <span style="color:#ec0000">&amp;</span>CurReloc, relocdata <span style="color:#ec0000">+</span> offset, <span style="color:#ec0000">sizeof</span>(CurReloc) );
+</span></span><span style="display:flex;"><span>				}
+</span></span><span style="display:flex;"><span>			}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>			section.data <span style="color:#ec0000">=</span> <span style="color:#ec0000">NULL</span>; /* 浅拷贝防止析构 */
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		list<span style="color:#ec0000">&lt;</span>MySection<span style="color:#ec0000">&gt;::</span>iterator itor <span style="color:#ec0000">=</span> Sections.begin();
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">while</span> ( itor <span style="color:#ec0000">!=</span> Sections.end() )
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			/*有些段会因为没有写入权限失败 */
+</span></span><span style="display:flex;"><span>			WriteProcessMemory( pi.hProcess, (LPVOID) ( (DWORD) ImageBase <span style="color:#ec0000">+</span> (<span style="color:#ec0000">*</span>itor).header.VirtualAddress), (<span style="color:#ec0000">*</span>itor).data, (<span style="color:#ec0000">*</span>itor).header.SizeOfRawData, <span style="color:#ec0000">&amp;</span>dwBytes );
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>StrCmp( (<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>) (<span style="color:#ec0000">*</span>itor).header.Name, <span style="color:#008900">&#34;.text&#34;</span> ) )
+</span></span><span style="display:flex;"><span>			{
+</span></span><span style="display:flex;"><span>				<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>			}
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">++</span>itor;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		ResumeThread( pi.hThread );
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">return</span>(TRUE);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">main</span>()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">if</span> ( __argc <span style="color:#ec0000">&lt;</span> <span style="color:#008900">3</span> ) /* 文件名+MAKE     文件名+RUN */
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>StrCmp( __argv[<span style="color:#008900">2</span>], <span style="color:#008900">&#34;MAKE&#34;</span> ) )
+</span></span><span style="display:flex;"><span>	{       /* 生成注入文件 */
+</span></span><span style="display:flex;"><span>		<span style="color:#5f5fff">char</span> dir[MAX_PATH], newfile[MAX_PATH];
+</span></span><span style="display:flex;"><span>		strcpy( dir, __argv[<span style="color:#008900">1</span>] );
+</span></span><span style="display:flex;"><span>		PathRemoveFileSpec( dir );
+</span></span><span style="display:flex;"><span>		strcpy( newfile, dir );
+</span></span><span style="display:flex;"><span>		strcat( newfile, <span style="color:#008900">&#34;</span><span style="color:#008900">\\</span><span style="color:#008900">data&#34;</span> );
+</span></span><span style="display:flex;"><span>		CopyFile( __argv[<span style="color:#008900">1</span>], newfile, FALSE );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		IMAGE_DOS_HEADER DosHeader;
+</span></span><span style="display:flex;"><span>		IMAGE_NT_HEADERS NtHeader;
+</span></span><span style="display:flex;"><span>		DWORD dwNumberOfBytesRead <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>		HANDLE hOldFile <span style="color:#ec0000">=</span> CreateFile( __argv[<span style="color:#008900">1</span>], GENERIC_READ <span style="color:#ec0000">|</span> GENERIC_WRITE, FILE_SHARE_READ <span style="color:#ec0000">|</span> FILE_SHARE_WRITE, <span style="color:#ec0000">NULL</span>, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, <span style="color:#ec0000">NULL</span> );
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> ( hOldFile <span style="color:#ec0000">==</span> INVALID_HANDLE_VALUE )
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		SetFilePointer( hOldFile, <span style="color:#008900">0</span>, <span style="color:#ec0000">NULL</span>, FILE_BEGIN );
+</span></span><span style="display:flex;"><span>		ReadFile( hOldFile, <span style="color:#ec0000">&amp;</span>DosHeader, <span style="color:#ec0000">sizeof</span>(DosHeader), <span style="color:#ec0000">&amp;</span>dwNumberOfBytesRead, <span style="color:#ec0000">NULL</span> );
+</span></span><span style="display:flex;"><span>		SetFilePointer( hOldFile, DosHeader.e_lfanew, <span style="color:#ec0000">NULL</span>, FILE_BEGIN );
+</span></span><span style="display:flex;"><span>		ReadFile( hOldFile, <span style="color:#ec0000">&amp;</span>NtHeader, <span style="color:#ec0000">sizeof</span>(NtHeader), <span style="color:#ec0000">&amp;</span>dwNumberOfBytesRead, <span style="color:#ec0000">NULL</span> );
+</span></span><span style="display:flex;"><span>		IMAGE_SECTION_HEADER curHeader; /* .text和.reloc的信息 */
+</span></span><span style="display:flex;"><span>		WORD i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">for</span> ( i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> NtHeader.FileHeader.NumberOfSections; i<span style="color:#ec0000">++</span> )
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			ReadFile( hOldFile, <span style="color:#ec0000">&amp;</span>curHeader, <span style="color:#ec0000">sizeof</span>(curHeader), <span style="color:#ec0000">&amp;</span>dwNumberOfBytesRead, <span style="color:#ec0000">NULL</span> );
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>StrCmp( (<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>) curHeader.Name, <span style="color:#008900">&#34;.text&#34;</span> ) )
+</span></span><span style="display:flex;"><span>			{
+</span></span><span style="display:flex;"><span>				<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>			}
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		SetFilePointer( hOldFile, curHeader.PointerToRawData, <span style="color:#ec0000">NULL</span>, FILE_BEGIN );
+</span></span><span style="display:flex;"><span>		BYTE<span style="color:#ec0000">*</span> newbuf <span style="color:#ec0000">=</span> <span style="color:#ec0000">new</span> BYTE[curHeader.SizeOfRawData];
+</span></span><span style="display:flex;"><span>		memset( newbuf, <span style="color:#008900">0</span>, curHeader.SizeOfRawData );
+</span></span><span style="display:flex;"><span>		WriteFile( hOldFile, newbuf, curHeader.SizeOfRawData, <span style="color:#ec0000">&amp;</span>dwNumberOfBytesRead, <span style="color:#ec0000">NULL</span> );
+</span></span><span style="display:flex;"><span>		CloseHandle( hOldFile );
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">delete</span>[]newbuf;
+</span></span><span style="display:flex;"><span>	}<span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>StrCmp( __argv[<span style="color:#008900">2</span>], <span style="color:#008900">&#34;RUN&#34;</span> ) )
+</span></span><span style="display:flex;"><span>	{       /* 运行文件 */
+</span></span><span style="display:flex;"><span>		<span style="color:#5f5fff">char</span> dir[MAX_PATH];
+</span></span><span style="display:flex;"><span>		strcpy( dir, __argv[<span style="color:#008900">1</span>] );
+</span></span><span style="display:flex;"><span>		PathRemoveFileSpec( dir );
+</span></span><span style="display:flex;"><span>		strcat( dir, <span style="color:#008900">&#34;</span><span style="color:#008900">\\</span><span style="color:#008900">data&#34;</span> );
+</span></span><span style="display:flex;"><span>		HANDLE hNewFile <span style="color:#ec0000">=</span> CreateFile( dir, GENERIC_READ, FILE_SHARE_READ <span style="color:#ec0000">|</span> FILE_SHARE_WRITE, <span style="color:#ec0000">NULL</span>, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, <span style="color:#ec0000">NULL</span> );
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> ( hNewFile <span style="color:#ec0000">==</span> INVALID_HANDLE_VALUE )
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		DWORD dwFileSize <span style="color:#ec0000">=</span> GetFileSize( hNewFile, <span style="color:#ec0000">NULL</span> );
+</span></span><span style="display:flex;"><span>		LPBYTE pInjectFileBuf <span style="color:#ec0000">=</span> <span style="color:#ec0000">new</span> BYTE[dwFileSize];
+</span></span><span style="display:flex;"><span>		memset( pInjectFileBuf, <span style="color:#008900">0</span>, dwFileSize );
+</span></span><span style="display:flex;"><span>		DWORD dwNumberOfBytesRead <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>		ReadFile( hNewFile, pInjectFileBuf, dwFileSize, <span style="color:#ec0000">&amp;</span>dwNumberOfBytesRead, <span style="color:#ec0000">NULL</span> );
+</span></span><span style="display:flex;"><span>		CloseHandle( hNewFile );
+</span></span><span style="display:flex;"><span>		InjectProcess( __argv[<span style="color:#008900">1</span>], pInjectFileBuf );
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">delete</span>[]pInjectFileBuf;
+</span></span><span style="display:flex;"><span>	}
+</span></span></code></pre></div><p>用法：</p>
+<ul>
+<li>Encrypt &ldquo;D:\Program Files\Thunder Network\Thunder\Program\Thunder.exe&rdquo; MAKE
+执行后会将Thunder.exe的.text掏空，使原始文件无法运行，另外将Thunder.exe拷贝一份到同目录下的data文件，这个我没做加密处理，不过相加还是能加的</li>
+<li>Encrypt &ldquo;D:\Program Files\Thunder Network\Thunder\Program\Thunder.exe&rdquo; RUN
+将被掏空代码的Thunder.exe以挂起模式运行，之后将data文件中正常数据，经过reloc手工修正各个段后填回Thunder.exe的内存映射中，这样就可以正常运行了</li>
+</ul>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20140102_disk_info/">
+                        获取硬盘信息
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    使用burpsuite验证https证书是否安全 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/misc/20161215_verify_https_cert/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/misc/">Miscs</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/misc/20161215_verify_https_cert/">使用burpsuite验证https证书是否安全</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">使用burpsuite验证https证书是否安全</h1>
+    
+    <p class="single-summary">使用burpsuite验证https证书是否安全</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2016-12-15T00:00:00&#43;00:00">December 15, 2016</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#为什么要验证https证书">为什么要验证https证书？</a></li>
+    <li><a href="#环境配置">环境配置</a></li>
+    <li><a href="#设置假证书">设置假证书</a></li>
+    <li><a href="#测试">测试</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="为什么要验证https证书">为什么要验证https证书？</h2>
+<p>  https是安全的传输过程，一旦建立连接便以加密形式通信，正常情况下窃听者无法得到私钥也无法解密数据，这些是由安全证书RSA本身特性保证的。然而如果在https建立过程中，未对证书做校验，攻击者可以伪造证书骗取密钥以解密之后的数据流</p>
+<h2 id="环境配置">环境配置</h2>
+<ul>
+<li>导出证书</li>
+</ul>
+<p>我测试的是iphone端，首先安装证书，先把证书导出</p>
+<pre tabindex="0"><code>Proxy -&gt; Options -&gt; Proxy Listeners -&gt; import / export CA certificate 出现CA Certificate对话框
+Export -&gt; Certificate in DER format -&gt; Next -&gt; 保存为 tmp.cer -&gt; Next ....
+</code></pre><ul>
+<li>手机端下载证书</li>
+</ul>
+<p>  h在本地建立简单的Http服务器，吧tmp.cer放到其中，用iphone登录自己的网站下载cer，会自动识别为证书，安装即可(在这里记得把以前重复安装的证书删掉，否则不生效，笔者在这里栽了好久)</p>
+<ul>
+<li>手机端设置代理</li>
+</ul>
+<p>  h设置iphone的代理，细节不赘述(主机建立热点保证和手机在同一个wifi，设置代理ip=???? port=8080)</p>
+<ul>
+<li>设置burp代理服务器</li>
+</ul>
+<pre tabindex="0"><code>Proxy -&gt; Options -&gt; Proxy Listeners ，listener里面默认有一项127.0.0.1:8080，选择Edit，Bind to address从Lookback only修改为All interfaces
+</code></pre><h2 id="设置假证书">设置假证书</h2>
+<p>  设置前面listener的Certificate，让然在Edit proxy listener页面，Certificate选项卡有三项，设置以后立即生效：</p>
+<ul>
+<li>Use a self-signed certificate 使用自签名证书，用于检测伪造证书为自签名情况</li>
+<li>Generate CA-signed per-host certificates 使用目标域名CA签名的证书，这是正常情况，代理工具会为每个域名生成证书</li>
+<li>Generate a CA-signed certificate with a specific hostname使用指定域名CA签名的证书，用于检测伪造host签名情况</li>
+<li>Use a custom certificate(PKCS#12) 使用用户自定义证书，用于检测其他伪造证书情况，如假日期</li>
+</ul>
+<h2 id="测试">测试</h2>
+<p>  现在尝试对https://www.baidu.com做一次校验，选择指定域名CA签名这种情况，设置为*.qq.com。正常情况下，www.baidu.com匹配才能通过，如果*.qq.com被通过了，说明存在https未验证host漏洞。结果为无法连接，说明浏览器做了校验域名</p>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/misc/20210731_letsencrypt/">
+                        使用Letsencrypt免费证书搭建tornado的https服务
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

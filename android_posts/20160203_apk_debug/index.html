@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    强制修改apk可调试性 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/android_posts/20160203_apk_debug/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/android_posts/">Android_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/android_posts/20160203_apk_debug/">强制修改apk可调试性</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">强制修改apk可调试性</h1>
+    
+    <p class="single-summary">强制修改apk可调试性</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2016-02-03T00:00:00&#43;00:00">February 3, 2016</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents"></nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <p>android上开启调试有2种方式：</p>
+<ul>
+<li>修改linux系统/default.prop的<code>ro.debuggable=1</code>。该法优点是彻底，开启全局调试权限，缺点是需要刷rom</li>
+<li>添加/修改AndroidManifest.xml中的application的debuggable属性。该法优点是不需要刷rom，只需要改apk</li>
+</ul>
+<p>  然而多数情况下，要修改该属性通常通过apktool反编译，修改其中的AndroidManifest.xml，之后回编译，签名并安装，而apktool工具经常会失效(即使用最靠谱的反编译为smali，只要资源解析失败那么没有办法回编译)，因此本文提出一种方法，从二进制角度直接修改apk中的xml，apk本质是一种压缩文件格式</p>
+<pre tabindex="0"><code>N:android=http://schemas.android.com/apk/res/android
+  E:manifest (line=2)
+   A: android:versionCode(0x0101021b)=(type 0x10)0x1
+   A: android:versionName(0x0101021c)=&#34;1.0&#34; (Raw:&#34;1.0&#34;)
+   A: package=&#34;com.example.test1&#34; (Raw:&#34;com.example.test1&#34;)
+   A: platformBuildVersionCode=(type 0x10)0x17 (Raw: &#34;23&#34;)
+   A: platformBuildVersionName=&#34;6.0-2438415&#34; (Raw:&#34;6.0-2438415&#34;)
+   E: uses-sdk (line=7)
+     A: android:minSdkVersion(0x0101020c)=(type 0x10)0x8
+     A: android:targetSdkVersion(0x01010270)=(type 0x10)0x15
+   E: application (line=11)
+     A: android:theme(0x01010000)=@0x7f0b0134
+     A: android:label(0x01010001)=@0x7f0a0014
+     A: android:icon(0x01010002)=@0x7f020045
+     A: android:debuggable(0x0101000f)=(type 0x12)0x0
+     A: android:allowBackup(0x01010280)=(type 0x12)0xffffffff
+     E: activity (line=17)
+       A: android:label(0x01010001)=@0x7f0a0014
+       A: android:name(0x01010003)=&#34;.MainActivity&#34; (Raw:&#34;.MainActivity&#34;)
+       E: intent-filter (line=20)
+         E: action (line=21)
+           A: android:name(0x01010003)=&#34;android.intent.action.MAIN&#34; (Raw:&#34;andr
+oid.intent.action.MAIN&#34;)
+         E: category (line=23)
+           A: android:name(0x01010003)=&#34;android.intent.category.LAUNCHER&#34;(Raw:
+&#34;android.intent.category.LAUNCHER&#34;)
+</code></pre><pre tabindex="0"><code>00000000  02 00 0C 00 C4 E9 02 00  01 00 0000 01 00 1C 00       Äé         
+00000010  00 CF 00 00 0E 06 00 00  00 00 0000 00 01 00 00    Ï            
+00000020  54 18 00 00 00 00 00 00  00 00 0000 32 00 00 00   T           2  
+00000030  5D 00 00 00 87 00 00 00  B3 00 0000 DF 00 00 00   ]   ‡  ³   ß  
+00000040  02 01 00 00 39 01 00 00  5D 01 0000 93 01 00 00       9   ]  “  
+00000050  B4 01 00 00 E0 01 00 00  FF 01 0000 2A 02 00 00   ´   à  ÿ   *  
+00000060  53 02 00 00 84 02 00 00  BC 02 0000 E9 02 00 00   S   „  ¼   é  
+00000070  16 03 00 00 4E 03 00 00  78 03 0000 B0 03 00 00       N   x  °  
+00000080  E7 03 00 00 18 04 00 00  45 04 0000 78 04 00 00   ç       E  x  
+......
+00001860  2F 2F 72 65 73 2F 6C 61  79 6F 7574 2F 6E 6F 74   //res/layout/not
+00001870  69 66 69 63 61 74 69 6F  6E 5F 6D65 64 69 61 5F   ification_media_
+00001880  63 61 6E 63 65 6C 5F 61  63 74 696F 6E 2E 78 6D   cancel_action.xm
+00001890  6C 00 28 28 72 65 73 2F  6C 61 796F 75 74 2F 61   l ((res/layout/a
+000018A0  62 63 5F 6C 69 73 74 5F  6D 65 6E75 5F 69 74 65   bc_list_menu_ite
+000018B0  6D 5F 6C 61 79 6F 75 74  2E 78 6D6C 00 27 27 72   m_layout.xml &#39;&#39;r
+000018C0  65 73 2F 6C 61 79 6F 75  74 2F 6162 63 5F 6C 69   es/layout/abc_li
+000018D0  73 74 5F 6D 65 6E 75 5F  69 74 656D 5F 72 61 64   st_menu_item_rad
+000018E0  69 6F 2E 78 6D 6C 00 29  29 72 6573 2F 6C 61 79   io.xml ))res/lay
+......
+0000CF00                                        00 0220 01                  
+0000CF10  B8 1A 02 00 7F 00 00 00  63 00 6F00 6D 00 2E 00   ¸       c o m .
+0000CF20  65 00 78 00 61 00 6D 00  70 00 6C00 65 00 2E 00   e x a m p l e .
+0000CF30  74 00 65 00 73 00 74 00  31 00 0000 00 00 00 00   t e s t 1      
+0000CF40  00 00 00 00 00 00 00 00  00 00 0000 00 00 00 00                  
+0000CF50  00 00 00 00 00 00 00 00  00 00 0000 00 00 00 00                  
+0000CF60  00 00 00 00 00 00 00 00  00 00 0000 00 00 00 00                  
+0000CF70  00 00 00 00 00 00 00 00  00 00 0000 00 00 00 00                  
+0000CF80  00 00 00 00 00 00 00 00  00 00 0000 00 00 00 00                  
+0000CF90  00 00 00 00 00 00 00 00  00 00 0000 00 00 00 00                  
+0000CFA0  00 00 00 00 00 00 00 00  00 00 0000 00 00 00 00                  
+0000CFB0  00 00 00 00 00 00 00 00  00 00 0000 00 00 00 00                  
+0000CFC0  00 00 00 00 00 00 00 00  00 00 0000 00 00 00 00                  
+0000CFD0  00 00 00 00 00 00 00 00  00 00 0000 00 00 00 00                  
+0000CFE0  00 00 00 00 00 00 00 00  00 00 0000 00 00 00 00                  
+0000CFF0  00 00 00 00 00 00 00 00  00 00 0000 00 00 00 00                  
+0000D000  00 00 00 00 00 00 00 00  00 00 0000 00 00 00 00                  
+0000D010  00 00 00 00 00 00 00 00  20 01 0000 0C 00 00 00                  
+0000D020  CC 01 00 00 8D 03 00 00  00 00 0000 01 00 1C 00   Ì              
+0000D030  AC 00 00 00 0C 00 00 00  00 00 0000 00 01 00 00   ¬              
+0000D040  4C 00 00 00 00 00 00 00  00 00 0000 07 00 00 00   L              
+0000D050  12 00 00 00 1B 00 00 00  22 00 0000 29 00 00 00           &#34;   )  
+0000D060  31 00 00 00 39 00 00 00  43 00 0000 48 00 00 00   1   9  C   H  
+0000D070  51 00 00 00 59 00 00 00  04 04 6174 74 72 00 08   Q   Y    attr
+0000D080  08 64 72 61 77 61 62 6C  65 00 0606 6C 61 79 6F    drawable   layo
+0000D090  75 74 00 04 04 61 6E 69  6D 00 0404 62 6F 6F 6C   ut   anim  bool
+0000D0A0  00 05 05 63 6F 6C 6F 72  00 05 0564 69 6D 65 6E      color   dimen
+0000D0B0  00 07 07 69 6E 74 65 67  65 72 0002 02 69 64 00      integer   id
+0000D0C0  06 06 73 74 72 69 6E 67  00 05 0573 74 79 6C 65     string   style
+0000D0D0  00 04 04 6D 65 6E 75 00  01 00 1C00 E8 7B 00 00      menu     è{
+0000D0E0  8D 03 00 00 00 00 00 00  00 01 0000 50 0E 00 00               P    
+</code></pre><p>结合源码分析resource.arsc如下：</p>
+<pre tabindex="0"><code>+00000  type=RES_TABLE_TYPEheadersize=c size=2e9c4  ResTable_header
+        包个数：1
++0000c  type=RES_STRING_POOL_TYPEheadersize=1c size=cf00     
+        字符串条目：60e
+        索引数组偏移范围：0x28-0x1860         (60e*4+头部，偏移占4字节)
+        字符串内容范围：0x1860-0xcf0c
++0cf0c  type=RES_TABLE_PACKAGE_TYPEheadersize=120 size=21AB8    ResTable_package
+        包名：com.example.test1
++d02c   类型符号表 ResStringPool_header
+        字符串条目：c   分析类同
++d0d8   键符号表 ResStringPool_header
+        字符串条目：38d  分析类同
+</code></pre><p>已编译Manifest.xml解析：</p>
+<pre tabindex="0"><code>00000000  03 00 08 00 28 07 00 00  01 00 1C00 DC 03 00 00       (       Ü  
+00000010  1E 00 00 00 00 00 00 00  00 00 0000 94 00 00 00               ”  
+00000020  00 00 00 00 00 00 00 00  1A 00 0000 34 00 00 00               4  
+00000030  52 00 00 00 76 00 00 00  8E 00 0000 A8 00 00 00   R   v  Ž   ¨  
+00000040  B4 00 00 00 C2 00 00 00  D0 00 0000 DC 00 00 00   ´   Â  Ð   Ü  
+00000050  EE 00 00 00 46 01 00 00  4A 01 0000 5C 01 00 00   î   F  J   \  
+00000060  90 01 00 00 C4 01 00 00  D8 01 0000 FE 01 00 00       Ä   Ø  þ  
+00000070  08 02 00 00 10 02 00 00  2A 02 0000 3E 02 00 00           *   &gt;  
+00000080  58 02 00 00 6C 02 00 00  8A 02 0000 A8 02 00 00   X   l  Š   ¨  
+00000090  B8 02 00 00 F0 02 00 00  04 03 0000 0B 00 76 00   ¸   ð        v
+000000A0  65 00 72 00 73 00 69 00  6F 00 6E00 43 00 6F 00   e r s i o n C o
+000000B0  64 00 65 00 00 00 0B 00  76 00 6500 72 00 73 00   d e     v e r s
+000000C0  69 00 6F 00 6E 00 4E 00  61 00 6D00 65 00 00 00   i o n N a m e  
+000000D0  0D 00 6D 00 69 00 6E 00  53 00 6400 6B 00 56 00     m i n S d k V
+......
+000003E0               80 01 08 00  30 00 00 00 1B 02 01 01       €  0      
+000003F0  1C 02 01 01 0C 02 01 01  70 02 0101 0F 00 01 01           p      
+00000400  80 02 01 01 02 00 01 01  01 00 0101 00 00 01 01   €              
+00000410  03 00 01 01 00 01 10 00  18 00 0000 02 00 00 00                  
+00000420  FF FF FF FF 0A 00 00 00  0B 00 0000 02 01 10 00   ÿÿÿÿ           
+00000430  88 00 00 00 02 00 00 00  FF FF FFFF FF FF FF FF   ˆ       ÿÿÿÿÿÿÿÿ
+00000440  10 00 00 00 14 00 14 00  05 00 0000 00 00 00 00                  
+......
+000004B0               02 01 10 00  4C 00 00 00 07 00 00 00           L      
+000004C0  FF FF FF FF FF FF FF FF  15 00 0000 14 00 14 00   ÿÿÿÿÿÿÿÿ      
+000004D0  02 00 00 00 00 00 00 00  0B 00 0000 02 00 00 00                  
+000004E0  FF FF FF FF 08 00 00 10  08 00 0000 0B 00 00 00   ÿÿÿÿ           
+000004F0  03 00 00 00 FF FF FF FF  08 00 0010 15 00 00 00       ÿÿÿÿ      
+00000500  03 01 10 00 18 00 00 00  09 00 0000 FF FF FF FF               ÿÿÿÿ
+00000510  FF FF FF FF 15 00 00 00  02 01 1000 88 00 00 00   ÿÿÿÿ        ˆ  
+......
+000005A0  02 01 10 00 4C 00 00 00  11 00 0000 FF FF FF FF       L       ÿÿÿÿ
+000005B0  FF FF FF FF 17 00 00 00  14 00 1400 02 00 00 00   ÿÿÿÿ           
+000005C0  00 00 00 00 0B 00 00 00  07 00 0000 FF FF FF FF               ÿÿÿÿ
+000005D0  08 00 00 01 14 00 0A 7F  0B 00 0000 09 00 00 00                  
+000005E0  18 00 00 00 08 00 00 03  18 00 0000 02 01 10 00                  
+000005F0  24 00 00 00 14 00 00 00  FF FF FFFF FF FF FF FF   $       ÿÿÿÿÿÿÿÿ
+00000600  19 00 00 00 14 00 14 00  00 00 0000 00 00 00 00                  
+00000610  02 01 10 00 38 00 00 00  15 00 0000 FF FF FF FF       8       ÿÿÿÿ
+......
+00000640                            03 01 10 00 18 0000 00                  
+00000650  15 00 00 00 FF FF FF FF  FF FF FFFF 1A 00 00 00       ÿÿÿÿÿÿÿÿ   
+00000660  02 01 10 00 38 00 00 00  17 00 0000 FF FF FF FF       8       ÿÿÿÿ
+00000670  FF FF FF FF 1C 00 00 00  14 00 1400 01 00 00 00   ÿÿÿÿ           
+00000680  00 00 00 00 0B 00 00 00  09 00 0000 1D 00 00 00                  
+00000690  08 00 00 03 1D 00 00 00  03 01 1000 18 00 00 00                  
+000006A0  17 00 00 00 FF FF FF FF  FF FF FFFF 1C 00 00 00       ÿÿÿÿÿÿÿÿ   
+000006B0  03 01 10 00 18 00 00 00  18 00 0000 FF FF FF FF               ÿÿÿÿ
+000006C0  FF FF FF FF 19 00 00 00  03 01 1000 18 00 00 00   ÿÿÿÿ           
+000006D0  19 00 00 00 FF FF FF FF  FF FF FFFF 17 00 00 00       ÿÿÿÿÿÿÿÿ   
+000006E0  03 01 10 00 18 00 00 00  1A 00 0000 FF FF FF FF               ÿÿÿÿ
+000006F0  FF FF FF FF 16 00 00 00  03 01 1000 18 00 00 00   ÿÿÿÿ           
+00000700  1C 00 00 00 FF FF FF FF  FF FF FFFF 10 00 00 00       ÿÿÿÿÿÿÿÿ   
+00000710  01 01 10 00 18 00 00 00  1C 00 0000 FF FF FF FF               ÿÿÿÿ
+00000720  0A 00 00 00 0B 00 00 00                               
+</code></pre><p>结合源码分析Manifest.xml如下</p>
+<pre tabindex="0"><code>+000    type=RES_XML_TYPE headersize=8 size=728
++008    type=RES_STRING_POOL_TYPE headersize=1c size=3dc
++3e4    type=RES_XML_RESOURCE_MAP_TYPE headersize=8 size=30
++414    type=RES_XML_START_NAMESPACE_TYPE headersize=10 size=18 namespace
++42c    type=RES_XML_START_ELEMENT_TYPE headersize=10 size=88   ----manifest
++4b4    type=RES_XML_START_ELEMENT_TYPE headersize=10 size=4c   ----uses-dsk
++500    type=RES_XML_END_ELEMENT_TYPE headersize=10 size=18     ----uses-dsk
++518    type=RES_XML_START_ELEMENT_TYPE headersize=10 size=88   ----application
++5a0    type=RES_XML_START_ELEMENT_TYPE headersize=10 size=4c   ----activity
++5ec    type=RES_XML_START_ELEMENT_TYPE headersize=10 size=24   ----intent-filter
++610    type=RES_XML_START_ELEMENT_TYPE headersize=10 size=38   ----action
++648    type=RES_XML_END_ELEMENT_TYPE headersize=10 size=18     ----action
++660    type=RES_XML_START_ELEMENT_TYPE headersize=10 size=38   ----category
++698    type=RES_XML_END_ELEMENT_TYPE headersize=10 size=18     ----category
++6b0    type=RES_XML_END_ELEMENT_TYPE headersize=10 size=18     ----intent-filter
++6c8    type=RES_XML_END_ELEMENT_TYPE headersize=10 size=18     ----activity
++6e0    type=RES_XML_END_ELEMENT_TYPE headersize=10 size=18     ----application
++6f8    type=RES_XML_END_ELEMENT_TYPE headersize=10 size=18     ----manifest
++710    type=RES_XML_END_NAMESPACE_TYPE headersize=10 size=18   namespace
+</code></pre><p>编程得出索引表：</p>
+<pre tabindex="0"><code>0-versionCode
+1-versionName
+2-minSdkVersion
+3-targetSdkVersion
+4-debuggable
+5-allowBackup
+6-icon
+7-label
+8-theme
+9-name
+10-android
+11-http://schemas.android.com/apk/res/android
+12-
+13-package
+14-platformBuildVersionCode
+15-platformBuildVersionName
+16-manifest
+17-com.example.test1
+18-1.0
+19-23
+20-6.0-2438415
+21-uses-sdk
+22-application
+23-activity
+24-.MainActivity
+25-intent-filter
+26-action
+27-android.intent.action.MAIN
+28-category
+29-android.intent.category.LAUNCHER
+</code></pre><p>从518处展开，来看application的debuggable属性：</p>
+<pre tabindex="0"><code>type=RES_XML_START_ELEMENT_TYPE headersize=10 size=88   
+    ResXMLTree_node+ResXMLTree_attrExt+属性数*ResXMLTree_attribute
+00000510                            02 01 10 00 88 0000 00               ˆ  
+00000520  0B 00 00 00 FF FF FF FF  FF FF FFFF 16 00 00 00       ÿÿÿÿÿÿÿÿ   
+00000530  14 00 14 00 05 00 00 00  00 00 0000 0B 00 00 00                  
+00000540  08 00 00 00 FF FF FF FF  08 00 0001 34 01 0B 7F       ÿÿÿÿ    4  
+00000550  0B 00 00 00 07 00 00 00  FF FF FFFF 08 00 00 01           ÿÿÿÿ   
+00000560  14 00 0A 7F 0B 00 00 00  06 00 0000 FF FF FF FF               ÿÿÿÿ
+00000570  08 00 00 01 45 00 02 7F  0B 00 0000 04 00 00 00       E           
+00000580  FF FF FF FF 08 00 00 12  00 00 0000 0B 00 00 00   ÿÿÿÿ           
+00000590  05 00 00 00 FF FF FF FF  08 00 0012 FF FF FF FF       ÿÿÿÿ    ÿÿÿÿ
+
+行号=11
+节点名索引=0x16   =&gt; application
+                            n
+属性开始偏移=0x14  每个属性大小=0x14 个数=5
+属性1：
+        namespace=&gt; http://schemas.android.com/apk/res/android
+        name=&gt; theme
+        rawValue=&gt; \
+        typedValue=&gt; TYPE_REFERENCE 0x7f0b0134
+属性2：
+        namespace=&gt; http://schemas.android.com/apk/res/android
+        name=&gt; label
+        rawValue=&gt; \
+        typedValue=&gt; TYPE_REFERENCE 0x7f0a0014        
+属性3：
+        namespace=&gt; http://schemas.android.com/apk/res/android
+        name=&gt; icon
+        rawValue=&gt; \
+        typedValue=&gt; TYPE_REFERENCE 0x7f020045
+属性4：
+        namespace=&gt; http://schemas.android.com/apk/res/android
+        name=&gt; debuggable
+        rawValue=&gt; \
+        typedValue=&gt; TYPE_REFERENCE 0x7f020045
+属性5：
+        namespace=&gt; http://schemas.android.com/apk/res/android
+        name=&gt; allowBackup
+        rawValue=&gt; \
+        typedValue=&gt; TYPE_REFERENCE 0x7f020045        
+</code></pre><p>可见，只需要修改0x588处为ffffffff即可，修改后用命令签名：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>java -jarsignapk.jar testkey.x509.pem testkey.pk8 input.apk output.apk
+</span></span></code></pre></div><p>运行后，调试器中便能看到改进程</p>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/android_posts/20140406_hospital/">
+                        开发爬虫获取医院信息和疾病病症医学数据库
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/android_posts/20160705_dump_bdwallet/">
+                        记脱壳百度钱包app
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

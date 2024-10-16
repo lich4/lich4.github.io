@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    Android Hook框架总结 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/android_posts/20170612_hook_framework/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/android_posts/">Android_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/android_posts/20170612_hook_framework/">Android Hook框架总结</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">Android Hook框架总结</h1>
+    
+    <p class="single-summary">Android Hook框架总结</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2017-06-12T00:00:00&#43;00:00">June 12, 2017</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/hook/">#Hook</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#分析">分析</a>
+      <ul>
+        <li><a href="#java正常方式调用逻辑">Java正常方式调用逻辑</a></li>
+        <li><a href="#java反射方式调用逻辑">Java反射方式调用逻辑</a></li>
+        <li><a href="#xposed文件结构">Xposed文件结构</a></li>
+        <li><a href="#hook类型">Hook类型</a></li>
+      </ul>
+    </li>
+    <li><a href="#问题">问题</a>
+      <ul>
+        <li><a href="#问题1何时加载frameworkjar">问题1：何时加载framework.jar?</a></li>
+        <li><a href="#问题2为何ixposedhookzygoteinit可以hook-frameworksystem-api">问题2：为何IXposedHookZygoteInit可以hook framework/system api</a></li>
+        <li><a href="#问题3为何ixposedhookloadpackage可以hook-app自身函数">问题3：为何IXposedHookLoadPackage可以hook app自身函数</a></li>
+        <li><a href="#问题4何时加载xposedbridge">问题4：何时加载xposedbridge?</a></li>
+        <li><a href="#问题5底层实现hook">问题5：底层实现hook？</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a>
+      <ul>
+        <li><a href="#android-hook方式">Android Hook方式</a></li>
+        <li><a href="#xposed-hook框架特点">Xposed Hook框架特点</a></li>
+        <li><a href="#cydia-substrate-hook框架特点">Cydia Substrate Hook框架特点</a></li>
+        <li><a href="#hook框架对比">Hook框架对比</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="分析">分析</h2>
+<h3 id="java正常方式调用逻辑">Java正常方式调用逻辑</h3>
+<ul>
+<li>dvmCallVoidMethod</li>
+<li>dvmCallMethod</li>
+<li>dvmCallMethodV</li>
+<li>dvmInterpret</li>
+<li>dvmMterpStd</li>
+<li>dvmMterpStdRun</li>
+<li>opcode =&gt; HANDLE_OPCODE(OP_INVOKE_STATIC)</li>
+<li>GOTO_invoke(invokeStatic)</li>
+<li>GOTO_invokeMethod</li>
+<li>dvmMterp_invokeMethod</li>
+<li>GOTO_TARGET(invokeMethod)</li>
+<li>Pc=methodToCall-&gt;insns/methodToCall-&gt;nativeFunc</li>
+</ul>
+<h3 id="java反射方式调用逻辑">Java反射方式调用逻辑</h3>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>Constructor getDeclaredConstructor = clazz. getDeclaredConstructor()
+</span></span><span style="display:flex;"><span>Method m = clazz.getDeclaredMethod()
+</span></span><span style="display:flex;"><span>m.Invoke() =&gt;
+</span></span><span style="display:flex;"><span>Constructor. newInstance =&gt;
+</span></span><span style="display:flex;"><span>Dalvik_java_lang_reflect_Constructor_constructNative =&gt;
+</span></span><span style="display:flex;"><span>dvmInvokeMethod =&gt;
+</span></span><span style="display:flex;"><span>method-&gt;nativeFunc/dvmInterpret insns
+</span></span><span style="display:flex;"><span>Method.invoke =&gt;
+</span></span><span style="display:flex;"><span>Method.invokeNative =&gt;
+</span></span><span style="display:flex;"><span>Dalvik_java_lang_reflect_Method_invokeNative =&gt;
+</span></span><span style="display:flex;"><span>dvmInvokeMethod =&gt;
+</span></span><span style="display:flex;"><span>method-&gt;nativeFunc/dvmInterpret
+</span></span><span style="display:flex;"><span>nativeFunc =&gt; dvmResolveNativeMethod
+</span></span><span style="display:flex;"><span>dfunc = dvmLookupInternalNativeMethod
+</span></span><span style="display:flex;"><span>dfunc()
+</span></span><span style="display:flex;"><span>GOTO_TARGET(invokeMethod, bool methodCallRange, const Method* _methodToCall, u2 count, u2 regs)
+</span></span></code></pre></div><h3 id="xposed文件结构">Xposed文件结构</h3>
+<ul>
+<li>app_process</li>
+<li>Xposed_service.cpp 提供文件操作接口(libc.so尚未加载)</li>
+<li>Libxposed_dalvik.cpp 提供dalvik虚拟机hook接口(jni层实现)</li>
+<li>Libxposed_art.cpp 提供art虚拟机hook接口(jni层实现)</li>
+<li>Libxposed_command.cpp 提供其他通用接口</li>
+<li>Xposed.cpp C++层一些实现，用于app_main</li>
+<li>App_main.cpp app_process入口，用于替换app_process(重写main和AppRuntime)  api&gt;=21</li>
+<li>App_main2.cpp app_process入口，用于替换app_process(重写main和AppRuntime)  api&lt;21</li>
+<li>Xposedbridge =&gt; xposedbridge.jar</li>
+<li>XposedHelpers.java 提供反射能力</li>
+<li>XposedBridge.java xposedbridge入口，代替系统ZygoteInit类，主要的hook逻辑</li>
+<li>XC_MethodHook.java 为插件提供hook接口(java层实现)</li>
+</ul>
+<h3 id="hook类型">Hook类型</h3>
+<ul>
+<li>IXposedHookZygoteInit 在Zygote进程启动初始化时执行hook，framework/system</li>
+<li>IXposedHookLoadPackage 在包加载时刻hook，此时可以hook用户app的函数</li>
+<li>IXposedHookInitPackageResources 在资源操作时刻回调</li>
+<li>IXposedHookCmdInit 在执行am,pm等时回调</li>
+</ul>
+<h2 id="问题">问题</h2>
+<h3 id="问题1何时加载frameworkjar">问题1：何时加载framework.jar?</h3>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>ActivityThread.class =&gt; const-class ActivityThread =&gt; OP_CONST_CLASS.cpp
+</span></span><span style="display:flex;"><span>dvmResolveClass 
+</span></span><span style="display:flex;"><span>    dvmFindClassNoInit
+</span></span><span style="display:flex;"><span>        findClassFromLoaderNoInit
+</span></span><span style="display:flex;"><span>            dvmCallMethod(loadClass)
+</span></span><span style="display:flex;"><span>        dvmFindSystemClassNoInit
+</span></span><span style="display:flex;"><span>            findClassNoInit
+</span></span><span style="display:flex;"><span>            searchBootPathForClass
+</span></span></code></pre></div><h3 id="问题2为何ixposedhookzygoteinit可以hook-frameworksystem-api">问题2：为何IXposedHookZygoteInit可以hook framework/system api</h3>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>XposedBridge.main
+</span></span><span style="display:flex;"><span>    initForZygote
+</span></span><span style="display:flex;"><span>         findAndHookMethod 加载系统jar
+</span></span><span style="display:flex;"><span>    loadModules
+</span></span><span style="display:flex;"><span>        loadModule        
+</span></span><span style="display:flex;"><span>            moduleInstance.initZygote()
+</span></span><span style="display:flex;"><span>            hookLoadPackage(moduleInstance)
+</span></span></code></pre></div><h3 id="问题3为何ixposedhookloadpackage可以hook-app自身函数">问题3：为何IXposedHookLoadPackage可以hook app自身函数</h3>
+<p>首次加载：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>android.app.ActivityThread.bindApplication
+</span></span><span style="display:flex;"><span>handleBindApplication
+</span></span><span style="display:flex;"><span>    ActivityStack.realStartActivityLocked
+</span></span><span style="display:flex;"><span>        scheduleLaunchActivity
+</span></span><span style="display:flex;"><span>            getPackageInfoNoCheck
+</span></span><span style="display:flex;"><span>getPackageInfoNoCheck
+</span></span><span style="display:flex;"><span>    LoadedApk()构造
+</span></span><span style="display:flex;"><span>        LoadedApk.getClassLoader
+</span></span><span style="display:flex;"><span>            ApplicationLoaders.getDefault().getClassLoader(zip,libpath,null)
+</span></span></code></pre></div><h3 id="问题4何时加载xposedbridge">问题4：何时加载xposedbridge?</h3>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>Xposed app_main-&gt;main():
+</span></span><span style="display:flex;"><span>    xposed::initialize()        -&gt;  env中加入xposedbridge.jar
+</span></span><span style="display:flex;"><span>    runtime.start(“de.robv.android.xposed.XposedBridge”) -&gt; AndroidRuntime
+</span></span><span style="display:flex;"><span>         startVm()
+</span></span><span style="display:flex;"><span>         onVmCreated()
+</span></span><span style="display:flex;"><span>             xposed:nVmCreated        加载xposedbridge.jar
+</span></span><span style="display:flex;"><span>         startReg()
+</span></span><span style="display:flex;"><span>         XposedBridge.main()
+</span></span></code></pre></div><h3 id="问题5底层实现hook">问题5：底层实现hook？</h3>
+<p>  强制吧函数设置为native，并修改native函数使其返调java函数，实现于libxposed_dalvik.cpp</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Java" data-lang="Java"><span style="display:flex;"><span>hookInfo<span style="color:#ec0000">-&gt;</span>reflectedMethod <span style="color:#ec0000">=</span> dvmDecodeIndirectRef(dvmThreadSelf(), env<span style="color:#ec0000">-&gt;</span>NewGlobalRef(reflectedMethodIndirect));
+</span></span><span style="display:flex;"><span>hookInfo<span style="color:#ec0000">-&gt;</span>additionalInfo <span style="color:#ec0000">=</span> dvmDecodeIndirectRef(dvmThreadSelf(), env<span style="color:#ec0000">-&gt;</span>NewGlobalRef(additionalInfoIndirect));
+</span></span><span style="display:flex;"><span>SET_METHOD_FLAG(method, ACC_NATIVE);//设置Method-&gt;AccessFlag强制为native函数
+</span></span><span style="display:flex;"><span>method<span style="color:#ec0000">-&gt;</span>nativeFunc <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>hookedMethodCallback;//修改默认回调dvmResolveNativeMethod为自定义函数，该函数原先从系统函数和so中的jni函数中寻找java对应的c层方法，hookedMethodCallback函数则调用dvmCallMethod执行java层方法
+</span></span><span style="display:flex;"><span>method<span style="color:#ec0000">-&gt;</span>insns <span style="color:#ec0000">=</span> (<span style="color:#ec0000">const</span> u2<span style="color:#ec0000">*</span>) hookInfo;//该域原用于非native模式下保存dex字节码用于解释执行，现用于存储Method指针
+</span></span><span style="display:flex;"><span>method<span style="color:#ec0000">-&gt;</span>registersSize <span style="color:#ec0000">=</span> method<span style="color:#ec0000">-&gt;</span>insSize;
+</span></span><span style="display:flex;"><span>method<span style="color:#ec0000">-&gt;</span>outsSize <span style="color:#ec0000">=</span> 0;
+</span></span></code></pre></div><h2 id="总结">总结</h2>
+<h3 id="android-hook方式">Android Hook方式</h3>
+<ul>
+<li>1.静态修改apk中的函数调用，插入语句(droidbox)</li>
+<li>2.用反射获取java函数Method类型对应c层结构Method*，修改insns域的dex字节码(未发现)</li>
+<li>3.修改method-&gt;nativeFunc域，自己实现dvmResolveNativeMethod以重新映射(xposed/substrate)</li>
+</ul>
+<h3 id="xposed-hook框架特点">Xposed Hook框架特点</h3>
+<ul>
+<li>1.兼容性方面，支持selinux，对某些厂商做适配</li>
+<li>2.提供多种hook功能，可以hook系统api，应用app函数，资源操作，am pm等调用，插件扩展方便</li>
+<li>3.开源，不断更新，支持art虚拟机，android5.x/6.x</li>
+</ul>
+<h3 id="cydia-substrate-hook框架特点">Cydia Substrate Hook框架特点</h3>
+<ul>
+<li>1.hook时机早，因此支持hook so函数</li>
+<li>2.重定向liblog.so，较易适配</li>
+<li>3.支持ios、android平台</li>
+<li>4.不支持dalvik，不支持selinux，不支持api&gt;=5.0</li>
+</ul>
+<p>文件：</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">substrate.h             //c++ header file used in JNI layer hook 
+substrate-api.jar       //import package used in java layer hook
+substrate-bless.jar     //used to remove properties(private,protect,etc...) in java layer hook
+com.saurik.substrate.apk//host apk, we can only develop plugin for it to install package
+\lib\armeabi  \lib\x86  //real operation for hooking
+libAndroidBootstrap0.so //used to fake /system/lib/liblog.so and pull up libAndroidLoader.so    
+libAndroidLoader.so     //used to pull all *.cy.so
+        //MSLoadExtensions
+libAndroidCydia.cy.so   //still in research
+libDalvikLoader.cy.so   //still in research
+libsubstrate.so         //provide jni layer hook low-level api
+        //MSFindSymbol MSGetImageByName MSCloseFunction MSDebug MSHookFunction
+libsubstrate-dvm.so     //provide java layer hook low-level api
+        //MSDecodeIndirectReference MSJavaHookClassLoad MSJavaHookBridge MSJavaHookMethod 
+        // MSJavaCreateObjectKey MSJavaReleaseObjectKey MSJavaGetObjectKey MSJavaSetObjectKey MSJavaBlessClassLoader
+libSubstrateJNI.so      //used by substrate.apk to do c++ layer work
+        //getppid readlink grep unlink symlink mkdir kill chown chmod
+libSubstrateRun.so      //used by substrate.apk to do patch/unpatch/link/unlink operation
+        //patch unpatch link unlink nm rpl
+update-binary.so        //used by substrate.apk to recover patch/link operation
+</code></pre><h3 id="hook框架对比">Hook框架对比</h3>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">substrate</th>
+          <th style="text-align: left">框架</th>
+          <th style="text-align: left">xposed框架</th>
+          <th style="text-align: left">dexposed框架</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: left">dalvik/art虚拟机支持</td>
+          <td style="text-align: left">dalvik</td>
+          <td style="text-align: left">dalvik/art</td>
+          <td style="text-align: left">dalvik/art</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">android版本支持</td>
+          <td style="text-align: left">2.x 3.x 4.x</td>
+          <td style="text-align: left">2.x 3.x 4.x 5.x 6.x</td>
+          <td style="text-align: left">2.x 3.x 4.x 5.x 6.x</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">hook能力</td>
+          <td style="text-align: left">java/c api</td>
+          <td style="text-align: left">java api</td>
+          <td style="text-align: left">java/c api(自身模块)</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">修改文件</td>
+          <td style="text-align: left">app_process</td>
+          <td style="text-align: left">liblog.so</td>
+          <td style="text-align: left">自身文件</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">hook时机</td>
+          <td style="text-align: left">app_process启动时</td>
+          <td style="text-align: left">app_process启动前加载so的时刻</td>
+          <td style="text-align: left">未知</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">hook方式</td>
+          <td style="text-align: left">修改method结构体</td>
+          <td style="text-align: left">重新映射java层对应的jni函数</td>
+          <td style="text-align: left">修改method结构体</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">c层hook类型</td>
+          <td style="text-align: left">无</td>
+          <td style="text-align: left">inline</td>
+          <td style="text-align: left">未知</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">是否需要root</td>
+          <td style="text-align: left">是</td>
+          <td style="text-align: left">是</td>
+          <td style="text-align: left">否</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">使用形式</td>
+          <td style="text-align: left">宿主+插件</td>
+          <td style="text-align: left">宿主+插件</td>
+          <td style="text-align: left">未知</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">风险</td>
+          <td style="text-align: left">app_process随每个版本变化</td>
+          <td style="text-align: left">加载so较多</td>
+          <td style="text-align: left">未知</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">ABI</td>
+          <td style="text-align: left">x86/arm</td>
+          <td style="text-align: left">x86/arm</td>
+          <td style="text-align: left">未知</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">操作系统</td>
+          <td style="text-align: left">ios/android</td>
+          <td style="text-align: left">android</td>
+          <td style="text-align: left"></td>
+      </tr>
+  </tbody>
+</table>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/android_posts/20170104_migusdk/">
+                        咪咕sdk反调试分析
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

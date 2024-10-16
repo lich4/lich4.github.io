@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    凸轮曲线计算工具 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/cpp_posts/20140311_tulun/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/cpp_posts/">Cpp_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/cpp_posts/20140311_tulun/">凸轮曲线计算工具</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">凸轮曲线计算工具</h1>
+    
+    <p class="single-summary">凸轮曲线计算工具</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2014-03-11T00:00:00&#43;00:00">March 11, 2014</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#项目需求">项目需求</a></li>
+    <li><a href="#源码">源码</a></li>
+    <li><a href="#展示">展示</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="背景">背景</h2>
+<p>  此项目是本人在南京大学实习时，给实验室师姐的朋友代开发的本科毕设，我是学通信的的完全不懂机械，纯粹出于兴趣，也想挑战一下自己，所以有了该作品。2011年的我才正式开始接触编程，此时是第三年</p>
+<h2 id="项目需求">项目需求</h2>
+<p>主要内容是凸轮系统的软件设计</p>
+<pre tabindex="0"><code>A区：位移线图
+B 区：速度线图（位移一阶导数）
+C 区：加速度线图（位移二阶导数）
+D 区：输入边界条件的相关参数（两个端点的XY坐标、运动类型等）
+E 区：输入函数的类型
+F 区：位移的精确参数
+输入： D区、 E区。D、E的输入参数共同决定输出的图像。
+输出： A区、 B区、 C区、 F区。
+</code></pre><p>上述步骤完成后，可以得出凸轮的图像（极坐标的运算规律）和具体参数。例：
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/tulun4.png">
+    </div>
+
+    
+</figure></p>
+<p>注：</p>
+<ul>
+<li>函数类型大约有6-8种，直线、抛物线、三角函数、5次方、修正三角函数等等</li>
+<li>角度区间大概分为4-5段。</li>
+</ul>
+<h2 id="源码">源码</h2>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>// tuluncalcDlg.cpp : 实现文件
+</span></span><span style="display:flex;"><span>//
+</span></span><span style="display:flex;"><span>#include &#34;stdafx.h&#34;
+</span></span><span style="display:flex;"><span>#include &#34;tuluncalc.h&#34;
+</span></span><span style="display:flex;"><span>#include &#34;tuluncalcDlg.h&#34;
+</span></span><span style="display:flex;"><span>#include &#34;afxdialogex.h&#34;
+</span></span><span style="display:flex;"><span>#include &lt;float.h&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>#ifdef _DEBUG
+</span></span><span style="display:flex;"><span>#define new DEBUG_NEW
+</span></span><span style="display:flex;"><span>#endif
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>// 用于应用程序“关于”菜单项的 CAboutDlg 对话框
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">class</span> <span style="color:#5f5fff">CAboutDlg</span> <span style="color:#ec0000">:</span> <span style="color:#ec0000">public</span> CDialogEx
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">public</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>        CAboutDlg();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>// 对话框数据
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">enum</span> { IDD <span style="color:#ec0000">=</span> IDD_ABOUTBOX };
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">protected</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">virtual</span> <span style="color:#5f5fff">void</span> DoDataExchange(CDataExchange<span style="color:#ec0000">*</span> pDX);    // DDX/DDV 支持
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>// 实现
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">protected</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>        DECLARE_MESSAGE_MAP()
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>CAboutDlg<span style="color:#ec0000">::</span>CAboutDlg() <span style="color:#ec0000">:</span> CDialogEx(CAboutDlg<span style="color:#ec0000">::</span>IDD)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> CAboutDlg<span style="color:#ec0000">::</span>DoDataExchange(CDataExchange<span style="color:#ec0000">*</span> pDX)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        CDialogEx<span style="color:#ec0000">::</span>DoDataExchange(pDX);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
+</span></span><span style="display:flex;"><span>END_MESSAGE_MAP()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>// CtuluncalcDlg 对话框
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>CtuluncalcDlg<span style="color:#ec0000">::</span>CtuluncalcDlg(CWnd<span style="color:#ec0000">*</span> pParent /*=NULL*/)
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">:</span> CDialogEx(CtuluncalcDlg<span style="color:#ec0000">::</span>IDD, pParent)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        m_hIcon <span style="color:#ec0000">=</span> AfxGetApp()<span style="color:#ec0000">-&gt;</span>LoadIcon(IDR_MAINFRAME);
+</span></span><span style="display:flex;"><span>        //  m_value = _T(&#34;&#34;);
+</span></span><span style="display:flex;"><span>        //  m_angle = _T(&#34;&#34;);
+</span></span><span style="display:flex;"><span>        m_angle <span style="color:#ec0000">=</span> <span style="color:#008900">0.0</span>;
+</span></span><span style="display:flex;"><span>        m_value <span style="color:#ec0000">=</span> <span style="color:#008900">0.0</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> CtuluncalcDlg<span style="color:#ec0000">::</span>DoDataExchange(CDataExchange<span style="color:#ec0000">*</span> pDX)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        CDialogEx<span style="color:#ec0000">::</span>DoDataExchange(pDX);
+</span></span><span style="display:flex;"><span>        //  DDX_Radio(pDX, IDC_ZHIXIAN, m_zhixian);
+</span></span><span style="display:flex;"><span>        //  DDX_Text(pDX, IDC_VALUE, m_value);
+</span></span><span style="display:flex;"><span>        DDX_Control(pDX, IDC_PTLIST, m_ptlist);
+</span></span><span style="display:flex;"><span>        //  DDX_Text(pDX, IDC_ANGLE, m_angle);
+</span></span><span style="display:flex;"><span>        DDX_Control(pDX, IDC_DRAWA, m_drawa);
+</span></span><span style="display:flex;"><span>        DDX_Control(pDX, IDC_DRAWS, m_draws);
+</span></span><span style="display:flex;"><span>        DDX_Control(pDX, IDC_DRAWV, m_drawv);
+</span></span><span style="display:flex;"><span>        DDX_Text(pDX, IDC_ANGLE, m_angle);
+</span></span><span style="display:flex;"><span>        DDX_Text(pDX, IDC_VALUE, m_value);
+</span></span><span style="display:flex;"><span>        DDX_Control(pDX, IDC_DATALIST, m_datalist);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>BEGIN_MESSAGE_MAP(CtuluncalcDlg, CDialogEx)
+</span></span><span style="display:flex;"><span>        ON_WM_SYSCOMMAND()
+</span></span><span style="display:flex;"><span>        ON_WM_PAINT()
+</span></span><span style="display:flex;"><span>        ON_WM_QUERYDRAGICON()
+</span></span><span style="display:flex;"><span>        ON_BN_CLICKED(IDC_ADDPT, <span style="color:#ec0000">&amp;</span>CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedAddpt)
+</span></span><span style="display:flex;"><span>        ON_BN_CLICKED(IDC_DELPT, <span style="color:#ec0000">&amp;</span>CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedDelpt)
+</span></span><span style="display:flex;"><span>        ON_BN_CLICKED(IDC_DRAW, <span style="color:#ec0000">&amp;</span>CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedDraw)
+</span></span><span style="display:flex;"><span>        ON_BN_CLICKED(IDC_ZHIXIAN, <span style="color:#ec0000">&amp;</span>CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedZhixian)
+</span></span><span style="display:flex;"><span>        ON_BN_CLICKED(IDC_PAOWUXIAN, <span style="color:#ec0000">&amp;</span>CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedPaowuxian)
+</span></span><span style="display:flex;"><span>        ON_BN_CLICKED(IDC_SANJIAOHANSHU, <span style="color:#ec0000">&amp;</span>CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedSanjiaohanshu)
+</span></span><span style="display:flex;"><span>        ON_BN_CLICKED(IDC_WUCIFANG, <span style="color:#ec0000">&amp;</span>CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedWucifang)
+</span></span><span style="display:flex;"><span>        ON_BN_CLICKED(IDC_XIUZHENGSANJIAO, <span style="color:#ec0000">&amp;</span>CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedXiuzhengsanjiao)
+</span></span><span style="display:flex;"><span>END_MESSAGE_MAP()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>// CtuluncalcDlg 消息处理程序
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>BOOL CtuluncalcDlg<span style="color:#ec0000">::</span>OnInitDialog()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        CDialogEx<span style="color:#ec0000">::</span>OnInitDialog();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        // 将“关于...”菜单项添加到系统菜单中。
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        // IDM_ABOUTBOX 必须在系统命令范围内。
+</span></span><span style="display:flex;"><span>        ASSERT((IDM_ABOUTBOX <span style="color:#ec0000">&amp;</span> <span style="color:#008900">0xFFF0</span>) <span style="color:#ec0000">==</span> IDM_ABOUTBOX);
+</span></span><span style="display:flex;"><span>        ASSERT(IDM_ABOUTBOX <span style="color:#ec0000">&lt;</span> <span style="color:#008900">0xF000</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        CMenu<span style="color:#ec0000">*</span> pSysMenu <span style="color:#ec0000">=</span> GetSystemMenu(FALSE);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (pSysMenu <span style="color:#ec0000">!=</span> <span style="color:#ec0000">NULL</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                BOOL bNameValid;
+</span></span><span style="display:flex;"><span>                CString strAboutMenu;
+</span></span><span style="display:flex;"><span>                bNameValid <span style="color:#ec0000">=</span> strAboutMenu.LoadString(IDS_ABOUTBOX);
+</span></span><span style="display:flex;"><span>                ASSERT(bNameValid);
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> (<span style="color:#ec0000">!</span>strAboutMenu.IsEmpty())
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        pSysMenu<span style="color:#ec0000">-&gt;</span>AppendMenu(MF_SEPARATOR);
+</span></span><span style="display:flex;"><span>                        pSysMenu<span style="color:#ec0000">-&gt;</span>AppendMenu(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        // 设置此对话框的图标。当应用程序主窗口不是对话框时，框架将自动
+</span></span><span style="display:flex;"><span>        //  执行此操作
+</span></span><span style="display:flex;"><span>        SetIcon(m_hIcon, TRUE);                        // 设置大图标
+</span></span><span style="display:flex;"><span>        SetIcon(m_hIcon, FALSE);                // 设置小图标
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        // TODO: 在此添加额外的初始化代码
+</span></span><span style="display:flex;"><span>        ((CButton<span style="color:#ec0000">*</span>)GetDlgItem(IDC_WUCIFANG))<span style="color:#ec0000">-&gt;</span>SetCheck(TRUE);
+</span></span><span style="display:flex;"><span>        DRAWTYPE<span style="color:#ec0000">=</span>T_WUCIFANG;
+</span></span><span style="display:flex;"><span>        m_datalist.InsertColumn(<span style="color:#008900">0</span>,<span style="color:#008900">&#34;序号&#34;</span>,LVCFMT_CENTER,<span style="color:#008900">60</span>);
+</span></span><span style="display:flex;"><span>        m_datalist.InsertColumn(<span style="color:#008900">1</span>,<span style="color:#008900">&#34;β&#34;</span>,LVCFMT_CENTER,<span style="color:#008900">60</span>);
+</span></span><span style="display:flex;"><span>        m_datalist.InsertColumn(<span style="color:#008900">2</span>,<span style="color:#008900">&#34;s&#34;</span>,LVCFMT_CENTER,<span style="color:#008900">60</span>);
+</span></span><span style="display:flex;"><span>        m_datalist.InsertColumn(<span style="color:#008900">3</span>,<span style="color:#008900">&#34;v&#34;</span>,LVCFMT_CENTER,<span style="color:#008900">60</span>);
+</span></span><span style="display:flex;"><span>        m_datalist.InsertColumn(<span style="color:#008900">4</span>,<span style="color:#008900">&#34;a&#34;</span>,LVCFMT_CENTER,<span style="color:#008900">60</span>);
+</span></span><span style="display:flex;"><span>        m_datalist.InsertColumn(<span style="color:#008900">5</span>,<span style="color:#008900">&#34;类型&#34;</span>,LVCFMT_CENTER,<span style="color:#008900">60</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span> TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> CtuluncalcDlg<span style="color:#ec0000">::</span>OnSysCommand(UINT nID, LPARAM lParam)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> ((nID <span style="color:#ec0000">&amp;</span> <span style="color:#008900">0xFFF0</span>) <span style="color:#ec0000">==</span> IDM_ABOUTBOX)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                CAboutDlg dlgAbout;
+</span></span><span style="display:flex;"><span>                dlgAbout.DoModal();
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                CDialogEx<span style="color:#ec0000">::</span>OnSysCommand(nID, lParam);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>// 如果向对话框添加最小化按钮，则需要下面的代码
+</span></span><span style="display:flex;"><span>//  来绘制该图标。对于使用文档/视图模型的 MFC 应用程序，
+</span></span><span style="display:flex;"><span>//  这将由框架自动完成。
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> CtuluncalcDlg<span style="color:#ec0000">::</span>OnPaint()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (IsIconic())
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                CPaintDC <span style="color:#5f5fff">dc</span>(<span style="color:#ec0000">this</span>); // 用于绘制的设备上下文
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                SendMessage(WM_ICONERASEBKGND, <span style="color:#ec0000">reinterpret_cast</span><span style="color:#ec0000">&lt;</span>WPARAM<span style="color:#ec0000">&gt;</span>(dc.GetSafeHdc()), <span style="color:#008900">0</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                // 使图标在工作区矩形中居中
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">int</span> cxIcon <span style="color:#ec0000">=</span> GetSystemMetrics(SM_CXICON);
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">int</span> cyIcon <span style="color:#ec0000">=</span> GetSystemMetrics(SM_CYICON);
+</span></span><span style="display:flex;"><span>                CRect rect;
+</span></span><span style="display:flex;"><span>                GetClientRect(<span style="color:#ec0000">&amp;</span>rect);
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">int</span> x <span style="color:#ec0000">=</span> (rect.Width() <span style="color:#ec0000">-</span> cxIcon <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>) <span style="color:#ec0000">/</span> <span style="color:#008900">2</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">int</span> y <span style="color:#ec0000">=</span> (rect.Height() <span style="color:#ec0000">-</span> cyIcon <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>) <span style="color:#ec0000">/</span> <span style="color:#008900">2</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                // 绘制图标
+</span></span><span style="display:flex;"><span>                dc.DrawIcon(x, y, m_hIcon);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                CDialogEx<span style="color:#ec0000">::</span>OnPaint();
+</span></span><span style="display:flex;"><span>                RECT rt;
+</span></span><span style="display:flex;"><span>                CBrush <span style="color:#5f5fff">clear</span>(RGB(<span style="color:#008900">255</span>,<span style="color:#008900">255</span>,<span style="color:#008900">255</span>));
+</span></span><span style="display:flex;"><span>                vector<span style="color:#ec0000">&lt;</span>globalPT<span style="color:#ec0000">&gt;</span> pts;
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">double</span> xmin,xmax,ymin,ymax;
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">int</span> segnum<span style="color:#ec0000">=</span>segpt.size()<span style="color:#ec0000">-</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">int</span> i,j;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(segnum <span style="color:#ec0000">&lt;=</span> <span style="color:#008900">0</span>)
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>                CString labelStr;
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">int</span> index<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>                CFont font1,font2;
+</span></span><span style="display:flex;"><span>                CPen <span style="color:#5f5fff">redpen</span>(PS_SOLID,<span style="color:#008900">1</span>,RGB(<span style="color:#008900">255</span>,<span style="color:#008900">0</span>,<span style="color:#008900">0</span>));
+</span></span><span style="display:flex;"><span>                font1.CreateFont(<span style="color:#008900">11</span>,<span style="color:#008900">0</span>,<span style="color:#008900">0</span>,<span style="color:#008900">0</span>,FW_NORMAL,FALSE,FALSE,<span style="color:#008900">0</span>,ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,
+</span></span><span style="display:flex;"><span>                                DEFAULT_QUALITY,DEFAULT_PITCH <span style="color:#ec0000">|</span> FF_SWISS,<span style="color:#008900">&#34;Arial&#34;</span>);
+</span></span><span style="display:flex;"><span>                font2.CreateFont(<span style="color:#008900">9</span>,<span style="color:#008900">0</span>,<span style="color:#ec0000">-</span><span style="color:#008900">900</span>,<span style="color:#008900">0</span>,FW_NORMAL,FALSE,FALSE,<span style="color:#008900">0</span>,ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,
+</span></span><span style="display:flex;"><span>                                DEFAULT_QUALITY,DEFAULT_PITCH <span style="color:#ec0000">|</span> FF_SWISS,<span style="color:#008900">&#34;Arial&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                xmin<span style="color:#ec0000">=</span>segpt[<span style="color:#008900">0</span>].B;//用来画横坐标
+</span></span><span style="display:flex;"><span>                xmax<span style="color:#ec0000">=</span>segpt[segnum].B;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                CWnd<span style="color:#ec0000">*</span> cwd[<span style="color:#008900">3</span>]<span style="color:#ec0000">=</span>{<span style="color:#ec0000">&amp;</span>m_draws,<span style="color:#ec0000">&amp;</span>m_drawv,<span style="color:#ec0000">&amp;</span>m_drawa};
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">int</span> type[]<span style="color:#ec0000">=</span>{OT_S,OT_V,OT_A};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> k<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;k<span style="color:#ec0000">&lt;</span><span style="color:#008900">3</span>;k<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        ymin<span style="color:#ec0000">=</span>DBL_MAX;//用来画纵坐标
+</span></span><span style="display:flex;"><span>                        ymax<span style="color:#ec0000">=</span>DBL_MIN;
+</span></span><span style="display:flex;"><span>                        pts.clear();
+</span></span><span style="display:flex;"><span>                        cwd[k]<span style="color:#ec0000">-&gt;</span>GetClientRect(<span style="color:#ec0000">&amp;</span>rt);
+</span></span><span style="display:flex;"><span>                        CClientDC <span style="color:#5f5fff">dc</span>(cwd[k]);
+</span></span><span style="display:flex;"><span>                        dc.FillRect(<span style="color:#ec0000">&amp;</span>rt,<span style="color:#ec0000">&amp;</span>clear);
+</span></span><span style="display:flex;"><span>                        dc.Rectangle(<span style="color:#ec0000">&amp;</span>rt);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                        <span style="color:#5f5fff">double</span> step<span style="color:#ec0000">=</span>(xmax<span style="color:#ec0000">-</span>xmin)<span style="color:#ec0000">/</span>(rt.right<span style="color:#ec0000">-</span><span style="color:#008900">2</span><span style="color:#ec0000">*</span>MARGIN);
+</span></span><span style="display:flex;"><span>                        <span style="color:#5f5fff">double</span> input<span style="color:#ec0000">=</span>xmin;
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">for</span>(i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>segnum;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                                <span style="color:#5f5fff">int</span> curnum<span style="color:#ec0000">=</span><span style="color:#5f5fff">int</span>((segpt[i<span style="color:#ec0000">+</span><span style="color:#008900">1</span>].B<span style="color:#ec0000">-</span>segpt[i].B)<span style="color:#ec0000">/</span>step);                                
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;=</span>curnum;j<span style="color:#ec0000">++</span>,input<span style="color:#ec0000">+=</span>step)
+</span></span><span style="display:flex;"><span>                                {
+</span></span><span style="display:flex;"><span>                                        <span style="color:#5f5fff">double</span> output<span style="color:#ec0000">=</span>CalcPoint(segpt[i].type,type[k],paramdata[i],input);
+</span></span><span style="display:flex;"><span>                                        <span style="color:#ec0000">if</span>(output <span style="color:#ec0000">&lt;</span> ymin)
+</span></span><span style="display:flex;"><span>                                                ymin<span style="color:#ec0000">=</span>GetOutLineNumber(output,FALSE);
+</span></span><span style="display:flex;"><span>                                        <span style="color:#ec0000">if</span>(output <span style="color:#ec0000">&gt;</span> ymax)
+</span></span><span style="display:flex;"><span>                                                ymax<span style="color:#ec0000">=</span>GetOutLineNumber(output,TRUE);
+</span></span><span style="display:flex;"><span>                                        pts.push_back(globalPT(input,output));
+</span></span><span style="display:flex;"><span>                                }
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                        dc.MoveTo(MARGIN,rt.bottom<span style="color:#ec0000">-</span>MARGIN);
+</span></span><span style="display:flex;"><span>                        dc.LineTo(rt.right<span style="color:#ec0000">-</span>MARGIN,rt.bottom<span style="color:#ec0000">-</span>MARGIN);
+</span></span><span style="display:flex;"><span>                        dc.MoveTo(MARGIN,rt.bottom<span style="color:#ec0000">-</span>MARGIN);
+</span></span><span style="display:flex;"><span>                        dc.LineTo(MARGIN,MARGIN);
+</span></span><span style="display:flex;"><span>                        //纵横各分为10段
+</span></span><span style="display:flex;"><span>                        <span style="color:#5f5fff">int</span> dl;
+</span></span><span style="display:flex;"><span>                        dl<span style="color:#ec0000">=</span><span style="color:#5f5fff">int</span>((rt.right<span style="color:#ec0000">-</span><span style="color:#008900">2</span><span style="color:#ec0000">*</span>MARGIN)<span style="color:#ec0000">/</span><span style="color:#008900">10</span>);
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">for</span>(i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;=</span><span style="color:#008900">10</span>;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                                dc.MoveTo(MARGIN<span style="color:#ec0000">+</span>dl<span style="color:#ec0000">*</span>i,rt.bottom<span style="color:#ec0000">-</span>MARGIN);
+</span></span><span style="display:flex;"><span>                                dc.LineTo(MARGIN<span style="color:#ec0000">+</span>dl<span style="color:#ec0000">*</span>i,rt.bottom<span style="color:#ec0000">-</span>MARGIN<span style="color:#ec0000">-</span><span style="color:#008900">5</span>);
+</span></span><span style="display:flex;"><span>                                <span style="color:#5f5fff">float</span> label<span style="color:#ec0000">=</span><span style="color:#5f5fff">float</span>(xmin<span style="color:#ec0000">+</span>i<span style="color:#ec0000">*</span>(xmax<span style="color:#ec0000">-</span>xmin)<span style="color:#ec0000">/</span><span style="color:#008900">10</span>);
+</span></span><span style="display:flex;"><span>                                labelStr.Format(<span style="color:#008900">&#34;%4.3f&#34;</span>,label);
+</span></span><span style="display:flex;"><span>                                dc.SelectObject(font1);
+</span></span><span style="display:flex;"><span>                                dc.TextOut(MARGIN<span style="color:#ec0000">+</span>dl<span style="color:#ec0000">*</span>i<span style="color:#ec0000">-</span><span style="color:#008900">5</span>,rt.bottom<span style="color:#ec0000">-</span>MARGIN<span style="color:#ec0000">+</span><span style="color:#008900">5</span>,labelStr);
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        dl<span style="color:#ec0000">=</span><span style="color:#5f5fff">int</span>((rt.bottom<span style="color:#ec0000">-</span><span style="color:#008900">2</span><span style="color:#ec0000">*</span>MARGIN)<span style="color:#ec0000">/</span><span style="color:#008900">10</span>);
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">for</span>(i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;=</span><span style="color:#008900">10</span>;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                                dc.MoveTo(MARGIN,rt.bottom<span style="color:#ec0000">-</span>MARGIN<span style="color:#ec0000">-</span>dl<span style="color:#ec0000">*</span>i);
+</span></span><span style="display:flex;"><span>                                dc.LineTo(MARGIN<span style="color:#ec0000">+</span><span style="color:#008900">5</span>,rt.bottom<span style="color:#ec0000">-</span>MARGIN<span style="color:#ec0000">-</span>dl<span style="color:#ec0000">*</span>i);
+</span></span><span style="display:flex;"><span>                                <span style="color:#5f5fff">float</span> label<span style="color:#ec0000">=</span><span style="color:#5f5fff">float</span>(ymin<span style="color:#ec0000">+</span>i<span style="color:#ec0000">*</span>(ymax<span style="color:#ec0000">-</span>ymin)<span style="color:#ec0000">/</span><span style="color:#008900">10</span>);
+</span></span><span style="display:flex;"><span>                                labelStr.Format(<span style="color:#008900">&#34;%4.3f&#34;</span>,label);
+</span></span><span style="display:flex;"><span>                                dc.SelectObject(font2);
+</span></span><span style="display:flex;"><span>                                dc.TextOut(MARGIN<span style="color:#ec0000">-</span><span style="color:#008900">10</span>,rt.bottom<span style="color:#ec0000">-</span>MARGIN<span style="color:#ec0000">-</span>dl<span style="color:#ec0000">*</span>i<span style="color:#ec0000">-</span><span style="color:#008900">5</span>,labelStr);
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                        dc.SelectObject(redpen);
+</span></span><span style="display:flex;"><span>                        vector<span style="color:#ec0000">&lt;</span>globalPT<span style="color:#ec0000">&gt;::</span>iterator itor<span style="color:#ec0000">=</span>pts.begin();
+</span></span><span style="display:flex;"><span>                        dc.MoveTo(MARGIN,MARGIN);
+</span></span><span style="display:flex;"><span>                        i<span style="color:#ec0000">=</span>MARGIN;
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">while</span>(itor <span style="color:#ec0000">!=</span> pts.end())
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                                
+</span></span><span style="display:flex;"><span>                                <span style="color:#5f5fff">int</span> yy<span style="color:#ec0000">=</span>rt.bottom<span style="color:#ec0000">-</span><span style="color:#5f5fff">int</span>(((<span style="color:#ec0000">*</span>itor).y<span style="color:#ec0000">-</span>ymin)<span style="color:#ec0000">/</span>(ymax<span style="color:#ec0000">-</span>ymin)<span style="color:#ec0000">*</span>(rt.bottom<span style="color:#ec0000">-</span><span style="color:#008900">2</span><span style="color:#ec0000">*</span>MARGIN)<span style="color:#ec0000">+</span>MARGIN);
+</span></span><span style="display:flex;"><span>                                dc.LineTo(i,yy);
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">++</span>itor;
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">++</span>i;
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> CtuluncalcDlg<span style="color:#ec0000">::</span>GetOutLineNumber(<span style="color:#5f5fff">double</span> input,BOOL isUpperLimit)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> count<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(input <span style="color:#ec0000">==</span> (<span style="color:#5f5fff">int</span>)input)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">return</span> input;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        BOOL sigflag<span style="color:#ec0000">=</span>FALSE;//负数为TRUE
+</span></span><span style="display:flex;"><span>        BOOL zoomflag<span style="color:#ec0000">=</span>FALSE;//缩小为TRUE
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(input<span style="color:#ec0000">&lt;</span><span style="color:#008900">0</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                sigflag<span style="color:#ec0000">=</span>TRUE;
+</span></span><span style="display:flex;"><span>                input<span style="color:#ec0000">=-</span>input;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(input<span style="color:#ec0000">&gt;</span><span style="color:#008900">10</span>)//22.2222
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">while</span>(input<span style="color:#ec0000">&gt;</span><span style="color:#008900">10</span>)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        input <span style="color:#ec0000">/=</span><span style="color:#008900">10</span>;
+</span></span><span style="display:flex;"><span>                        count<span style="color:#ec0000">++</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                input<span style="color:#ec0000">=</span>(<span style="color:#5f5fff">int</span>)input;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(sigflag <span style="color:#ec0000">!=</span> isUpperLimit)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        input<span style="color:#ec0000">++</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(sigflag)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        input<span style="color:#ec0000">=-</span>input;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span>(input<span style="color:#ec0000">&gt;</span><span style="color:#008900">1</span>)//2.2222
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                input<span style="color:#ec0000">=</span>(<span style="color:#5f5fff">int</span>)input;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(sigflag <span style="color:#ec0000">!=</span> isUpperLimit)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        input<span style="color:#ec0000">++</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(sigflag)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        input<span style="color:#ec0000">=-</span>input;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">return</span> input;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">else</span>//0.22222
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                zoomflag<span style="color:#ec0000">=</span>TRUE;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">while</span>(input<span style="color:#ec0000">&lt;</span><span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        input <span style="color:#ec0000">*=</span> <span style="color:#008900">10</span>;
+</span></span><span style="display:flex;"><span>                        count<span style="color:#ec0000">++</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                input<span style="color:#ec0000">=</span>(<span style="color:#5f5fff">int</span>)input;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(sigflag <span style="color:#ec0000">!=</span> isUpperLimit)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        input<span style="color:#ec0000">++</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(sigflag)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        input<span style="color:#ec0000">=-</span>input;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(zoomflag)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">while</span>(count<span style="color:#ec0000">--</span>)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        input <span style="color:#ec0000">/=</span> <span style="color:#008900">10</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">while</span>(count<span style="color:#ec0000">--</span>)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        input <span style="color:#ec0000">*=</span> <span style="color:#008900">10</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span> input;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>//当用户拖动最小化窗口时系统调用此函数取得光标
+</span></span><span style="display:flex;"><span>//显示。
+</span></span><span style="display:flex;"><span>HCURSOR CtuluncalcDlg<span style="color:#ec0000">::</span>OnQueryDragIcon()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span> <span style="color:#ec0000">static_cast</span><span style="color:#ec0000">&lt;</span>HCURSOR<span style="color:#ec0000">&gt;</span>(m_hIcon);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedAddpt()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        // TODO: 在此添加控件通知处理程序代码
+</span></span><span style="display:flex;"><span>        UpdateData(TRUE);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>segpt.empty() <span style="color:#ec0000">&amp;&amp;</span> segpt[segpt.size()<span style="color:#ec0000">-</span><span style="color:#008900">1</span>].B <span style="color:#ec0000">&gt;=</span> m_angle)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                AfxMessageBox(<span style="color:#008900">&#34;输入不合法，需要比上一个β值大&#34;</span>);
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        CString str;
+</span></span><span style="display:flex;"><span>        str.Format(<span style="color:#008900">&#34;β=%lf,s(β)=%lf&#34;</span>,m_angle,m_value);
+</span></span><span style="display:flex;"><span>        m_ptlist.AddString(str);
+</span></span><span style="display:flex;"><span>        segpt.push_back(segPT(DRAWTYPE,m_angle,m_value));
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedDelpt()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        // TODO: 在此添加控件通知处理程序代码
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> num<span style="color:#ec0000">=</span>m_ptlist.GetCount();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(num)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                m_ptlist.DeleteString(num<span style="color:#ec0000">-</span><span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>                segpt.pop_back();
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedDraw()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        // TODO: 在此添加控件通知处理程序代码
+</span></span><span style="display:flex;"><span>        UpdateData(TRUE);
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> segnum<span style="color:#ec0000">=</span>segpt.size()<span style="color:#ec0000">-</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(segnum <span style="color:#ec0000">&lt;=</span> <span style="color:#008900">0</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                AfxMessageBox(<span style="color:#008900">&#34;参数有误&#34;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        paramdata.clear();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>segnum;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>        {                        
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(segpt[i].type <span style="color:#ec0000">==</span> T_ZHIXIAN)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span>(segpt[i].type <span style="color:#ec0000">==</span> T_PAOWUXIAN)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span>(segpt[i].type <span style="color:#ec0000">==</span> T_SANJIAOHANSHU)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span>(segpt[i].type <span style="color:#ec0000">==</span> T_WUCIFANG)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        <span style="color:#5f5fff">double</span> f0[<span style="color:#008900">7</span>],f1[<span style="color:#008900">7</span>],f2[<span style="color:#008900">7</span>],f3[<span style="color:#008900">7</span>],f4[<span style="color:#008900">7</span>],f5[<span style="color:#008900">7</span>];
+</span></span><span style="display:flex;"><span>                        <span style="color:#5f5fff">double</span><span style="color:#ec0000">*</span> f[<span style="color:#008900">6</span>]<span style="color:#ec0000">=</span>{f0,f1,f2,f3,f4,f5};
+</span></span><span style="display:flex;"><span>                        <span style="color:#5f5fff">double</span> BA<span style="color:#ec0000">=</span>segpt[i].B,BB<span style="color:#ec0000">=</span>segpt[i<span style="color:#ec0000">+</span><span style="color:#008900">1</span>].B,SA<span style="color:#ec0000">=</span>segpt[i].S,SB<span style="color:#ec0000">=</span>segpt[i<span style="color:#ec0000">+</span><span style="color:#008900">1</span>].S;
+</span></span><span style="display:flex;"><span>                        f[<span style="color:#008900">0</span>][<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;f[<span style="color:#008900">0</span>][<span style="color:#008900">1</span>]<span style="color:#ec0000">=</span>BA;f[<span style="color:#008900">0</span>][<span style="color:#008900">2</span>]<span style="color:#ec0000">=</span>BA<span style="color:#ec0000">*</span>BA;f[<span style="color:#008900">0</span>][<span style="color:#008900">3</span>]<span style="color:#ec0000">=</span>BA<span style="color:#ec0000">*</span>BA<span style="color:#ec0000">*</span>BA;f[<span style="color:#008900">0</span>][<span style="color:#008900">4</span>]<span style="color:#ec0000">=</span>BA<span style="color:#ec0000">*</span>BA<span style="color:#ec0000">*</span>BA<span style="color:#ec0000">*</span>BA;f[<span style="color:#008900">0</span>][<span style="color:#008900">5</span>]<span style="color:#ec0000">=</span>BA<span style="color:#ec0000">*</span>BA<span style="color:#ec0000">*</span>BA<span style="color:#ec0000">*</span>BA<span style="color:#ec0000">*</span>BA;f[<span style="color:#008900">0</span>][<span style="color:#008900">6</span>]<span style="color:#ec0000">=</span>SA;
+</span></span><span style="display:flex;"><span>                        f[<span style="color:#008900">1</span>][<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;f[<span style="color:#008900">1</span>][<span style="color:#008900">1</span>]<span style="color:#ec0000">=</span>BB;f[<span style="color:#008900">1</span>][<span style="color:#008900">2</span>]<span style="color:#ec0000">=</span>BB<span style="color:#ec0000">*</span>BB;f[<span style="color:#008900">1</span>][<span style="color:#008900">3</span>]<span style="color:#ec0000">=</span>BB<span style="color:#ec0000">*</span>BB<span style="color:#ec0000">*</span>BB;f[<span style="color:#008900">1</span>][<span style="color:#008900">4</span>]<span style="color:#ec0000">=</span>BB<span style="color:#ec0000">*</span>BB<span style="color:#ec0000">*</span>BB<span style="color:#ec0000">*</span>BB;f[<span style="color:#008900">1</span>][<span style="color:#008900">5</span>]<span style="color:#ec0000">=</span>BB<span style="color:#ec0000">*</span>BB<span style="color:#ec0000">*</span>BB<span style="color:#ec0000">*</span>BB<span style="color:#ec0000">*</span>BB;f[<span style="color:#008900">1</span>][<span style="color:#008900">6</span>]<span style="color:#ec0000">=</span>SB;
+</span></span><span style="display:flex;"><span>                        f[<span style="color:#008900">2</span>][<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;f[<span style="color:#008900">2</span>][<span style="color:#008900">1</span>]<span style="color:#ec0000">=</span><span style="color:#008900">1</span>; f[<span style="color:#008900">2</span>][<span style="color:#008900">2</span>]<span style="color:#ec0000">=</span><span style="color:#008900">2</span><span style="color:#ec0000">*</span>BA;  f[<span style="color:#008900">2</span>][<span style="color:#008900">3</span>]<span style="color:#ec0000">=</span><span style="color:#008900">3</span><span style="color:#ec0000">*</span>BA<span style="color:#ec0000">*</span>BA; f[<span style="color:#008900">2</span>][<span style="color:#008900">4</span>]<span style="color:#ec0000">=</span><span style="color:#008900">4</span><span style="color:#ec0000">*</span>BA<span style="color:#ec0000">*</span>BA<span style="color:#ec0000">*</span>BA; f[<span style="color:#008900">2</span>][<span style="color:#008900">5</span>]<span style="color:#ec0000">=</span><span style="color:#008900">5</span><span style="color:#ec0000">*</span>BA<span style="color:#ec0000">*</span>BA<span style="color:#ec0000">*</span>BA<span style="color:#ec0000">*</span>BA;        f[<span style="color:#008900">2</span>][<span style="color:#008900">6</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>                        f[<span style="color:#008900">3</span>][<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;f[<span style="color:#008900">3</span>][<span style="color:#008900">1</span>]<span style="color:#ec0000">=</span><span style="color:#008900">1</span>; f[<span style="color:#008900">3</span>][<span style="color:#008900">2</span>]<span style="color:#ec0000">=</span><span style="color:#008900">2</span><span style="color:#ec0000">*</span>BB;  f[<span style="color:#008900">3</span>][<span style="color:#008900">3</span>]<span style="color:#ec0000">=</span><span style="color:#008900">3</span><span style="color:#ec0000">*</span>BB<span style="color:#ec0000">*</span>BB; f[<span style="color:#008900">3</span>][<span style="color:#008900">4</span>]<span style="color:#ec0000">=</span><span style="color:#008900">4</span><span style="color:#ec0000">*</span>BB<span style="color:#ec0000">*</span>BB<span style="color:#ec0000">*</span>BB; f[<span style="color:#008900">3</span>][<span style="color:#008900">5</span>]<span style="color:#ec0000">=</span><span style="color:#008900">5</span><span style="color:#ec0000">*</span>BB<span style="color:#ec0000">*</span>BB<span style="color:#ec0000">*</span>BB<span style="color:#ec0000">*</span>BB;        f[<span style="color:#008900">3</span>][<span style="color:#008900">6</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>                        f[<span style="color:#008900">4</span>][<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;f[<span style="color:#008900">4</span>][<span style="color:#008900">1</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>; f[<span style="color:#008900">4</span>][<span style="color:#008900">2</span>]<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;     f[<span style="color:#008900">4</span>][<span style="color:#008900">3</span>]<span style="color:#ec0000">=</span><span style="color:#008900">3</span><span style="color:#ec0000">*</span>BA;          f[<span style="color:#008900">4</span>][<span style="color:#008900">4</span>]<span style="color:#ec0000">=</span><span style="color:#008900">6</span><span style="color:#ec0000">*</span>BA<span style="color:#ec0000">*</span>BA;     f[<span style="color:#008900">4</span>][<span style="color:#008900">5</span>]<span style="color:#ec0000">=</span><span style="color:#008900">10</span><span style="color:#ec0000">*</span>BA<span style="color:#ec0000">*</span>BA<span style="color:#ec0000">*</span>BA;        f[<span style="color:#008900">4</span>][<span style="color:#008900">6</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>                        f[<span style="color:#008900">5</span>][<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;f[<span style="color:#008900">5</span>][<span style="color:#008900">1</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>; f[<span style="color:#008900">5</span>][<span style="color:#008900">2</span>]<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;     f[<span style="color:#008900">5</span>][<span style="color:#008900">3</span>]<span style="color:#ec0000">=</span><span style="color:#008900">3</span><span style="color:#ec0000">*</span>BB;          f[<span style="color:#008900">5</span>][<span style="color:#008900">4</span>]<span style="color:#ec0000">=</span><span style="color:#008900">6</span><span style="color:#ec0000">*</span>BB<span style="color:#ec0000">*</span>BB;     f[<span style="color:#008900">5</span>][<span style="color:#008900">5</span>]<span style="color:#ec0000">=</span><span style="color:#008900">10</span><span style="color:#ec0000">*</span>BB<span style="color:#ec0000">*</span>BB<span style="color:#ec0000">*</span>BB;        f[<span style="color:#008900">5</span>][<span style="color:#008900">6</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>WUCIFANG(f))
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                                AfxMessageBox(<span style="color:#008900">&#34;参数错误!&#34;</span>);
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        GENERALDATA data;
+</span></span><span style="display:flex;"><span>                        <span style="color:#5f5fff">double</span> <span style="color:#ec0000">*</span>ptr<span style="color:#ec0000">=</span>data.what.WUCIFANG.param;
+</span></span><span style="display:flex;"><span>                        ptr[<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span>f[<span style="color:#008900">0</span>][<span style="color:#008900">6</span>];ptr[<span style="color:#008900">1</span>]<span style="color:#ec0000">=</span>f[<span style="color:#008900">1</span>][<span style="color:#008900">6</span>];ptr[<span style="color:#008900">2</span>]<span style="color:#ec0000">=</span>f[<span style="color:#008900">2</span>][<span style="color:#008900">6</span>];ptr[<span style="color:#008900">3</span>]<span style="color:#ec0000">=</span>f[<span style="color:#008900">3</span>][<span style="color:#008900">6</span>];ptr[<span style="color:#008900">4</span>]<span style="color:#ec0000">=</span>f[<span style="color:#008900">4</span>][<span style="color:#008900">6</span>];ptr[<span style="color:#008900">5</span>]<span style="color:#ec0000">=</span>f[<span style="color:#008900">5</span>][<span style="color:#008900">6</span>];
+</span></span><span style="display:flex;"><span>                        paramdata.push_back(data);
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span>(segpt[i].type <span style="color:#ec0000">==</span> T_XIUZHENGSANJIAO)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        Invalidate(FALSE);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">double</span> xmin<span style="color:#ec0000">=</span>segpt[<span style="color:#008900">0</span>].B;//用来画横坐标
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">double</span> xmax<span style="color:#ec0000">=</span>segpt[segnum].B;
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">double</span> step<span style="color:#ec0000">=</span>(xmax<span style="color:#ec0000">-</span>xmin)<span style="color:#ec0000">/</span><span style="color:#008900">100</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">double</span> input<span style="color:#ec0000">=</span>xmin;
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> i,j,index<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        CString str;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span>(i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>segnum;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">int</span> curnum<span style="color:#ec0000">=</span><span style="color:#5f5fff">int</span>((segpt[i<span style="color:#ec0000">+</span><span style="color:#008900">1</span>].B<span style="color:#ec0000">-</span>segpt[i].B)<span style="color:#ec0000">/</span>step);                                
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;=</span>curnum;j<span style="color:#ec0000">++</span>,input<span style="color:#ec0000">+=</span>step)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        <span style="color:#5f5fff">double</span> outputs<span style="color:#ec0000">=</span>CalcPoint(segpt[i].type,OT_S,paramdata[i],input);
+</span></span><span style="display:flex;"><span>                        <span style="color:#5f5fff">double</span> outputv<span style="color:#ec0000">=</span>CalcPoint(segpt[i].type,OT_V,paramdata[i],input);
+</span></span><span style="display:flex;"><span>                        <span style="color:#5f5fff">double</span> outputa<span style="color:#ec0000">=</span>CalcPoint(segpt[i].type,OT_A,paramdata[i],input);
+</span></span><span style="display:flex;"><span>                        str.Format(<span style="color:#008900">&#34;%d&#34;</span>,index);
+</span></span><span style="display:flex;"><span>                        m_datalist.InsertItem(index,str);
+</span></span><span style="display:flex;"><span>                        str.Format(<span style="color:#008900">&#34;%lf&#34;</span>,input);
+</span></span><span style="display:flex;"><span>                        m_datalist.SetItemText(index,<span style="color:#008900">1</span>,str);
+</span></span><span style="display:flex;"><span>                        str.Format(<span style="color:#008900">&#34;%lf&#34;</span>,outputs);
+</span></span><span style="display:flex;"><span>                        m_datalist.SetItemText(index,<span style="color:#008900">2</span>,str);
+</span></span><span style="display:flex;"><span>                        str.Format(<span style="color:#008900">&#34;%lf&#34;</span>,outputv);
+</span></span><span style="display:flex;"><span>                        m_datalist.SetItemText(index,<span style="color:#008900">3</span>,str);
+</span></span><span style="display:flex;"><span>                        str.Format(<span style="color:#008900">&#34;%lf&#34;</span>,outputa);
+</span></span><span style="display:flex;"><span>                        m_datalist.SetItemText(index,<span style="color:#008900">4</span>,str);
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">switch</span>(segpt[i].type)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">case</span> <span style="color:#ec0000">T_ZHIXIAN</span>:
+</span></span><span style="display:flex;"><span>                                        str<span style="color:#ec0000">=</span><span style="color:#008900">&#34;直线&#34;</span>;
+</span></span><span style="display:flex;"><span>                                        <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">case</span> <span style="color:#ec0000">T_PAOWUXIAN</span>:
+</span></span><span style="display:flex;"><span>                                        str<span style="color:#ec0000">=</span><span style="color:#008900">&#34;抛物线&#34;</span>;
+</span></span><span style="display:flex;"><span>                                        <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">case</span> <span style="color:#ec0000">T_SANJIAOHANSHU</span>:
+</span></span><span style="display:flex;"><span>                                        str<span style="color:#ec0000">=</span><span style="color:#008900">&#34;三角函数&#34;</span>;
+</span></span><span style="display:flex;"><span>                                        <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">case</span> <span style="color:#ec0000">T_WUCIFANG</span>:
+</span></span><span style="display:flex;"><span>                                        str<span style="color:#ec0000">=</span><span style="color:#008900">&#34;五次方&#34;</span>;
+</span></span><span style="display:flex;"><span>                                        <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">case</span> <span style="color:#ec0000">T_XIUZHENGSANJIAO</span>:
+</span></span><span style="display:flex;"><span>                                        str<span style="color:#ec0000">=</span><span style="color:#008900">&#34;修正三角函数&#34;</span>;
+</span></span><span style="display:flex;"><span>                                        <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        m_datalist.SetItemText(index,<span style="color:#008900">5</span>,str);
+</span></span><span style="display:flex;"><span>                        index<span style="color:#ec0000">++</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>BOOL CtuluncalcDlg<span style="color:#ec0000">::</span>WUCIFANG(<span style="color:#5f5fff">double</span><span style="color:#ec0000">*</span> arr[<span style="color:#008900">6</span>])
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> N<span style="color:#ec0000">=</span><span style="color:#008900">6</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> i,j,k;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">bool</span> flag<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span>(i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>N;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>arr[i][i])
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        flag<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span>;
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span>i;j<span style="color:#ec0000">&lt;</span>N;j<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">if</span>(arr[j][i])
+</span></span><span style="display:flex;"><span>                                {
+</span></span><span style="display:flex;"><span>                                        flag<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>                                        <span style="color:#5f5fff">double</span><span style="color:#ec0000">*</span> temp<span style="color:#ec0000">=</span>arr[i];
+</span></span><span style="display:flex;"><span>                                        arr[i]<span style="color:#ec0000">=</span>arr[j];
+</span></span><span style="display:flex;"><span>                                        arr[j]<span style="color:#ec0000">=</span>temp;
+</span></span><span style="display:flex;"><span>                                }
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>flag)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">goto</span> ERROR1;
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span>N;j<span style="color:#ec0000">&gt;=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">--</span>)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        arr[i][j] <span style="color:#ec0000">/=</span> arr[i][i];
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">for</span>(k<span style="color:#ec0000">=</span>i<span style="color:#ec0000">+</span><span style="color:#008900">1</span>;k<span style="color:#ec0000">&lt;</span>N;k<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">if</span>(arr[k][i])
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span>N;j<span style="color:#ec0000">&gt;=</span>i;j<span style="color:#ec0000">--</span>)
+</span></span><span style="display:flex;"><span>                                {
+</span></span><span style="display:flex;"><span>                                        arr[k][j] <span style="color:#ec0000">-=</span> arr[k][i]<span style="color:#ec0000">*</span>arr[i][j];
+</span></span><span style="display:flex;"><span>                                }
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        //1 ? ? ? ? ? ?
+</span></span><span style="display:flex;"><span>        //0 1 ? ? ? ? ?
+</span></span><span style="display:flex;"><span>        //0 0 1 ? ? ? ?
+</span></span><span style="display:flex;"><span>        //0 0 0 1 ? ? ?
+</span></span><span style="display:flex;"><span>        //0 0 0 0 1 ? ?
+</span></span><span style="display:flex;"><span>        //0 0 0 0 0 1 ?
+</span></span><span style="display:flex;"><span>        //回带
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span>N<span style="color:#ec0000">-</span><span style="color:#008900">1</span>;j<span style="color:#ec0000">&gt;</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">--</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">for</span>(i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>j;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                        arr[i][N] <span style="color:#ec0000">-=</span> arr[i][j]<span style="color:#ec0000">*</span>arr[j][N];
+</span></span><span style="display:flex;"><span>                        arr[i][j]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span> TRUE;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">ERROR1</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span> FALSE;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedZhixian()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        // TODO: 在此添加控件通知处理程序代码
+</span></span><span style="display:flex;"><span>        DRAWTYPE<span style="color:#ec0000">=</span>T_ZHIXIAN;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedPaowuxian()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        // TODO: 在此添加控件通知处理程序代码
+</span></span><span style="display:flex;"><span>        DRAWTYPE<span style="color:#ec0000">=</span>T_PAOWUXIAN;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedSanjiaohanshu()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        // TODO: 在此添加控件通知处理程序代码
+</span></span><span style="display:flex;"><span>        DRAWTYPE<span style="color:#ec0000">=</span>T_SANJIAOHANSHU;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedWucifang()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        // TODO: 在此添加控件通知处理程序代码
+</span></span><span style="display:flex;"><span>        DRAWTYPE<span style="color:#ec0000">=</span>T_WUCIFANG;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> CtuluncalcDlg<span style="color:#ec0000">::</span>OnBnClickedXiuzhengsanjiao()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        // TODO: 在此添加控件通知处理程序代码
+</span></span><span style="display:flex;"><span>        DRAWTYPE<span style="color:#ec0000">=</span>T_XIUZHENGSANJIAO;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> CtuluncalcDlg<span style="color:#ec0000">::</span>CalcPoint(<span style="color:#5f5fff">int</span> type,<span style="color:#5f5fff">int</span> outtype,GENERALDATA<span style="color:#ec0000">&amp;</span> param,<span style="color:#5f5fff">double</span> input)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">double</span> result<span style="color:#ec0000">=</span><span style="color:#008900">0.0</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">switch</span>(type)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#ec0000">T_ZHIXIAN</span>:
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">if</span>(outtype <span style="color:#ec0000">==</span> OT_S)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span>(outtype <span style="color:#ec0000">==</span> OT_V)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span>(outtype <span style="color:#ec0000">==</span> OT_A)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#ec0000">T_PAOWUXIAN</span>:
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">if</span>(outtype <span style="color:#ec0000">==</span> OT_S)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span>(outtype <span style="color:#ec0000">==</span> OT_V)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span>(outtype <span style="color:#ec0000">==</span> OT_A)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#ec0000">T_SANJIAOHANSHU</span>:
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">if</span>(outtype <span style="color:#ec0000">==</span> OT_S)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span>(outtype <span style="color:#ec0000">==</span> OT_V)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span>(outtype <span style="color:#ec0000">==</span> OT_A)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#ec0000">T_WUCIFANG</span>:
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                                <span style="color:#5f5fff">double</span> B<span style="color:#ec0000">=</span>input;
+</span></span><span style="display:flex;"><span>                                <span style="color:#5f5fff">double</span><span style="color:#ec0000">*</span> r<span style="color:#ec0000">=</span>param.what.WUCIFANG.param;
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">if</span>(outtype <span style="color:#ec0000">==</span> OT_S)
+</span></span><span style="display:flex;"><span>                                {
+</span></span><span style="display:flex;"><span>                                        result<span style="color:#ec0000">=</span>r[<span style="color:#008900">0</span>]<span style="color:#ec0000">+</span>r[<span style="color:#008900">1</span>]<span style="color:#ec0000">*</span>B<span style="color:#ec0000">+</span>r[<span style="color:#008900">2</span>]<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">+</span>r[<span style="color:#008900">3</span>]<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">+</span>r[<span style="color:#008900">4</span>]<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">+</span>r[<span style="color:#008900">5</span>]<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B;
+</span></span><span style="display:flex;"><span>                                }
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span>(outtype <span style="color:#ec0000">==</span> OT_V)
+</span></span><span style="display:flex;"><span>                                {
+</span></span><span style="display:flex;"><span>                                        result<span style="color:#ec0000">=</span>r[<span style="color:#008900">1</span>]<span style="color:#ec0000">+</span><span style="color:#008900">2</span><span style="color:#ec0000">*</span>r[<span style="color:#008900">2</span>]<span style="color:#ec0000">*</span>B<span style="color:#ec0000">+</span><span style="color:#008900">3</span><span style="color:#ec0000">*</span>r[<span style="color:#008900">3</span>]<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">+</span><span style="color:#008900">4</span><span style="color:#ec0000">*</span>r[<span style="color:#008900">4</span>]<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">+</span><span style="color:#008900">5</span><span style="color:#ec0000">*</span>r[<span style="color:#008900">5</span>]<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B;
+</span></span><span style="display:flex;"><span>                                }
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span>(outtype <span style="color:#ec0000">==</span> OT_A)
+</span></span><span style="display:flex;"><span>                                {
+</span></span><span style="display:flex;"><span>                                        result<span style="color:#ec0000">=</span><span style="color:#008900">2</span><span style="color:#ec0000">*</span>r[<span style="color:#008900">2</span>]<span style="color:#ec0000">+</span><span style="color:#008900">6</span><span style="color:#ec0000">*</span>r[<span style="color:#008900">3</span>]<span style="color:#ec0000">*</span>B<span style="color:#ec0000">+</span><span style="color:#008900">12</span><span style="color:#ec0000">*</span>r[<span style="color:#008900">4</span>]<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">+</span><span style="color:#008900">20</span><span style="color:#ec0000">*</span>r[<span style="color:#008900">5</span>]<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B<span style="color:#ec0000">*</span>B;
+</span></span><span style="display:flex;"><span>                                }
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#ec0000">T_XIUZHENGSANJIAO</span>:
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">if</span>(outtype <span style="color:#ec0000">==</span> OT_S)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span>(outtype <span style="color:#ec0000">==</span> OT_V)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span>(outtype <span style="color:#ec0000">==</span> OT_A)
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span> result;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="展示">展示</h2>
+<p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/tulun5.jpg">
+    </div>
+
+    
+</figure></p>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/cpp_posts/20110101_viterbi/">
+                        卷积码的viterbi译码
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/cpp_posts/20140419_bignum/">
+                        实现大整数运算
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

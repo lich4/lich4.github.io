@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    json对象平坦化 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/js_posts/20240609_json_flatten/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/js_posts/">Js_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/js_posts/20240609_json_flatten/">json对象平坦化</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">json对象平坦化</h1>
+    
+    <p class="single-summary">json对象平坦化</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2024-06-09T00:00:00&#43;00:00">June 9, 2024</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#为什么要平坦化">为什么要平坦化</a></li>
+    <li><a href="#开发">开发</a></li>
+    <li><a href="#测试">测试</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="为什么要平坦化">为什么要平坦化</h2>
+<p>  在使用有Vue能力的html table时，需要用到对象数组，Vue内部用对象的字段获取对应值，而如果对象层次较深可能就难以直接使用字段。下面是一个简单的例子：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-html" data-lang="html"><span style="display:flex;"><span>&lt;<span style="color:#ec0000">el-table</span> <span style="color:#5f5fff">:data</span><span style="color:#ec0000">=</span><span style="color:#008900">&#34;table_data&#34;</span>&gt;
+</span></span><span style="display:flex;"><span>  &lt;<span style="color:#ec0000">el-table-column</span> <span style="color:#5f5fff">prop</span><span style="color:#ec0000">=</span><span style="color:#008900">&#34;field_1&#34;</span> <span style="color:#5f5fff">label</span><span style="color:#ec0000">=</span><span style="color:#008900">&#34;字段1&#34;</span>&gt;&lt;/<span style="color:#ec0000">el-table-column</span>&gt;
+</span></span><span style="display:flex;"><span>  &lt;<span style="color:#ec0000">el-table-column</span> <span style="color:#5f5fff">prop</span><span style="color:#ec0000">=</span><span style="color:#008900">&#34;field_2&#34;</span> <span style="color:#5f5fff">label</span><span style="color:#ec0000">=</span><span style="color:#008900">&#34;字段2&#34;</span>&gt;&lt;/<span style="color:#ec0000">el-table-column</span>&gt;
+</span></span><span style="display:flex;"><span>&lt;/<span style="color:#ec0000">el-table</span>&gt;
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#ec0000">const</span> app <span style="color:#ec0000">=</span> {
+</span></span><span style="display:flex;"><span>  data() {
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> {
+</span></span><span style="display:flex;"><span>      table_data<span style="color:#ec0000">:</span> [
+</span></span><span style="display:flex;"><span>        {<span style="color:#008900">&#34;field_1&#34;</span><span style="color:#ec0000">:</span> <span style="color:#008900">111</span>},
+</span></span><span style="display:flex;"><span>        {<span style="color:#008900">&#34;field_2&#34;</span><span style="color:#ec0000">:</span> <span style="color:#008900">112</span>}
+</span></span><span style="display:flex;"><span>      ]
+</span></span><span style="display:flex;"><span>    };
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>};
+</span></span></code></pre></div><p>  如果数据层次深一些，有可能UI组件无法处理，如下例所示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>[
+</span></span><span style="display:flex;"><span>  {<span style="color:#ec0000">&#34;field_1&#34;</span>: {<span style="color:#ec0000">&#34;name&#34;</span>:<span style="color:#008900">111</span>}},
+</span></span><span style="display:flex;"><span>  {<span style="color:#ec0000">&#34;field_2&#34;</span>: {<span style="color:#ec0000">&#34;name&#34;</span>:<span style="color:#008900">112</span>}}
+</span></span><span style="display:flex;"><span>]
+</span></span><span style="display:flex;"><span>[
+</span></span><span style="display:flex;"><span>  {<span style="color:#ec0000">&#34;field_1&#34;</span>: [<span style="color:#008900">111</span>,<span style="color:#ec0000">true</span>]},
+</span></span><span style="display:flex;"><span>  {<span style="color:#ec0000">&#34;field_2&#34;</span>: [<span style="color:#008900">112</span>,<span style="color:#ec0000">false</span>]}
+</span></span><span style="display:flex;"><span>]
+</span></span></code></pre></div><p>  可见Table的绑定数据最好是扁平的JSON数据，此时需要平坦化解决该问题。</p>
+<h2 id="开发">开发</h2>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#ec0000">function</span> flat(obj, prefix, is_arr) {
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (<span style="color:#ec0000">!</span>prefix) {
+</span></span><span style="display:flex;"><span>        prefix <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;&#34;</span>;
+</span></span><span style="display:flex;"><span>        is_arr <span style="color:#ec0000">=</span> <span style="color:#ec0000">false</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> tobj <span style="color:#ec0000">=</span> <span style="color:#ec0000">Object</span>.prototype.toString.call(obj);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (tobj <span style="color:#ec0000">==</span> <span style="color:#008900">&#34;[object Array]&#34;</span>) {
+</span></span><span style="display:flex;"><span>            is_arr <span style="color:#ec0000">=</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> <span style="color:#ec0000">Object</span>.keys(obj).reduce(<span style="color:#ec0000">function</span>(memo, prop) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> tobj <span style="color:#ec0000">=</span> <span style="color:#ec0000">Object</span>.prototype.toString.call(obj[prop]);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> ppre <span style="color:#ec0000">=</span> prefix <span style="color:#ec0000">?</span> prefix <span style="color:#ec0000">+</span> <span style="color:#008900">&#39;.&#39;</span> <span style="color:#ec0000">:</span> <span style="color:#008900">&#34;&#34;</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> sub_prefix <span style="color:#ec0000">=</span> is_arr <span style="color:#ec0000">?</span> prefix <span style="color:#ec0000">+</span> <span style="color:#008900">&#39;[&#39;</span> <span style="color:#ec0000">+</span> prop <span style="color:#ec0000">+</span> <span style="color:#008900">&#39;]&#39;</span> <span style="color:#ec0000">:</span> ppre <span style="color:#ec0000">+</span> prop;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (tobj <span style="color:#ec0000">===</span> <span style="color:#008900">&#34;[object Object]&#34;</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">return</span> <span style="color:#ec0000">Object</span>.assign({}, memo, flat(obj[prop], sub_prefix, <span style="color:#ec0000">false</span>));
+</span></span><span style="display:flex;"><span>        } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (tobj <span style="color:#ec0000">===</span> <span style="color:#008900">&#34;[object Array]&#34;</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">return</span> <span style="color:#ec0000">Object</span>.assign({}, memo, flat(obj[prop], sub_prefix, <span style="color:#ec0000">true</span>));
+</span></span><span style="display:flex;"><span>        } <span style="color:#ec0000">else</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">return</span> <span style="color:#ec0000">Object</span>.assign({}, memo, {[sub_prefix]<span style="color:#ec0000">:</span> obj[prop]});
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }, {});
+</span></span><span style="display:flex;"><span>}   
+</span></span></code></pre></div><h2 id="测试">测试</h2>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{ 
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&#34;a0&#34;</span>: {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&#34;b00&#34;</span>: <span style="color:#008900">&#34;c00&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&#34;b01&#34;</span>: <span style="color:#008900">&#34;c01&#34;</span>,
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&#34;a1&#34;</span>: [
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;b10&#34;</span>, <span style="color:#008900">&#34;b11&#34;</span>
+</span></span><span style="display:flex;"><span>    ],
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&#34;a2&#34;</span>:{
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&#34;b20&#34;</span>:[{
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">&#34;c3&#34;</span>:{
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&#34;d3&#34;</span>:<span style="color:#008900">&#34;ok&#34;</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }],
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&#34;b21&#34;</span>:[{
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">&#34;c3&#34;</span>:{
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&#34;d3&#34;</span>:<span style="color:#008900">&#34;ok&#34;</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;b22&#34;</span>],
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&#34;a0.b00&#34;</span>: <span style="color:#008900">&#34;c00&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&#34;a0.b01&#34;</span>: <span style="color:#008900">&#34;c01&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&#34;a1[0]&#34;</span>: <span style="color:#008900">&#34;b10&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&#34;a1[1]&#34;</span>: <span style="color:#008900">&#34;b11&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&#34;a2.b20[0].c3.d3&#34;</span>: <span style="color:#008900">&#34;ok&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&#34;a2.b21[0].c3.d3&#34;</span>: <span style="color:#008900">&#34;ok&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&#34;a2.b21[1]&#34;</span>: <span style="color:#008900">&#34;b22&#34;</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

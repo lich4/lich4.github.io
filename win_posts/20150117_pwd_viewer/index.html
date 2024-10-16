@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    星号密码查看器逆向分析 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/win_posts/20150117_pwd_viewer/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/win_posts/">Win_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/win_posts/20150117_pwd_viewer/">星号密码查看器逆向分析</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">星号密码查看器逆向分析</h1>
+    
+    <p class="single-summary">星号密码查看器逆向分析</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2015-01-17T00:00:00&#43;00:00">January 17, 2015</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#分析">分析</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="分析">分析</h2>
+<p>  很久以前就有这个东西了，不过一直不知道原理是什么。这个和灰色按钮破解还有些不同，灰色按钮那个是EnumWindow和EnableWindow搞定的，而星号密码经我研究发现是通过远程线程注入API实现的。从前不会调试，静态反汇编面对海量代码任你是谁也无法那么容易找到，然而熟悉了调试以后，这个就变的简单了。主窗口有个放大镜，拖动放大镜到任意窗口就可以显示密码文本框的实际字符串，根据这一点可以下SetWindowText系列API断点。下面用WinDbg来调试：</p>
+<ul>
+<li>bp User32!SetWindowTextA</li>
+<li>bp User32!SetWindowTextW</li>
+<li>bp User32!SetDlgItemTextA</li>
+<li>bp User32!SetDlgItemTextW</li>
+</ul>
+<p>  再移动放大镜到某窗口，断在了SetWindowTextA，Shift+F11跳出后进入ViewPass，输入k查看调用栈：</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">0018f8e4 774b62fa ViewPass+0x1cf0
+0018f910 774df943 USER32!gapfnScSendMessage+0x332
+0018f98c 774df784 USER32!GetCursor+0x263
+0018f9dc 774cafac USER32!GetCursor+0xa4
+0018f9fc 774b62fa USER32!DrawTextExA+0xd4
+0018fa28 774b6d3a USER32!gapfnScSendMessage+0x332
+0018faa0 774b77c4 USER32!GetThreadDesktop+0xd7
+0018fb00 774b788a USER32!CharPrevW+0x138
+0018fb10 774dc81f USER32!DispatchMessageW+0xf
+0018fb3c 774dcde7 USER32!IsDialogMessageW+0x11e
+0018fb80 774dcf5c USER32!DialogBoxIndirectParamW+0x1f4
+0018fbac 774dce8a USER32!DialogBoxIndirectParamAorW+0x108
+0018fbcc 774fcb58 USER32!DialogBoxIndirectParamAorW+0x36
+0018fbf8 004014f7 USER32!DialogBoxParamA+0x4c
+0018fefc 00404145 ViewPass+0x14f7
+0018ff88 775b338a ViewPass+0x4145
+0018ff94 77d49f72 kernel32!BaseThreadInitThunk+0x12
+0018ffd4 77d49f45 ntdll!RtlInitializeExceptionChain+0x63
+0018ffec 00000000 ntdll!RtlInitializeExceptionChain+0x36
+</code></pre><p>可以看出是个回调函数，再看剩下的代码：</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">00401CC7   68 C8F44000      PUSH ViewPass.0040F4C8
+00401CCC   50               PUSH EAX
+00401CCD   E8 9E130000      CALL ViewPass.00403070
+00401CD2   59               POP ECX
+00401CD3   59               POP ECX
+00401CD4   8D85 D8FEFFFF    LEA EAX,DWORD PTR SS:[EBP-128]
+00401CDA   50               PUSH EAX
+00401CDB   68 EC030000      PUSH 3EC
+00401CE0   FF75 08          PUSH DWORD PTR SS:[EBP+8]
+00401CE3   FF15 B0A14000    CALL DWORD PTR DS:[&lt;&amp;USER32.GetDlgItem&gt;] ; USER32.GetDlgItem
+00401CE9   50               PUSH EAX
+00401CEA   FF15 2CA24000    CALL DWORD PTR DS:[&lt;&amp;USER32.SetWindowTex&gt;; USER32.SetWindowTextA
+00401CF0   33C0             XOR EAX,EAX
+00401CF2   5F               POP EDI
+00401CF3   5E               POP ESI
+00401CF4   5B               POP EBX
+00401CF5   C9               LEAVE
+</code></pre><p>  发现上一句是GetDlgItem，第二个参数1004，用exescope查确实是编辑框id。执行结束再看调用栈，发现一堆USER32，一切迹象表明这个函数是个回调函数，那么有2个工作要做：</p>
+<ul>
+<li>从栈上找到其参数②找到起始地址</li>
+<li>因为API函数序言部分为push ebp;mov ebp,esp;sub esp,???; 而调用之前为push param4;push param3;push param2;push param1;call func;因此从ebp推断，d ebp得：</li>
+</ul>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">0018f8e4  10 f9 18 00 fa 62 4b 77-84 0a 51 00 00 02 00 00  .....bKw..Q.....
+0018f8f4  4c 0d 0b 00 ac 16 00 00-fe 14 40 00 cd ab ba dc  L.........@.....
+0018f904  01 00 00 00 00 00 00 00-fe 14 40 00 8c f9 18 00  ..........@.....
+0018f914  43 f9 4d 77 fe 14 40 00-84 0a 51 00 00 02 00 00  C.Mw..@...Q.....
+</code></pre><p>  查MSDN得知窗口回调函数格式为：<br>
+<code>int WINAPI DialogProc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)</code><br>
+  [ebp]为原始ebp，[ebp+4]为call func指令下一句地址，[ebp+8]为hwndDlg=0x510a84，也就是[ebp+12]为uMsg=0x200 查winuser.h可知为WM_MOUSEMOVE
+②找到起始地址需要借助调用该回调函数的系统函数，查看调用栈，地址为774df943，那么用命令 <code>u 0x774df943 l-10</code> 看一下该地址处的前一条指令</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">0:000&gt; u 774df943 l-10
+USER32!GetCursor+0x253:
+774df933 1cff            sbb     al,0FFh
+774df935 7518            jne     USER32!GetCursor+0x26f (774df94f)
+774df937 ff7514          push    dword ptr [ebp+14h]
+774df93a ff7510          push    dword ptr [ebp+10h]
+774df93d 56              push    esi
+774df93e e89469fdff      call    USER32!gapfnScSendMessage+0x30f (774b62d7)
+   课件上一条指令为call    USER32!gapfnScSendMessage+0x30f ，此时bp 774df93e重新运行，跟踪系统函数直到进入用户程序范围
+774b62d7 55              push    ebp
+774b62d8 8bec            mov     ebp,esp
+774b62da 56              push    esi
+774b62db 57              push    edi
+774b62dc 53              push    ebx
+774b62dd 68cdabbadc      push    0DCBAABCDh
+774b62e2 56              push    esi
+774b62e3 ff7518          push    dword ptr [ebp+18h]
+774b62e6 ff7514          push    dword ptr [ebp+14h]
+774b62e9 ff7510          push    dword ptr [ebp+10h]
+774b62ec ff750c          push    dword ptr [ebp+0Ch]
+774b62ef 64800dca0f000001 or      byte ptr fs:[0FCAh],1
+774b62f7 ff5508          call    dword ptr [ebp+8]
+</code></pre><p>  走到这时，就进入了程序范围<code>ViewPass+0x14fe=004014fe</code>处，该处为函数起始位置：</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">0:000&gt; u . l20
+ViewPass+0x14fe:
+004014fe 55              push    ebp
+004014ff 8bec            mov     ebp,esp
+00401501 81ec28040000    sub     esp,428h
+00401507 8b4d0c          mov     ecx,dword ptr [ebp+0Ch]
+0040150a b838010000      mov     eax,138h
+0040150f 53              push    ebx
+00401510 56              push    esi
+00401511 3bc8            cmp     ecx,eax
+00401513 57              push    edi
+00401514 0f87cf030000    ja      ViewPass+0x18e9 (004018e9)
+0040151a 0f847c030000    je      ViewPass+0x189c (0040189c)
+00401520 8bc1            mov     eax,ecx
+00401522 83e810          sub     eax,10h
+00401525 0f8466030000    je      ViewPass+0x1891 (00401891)
+0040152b 2d00010000      sub     eax,100h
+</code></pre><p>  由于第一次运行是WM_MOVEMOUSE响应，因此去掉所有断点并下条件断点：<code>bp 004014fe &quot;.if poi([esp+8])=0x200 {} .else {gc}</code>&quot;，这样的结果是，无论是否移动放大镜，只要鼠标滑过就会触发，结合IDA分析，得到大致代码如下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span>HWND hglasswnd;//放大镜窗口  
+</span></span><span style="display:flex;"><span>HICON hglassicon_new,hglassicon_origin;//放大镜图标  
+</span></span><span style="display:flex;"><span>BOOL IsMouseDown<span style="color:#ec0000">=</span>FALSE;  
+</span></span><span style="display:flex;"><span>HCURSOR hCursor;  
+</span></span><span style="display:flex;"><span>HINSTANCE hInstance;  
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> WINAPI <span style="color:#5f5fff">MainDlg</span>(HWND hDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">switch</span>(uMsg)  
+</span></span><span style="display:flex;"><span>   {  
+</span></span><span style="display:flex;"><span>       <span style="color:#ec0000">case</span> <span style="color:#ec0000">WM_INITDIALOG</span>:  
+</span></span><span style="display:flex;"><span>       {  
+</span></span><span style="display:flex;"><span>       }  
+</span></span><span style="display:flex;"><span>       <span style="color:#ec0000">break</span>;  
+</span></span><span style="display:flex;"><span>       <span style="color:#ec0000">case</span> <span style="color:#ec0000">WM_LBUTTONDOWN</span>:  
+</span></span><span style="display:flex;"><span>       {  
+</span></span><span style="display:flex;"><span>           POINT pt<span style="color:#ec0000">=</span>{LOWORD(lParam),HIWORD(lParam)};  
+</span></span><span style="display:flex;"><span>           HWND hobjwnd<span style="color:#ec0000">=</span>ChildWindowFromPoint(hDlg,pt);  
+</span></span><span style="display:flex;"><span>           <span style="color:#ec0000">if</span>(hobjwnd <span style="color:#ec0000">==</span> hglasswnd)  
+</span></span><span style="display:flex;"><span>           {  
+</span></span><span style="display:flex;"><span>               SetCapture(hDlg);  
+</span></span><span style="display:flex;"><span>               SetCursor(hCursor);  
+</span></span><span style="display:flex;"><span>               SendMessage(hglasswnd,STM_SETICON,(WPARAM)hglassicon_new,<span style="color:#ec0000">NULL</span>);  
+</span></span><span style="display:flex;"><span>               IsMouseDown<span style="color:#ec0000">=</span>TRUE;  
+</span></span><span style="display:flex;"><span>           }  
+</span></span><span style="display:flex;"><span>           <span style="color:#ec0000">return</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>       }  
+</span></span><span style="display:flex;"><span>       <span style="color:#ec0000">case</span> <span style="color:#ec0000">WM_LBUTTONUP</span>:  
+</span></span><span style="display:flex;"><span>       {  
+</span></span><span style="display:flex;"><span>           <span style="color:#ec0000">if</span>(IsMouseDown)  
+</span></span><span style="display:flex;"><span>           {  
+</span></span><span style="display:flex;"><span>               ReleaseCapture();  
+</span></span><span style="display:flex;"><span>               IsMouseDown<span style="color:#ec0000">=</span>FALSE;  
+</span></span><span style="display:flex;"><span>               SetCursor(LoadCursor(hInstance,MAKEINTRESOURCE(<span style="color:#008900">32512</span>)));  
+</span></span><span style="display:flex;"><span>               SendMessage(hglasswnd,STM_SETICON,(WPARAM)hglassicon_origin,<span style="color:#008900">0</span>);  
+</span></span><span style="display:flex;"><span>           }  
+</span></span><span style="display:flex;"><span>           <span style="color:#ec0000">return</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>       }  
+</span></span><span style="display:flex;"><span>       <span style="color:#ec0000">case</span> <span style="color:#ec0000">WM_MOUSEMOVE</span>:  
+</span></span><span style="display:flex;"><span>       {  
+</span></span><span style="display:flex;"><span>           POINT Point;  
+</span></span><span style="display:flex;"><span>           TCHAR String[<span style="color:#008900">256</span>],ClassName[<span style="color:#008900">256</span>];  
+</span></span><span style="display:flex;"><span>           GetCursorPos(<span style="color:#ec0000">&amp;</span>Point);  
+</span></span><span style="display:flex;"><span>           <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>IsMouseDown)  
+</span></span><span style="display:flex;"><span>               <span style="color:#ec0000">return</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>           String[<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">&#39;\0&#39;</span>;  
+</span></span><span style="display:flex;"><span>           HWND hobjwnd<span style="color:#ec0000">=</span>WindowFromPoint(Point);//获取鼠标位置的窗口句柄  
+</span></span><span style="display:flex;"><span>           <span style="color:#ec0000">if</span>(hobjwnd)  
+</span></span><span style="display:flex;"><span>           {  
+</span></span><span style="display:flex;"><span>               DWORD threadid<span style="color:#ec0000">=</span>GetWindowThreadProcessId(hobjwnd,<span style="color:#ec0000">NULL</span>);  
+</span></span><span style="display:flex;"><span>               <span style="color:#ec0000">if</span>(threadid <span style="color:#ec0000">==</span> GetWindowThreadProcessId(hDlg,<span style="color:#008900">0</span>))  
+</span></span><span style="display:flex;"><span>                   <span style="color:#ec0000">return</span> <span style="color:#008900">0</span>;//所在窗口正是密码查看器窗口  
+</span></span><span style="display:flex;"><span>               <span style="color:#ec0000">if</span>(GetClassName(hobjwnd,ClassName,<span style="color:#008900">256</span>))  
+</span></span><span style="display:flex;"><span>               {  
+</span></span><span style="display:flex;"><span>                   <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>strcmp(ClassName,<span style="color:#008900">&#34;Internet Explorer_Server&#34;</span>))  
+</span></span><span style="display:flex;"><span>                   {  
+</span></span><span style="display:flex;"><span>                       POINT pt<span style="color:#ec0000">=</span>Point;  
+</span></span><span style="display:flex;"><span>                       ScreenToClient(hobjwnd,<span style="color:#ec0000">&amp;</span>pt);  
+</span></span><span style="display:flex;"><span>                       htmlHWNDtoDocument(hobjwnd,pt);  
+</span></span><span style="display:flex;"><span>                       <span style="color:#ec0000">return</span> <span style="color:#008900">1</span>;  
+</span></span><span style="display:flex;"><span>                   }  
+</span></span><span style="display:flex;"><span>                   strupr(ClassName);  
+</span></span><span style="display:flex;"><span>                   <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>strcmp(ClassName,<span style="color:#008900">&#34;BUTTON&#34;</span>) <span style="color:#ec0000">||</span> <span style="color:#ec0000">!</span>strcmp(ClassName,<span style="color:#008900">&#34;#32770&#34;</span>))//#32770是对话框默认窗口类名  
+</span></span><span style="display:flex;"><span>                   {  
+</span></span><span style="display:flex;"><span>                       HWND hparent;  
+</span></span><span style="display:flex;"><span>                       <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>strcmp(ClassName,<span style="color:#008900">&#34;#32770&#34;</span>))  
+</span></span><span style="display:flex;"><span>                           hparent<span style="color:#ec0000">=</span>hobjwnd;  
+</span></span><span style="display:flex;"><span>                       <span style="color:#ec0000">else</span> 
+</span></span><span style="display:flex;"><span>                           hparent<span style="color:#ec0000">=</span>GetParent(hobjwnd);  
+</span></span><span style="display:flex;"><span>                       <span style="color:#ec0000">if</span>(hparent)  
+</span></span><span style="display:flex;"><span>                       {  
+</span></span><span style="display:flex;"><span>                           POINT pt<span style="color:#ec0000">=</span>Point;  
+</span></span><span style="display:flex;"><span>                           ScreenToClient(hparent,<span style="color:#ec0000">&amp;</span>pt);  
+</span></span><span style="display:flex;"><span>                           HWND first<span style="color:#ec0000">=</span>ChildWindowFromPointEx(hparent,pt,CWP_ALL);  
+</span></span><span style="display:flex;"><span>                           <span style="color:#ec0000">if</span>(first <span style="color:#ec0000">==</span> hobjwnd)  
+</span></span><span style="display:flex;"><span>                           {  
+</span></span><span style="display:flex;"><span>                               <span style="color:#ec0000">while</span>(first<span style="color:#ec0000">=</span>GetWindow(first,GW_HWNDNEXT))//按z-order遍历当前鼠标位置所有窗口  
+</span></span><span style="display:flex;"><span>                               {  
+</span></span><span style="display:flex;"><span>                                   RECT rt;  
+</span></span><span style="display:flex;"><span>                                   GetWindowRect(first,<span style="color:#ec0000">&amp;</span>rt);  
+</span></span><span style="display:flex;"><span>                                   <span style="color:#ec0000">if</span>(PtInRect(<span style="color:#ec0000">&amp;</span>rt,Point))  
+</span></span><span style="display:flex;"><span>                                       <span style="color:#ec0000">break</span>;  
+</span></span><span style="display:flex;"><span>                               }  
+</span></span><span style="display:flex;"><span>                           }  
+</span></span><span style="display:flex;"><span>                           <span style="color:#ec0000">if</span>(first)  
+</span></span><span style="display:flex;"><span>                           {  
+</span></span><span style="display:flex;"><span>                               hobjwnd<span style="color:#ec0000">=</span>first;  
+</span></span><span style="display:flex;"><span>                               GetClassName(first,ClassName,<span style="color:#008900">255</span>);  
+</span></span><span style="display:flex;"><span>                               _strupr(ClassName);  
+</span></span><span style="display:flex;"><span>                           }  
+</span></span><span style="display:flex;"><span>                       }  
+</span></span><span style="display:flex;"><span>                   }  
+</span></span><span style="display:flex;"><span>                   LONG style<span style="color:#ec0000">=</span>GetWindowLong(hobjwnd,GWL_STYLE);  
+</span></span><span style="display:flex;"><span>                   <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>strcmp(ClassName,<span style="color:#008900">&#34;EDIT&#34;</span>) <span style="color:#ec0000">||</span> <span style="color:#ec0000">!</span>strcmp(ClassName,<span style="color:#008900">&#34;TEDIT&#34;</span>) <span style="color:#ec0000">||!</span>strcmp(ClassName,<span style="color:#008900">&#34;THUNDERRTTEXTBOX&#34;</span>) <span style="color:#ec0000">||</span>  
+</span></span><span style="display:flex;"><span>                       <span style="color:#ec0000">!</span>strcmp(ClassName,<span style="color:#008900">&#34;THUNDERRT3TEXTBOX&#34;</span>) <span style="color:#ec0000">||</span> <span style="color:#ec0000">!</span>strcmp(ClassName,<span style="color:#008900">&#34;THUNDERRT4TEXTBOX&#34;</span>) <span style="color:#ec0000">||</span>   
+</span></span><span style="display:flex;"><span>                       <span style="color:#ec0000">!</span>strcmp(ClassName,<span style="color:#008900">&#34;THUNDERRT5TEXTBOX&#34;</span>) <span style="color:#ec0000">||</span> <span style="color:#ec0000">!</span>strcmp(ClassName,<span style="color:#008900">&#34;THUNDERRT6TEXTBOX&#34;</span>) <span style="color:#ec0000">||</span>  
+</span></span><span style="display:flex;"><span>                       strstr(ClassName,<span style="color:#008900">&#34;Pass&#34;</span>) <span style="color:#ec0000">||</span> strstr(ClassName,<span style="color:#008900">&#34;pass&#34;</span>))  
+</span></span><span style="display:flex;"><span>                   {  
+</span></span><span style="display:flex;"><span>                       <span style="color:#ec0000">if</span>(style<span style="color:#ec0000">&amp;</span>ES_PASSWORD/*且为Windows NT系统*/)  
+</span></span><span style="display:flex;"><span>                       {  
+</span></span><span style="display:flex;"><span>                           DWORD tid;  
+</span></span><span style="display:flex;"><span>                           GetWindowThreadProcessId(hobjwnd,<span style="color:#ec0000">&amp;</span>tid);  
+</span></span><span style="display:flex;"><span>                           HANDLE hproc<span style="color:#ec0000">=</span>OpenProcess(PROCESS_QUERY_INFORMATION<span style="color:#ec0000">|</span>PROCESS_VM_WRITE<span style="color:#ec0000">|</span>PROCESS_VM_READ<span style="color:#ec0000">|</span>PROCESS_VM_OPERATION<span style="color:#ec0000">|</span>PROCESS_CREATE_THREAD,<span style="color:#ec0000">false</span>,tid);  
+</span></span><span style="display:flex;"><span>                           <span style="color:#ec0000">if</span>(hproc)  
+</span></span><span style="display:flex;"><span>                           {  
+</span></span><span style="display:flex;"><span>                               GetPassFromStar(hproc,hobjwnd,String);//远程注入到该进程以获取密码  
+</span></span><span style="display:flex;"><span>                               CloseHandle(hproc);  
+</span></span><span style="display:flex;"><span>                           }  
+</span></span><span style="display:flex;"><span>                           <span style="color:#ec0000">else</span> 
+</span></span><span style="display:flex;"><span>                               strcpy(String,<span style="color:#008900">&#34;&#34;</span>);  
+</span></span><span style="display:flex;"><span>                       }  
+</span></span><span style="display:flex;"><span>                   }  
+</span></span><span style="display:flex;"><span>                   <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>(style<span style="color:#ec0000">&amp;</span>(WS_POPUP<span style="color:#ec0000">|</span>WS_CAPTION<span style="color:#ec0000">|</span>WS_SYSMENU)))  
+</span></span><span style="display:flex;"><span>                       SendMessage(hobjwnd,WM_GETTEXT,<span style="color:#008900">255</span>,(LPARAM)String);  
+</span></span><span style="display:flex;"><span>               }  
+</span></span><span style="display:flex;"><span>           }  
+</span></span><span style="display:flex;"><span>           SetWindowText(GetDlgItem(hobjwnd,<span style="color:#008900">1004</span>),String);//更新编辑框字符串  
+</span></span><span style="display:flex;"><span>       }  
+</span></span><span style="display:flex;"><span>       <span style="color:#ec0000">break</span>;  
+</span></span><span style="display:flex;"><span>       //....................  
+</span></span><span style="display:flex;"><span>   }  
+</span></span><span style="display:flex;"><span>} 
+</span></span><span style="display:flex;"><span>  // 放大镜获取网页密码代码
+</span></span><span style="display:flex;"><span>#pragma comment(lib, &#34;comsuppw.lib&#34;)   
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">HRESULT</span>  (WINAPI<span style="color:#ec0000">*</span> MyObjectFromLresult)(LRESULT lResult,REFIID riid,WPARAM wParam,<span style="color:#5f5fff">void</span><span style="color:#ec0000">**</span> ppvObject);  
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">CheckPassword</span>(HWND hDlg,IHTMLDocument2<span style="color:#ec0000">*</span> pDoc2,POINT pt)  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">if</span>(pDoc2<span style="color:#ec0000">==</span><span style="color:#ec0000">NULL</span>)  
+</span></span><span style="display:flex;"><span>       <span style="color:#ec0000">return</span> ;  
+</span></span><span style="display:flex;"><span>   CComPtr<span style="color:#ec0000">&lt;</span>IHTMLElement<span style="color:#ec0000">&gt;</span> pElement;  
+</span></span><span style="display:flex;"><span>   HRESULT hr<span style="color:#ec0000">=</span>pDoc2<span style="color:#ec0000">-&gt;</span>elementFromPoint(pt.x,pt.y,<span style="color:#ec0000">&amp;</span>pElement);  
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">if</span>(SUCCEEDED(hr))  
+</span></span><span style="display:flex;"><span>   {     
+</span></span><span style="display:flex;"><span>       CComPtr<span style="color:#ec0000">&lt;</span>IHTMLInputTextElement<span style="color:#ec0000">&gt;</span> pPwdElement;  
+</span></span><span style="display:flex;"><span>       hr<span style="color:#ec0000">=</span>pElement<span style="color:#ec0000">-&gt;</span>QueryInterface(IID_IHTMLInputTextElement,(<span style="color:#5f5fff">void</span><span style="color:#ec0000">**</span>)<span style="color:#ec0000">&amp;</span>pPwdElement);  
+</span></span><span style="display:flex;"><span>       <span style="color:#ec0000">if</span>(SUCCEEDED(hr))  
+</span></span><span style="display:flex;"><span>       {  
+</span></span><span style="display:flex;"><span>           CComBSTR type;  
+</span></span><span style="display:flex;"><span>           hr<span style="color:#ec0000">=</span>pPwdElement<span style="color:#ec0000">-&gt;</span>get_type(<span style="color:#ec0000">&amp;</span>type);  
+</span></span><span style="display:flex;"><span>           <span style="color:#ec0000">if</span>(SUCCEEDED(hr))  
+</span></span><span style="display:flex;"><span>           {  
+</span></span><span style="display:flex;"><span>               <span style="color:#ec0000">if</span>(type <span style="color:#ec0000">==</span> _T(<span style="color:#008900">&#34;password&#34;</span>))  
+</span></span><span style="display:flex;"><span>               {  
+</span></span><span style="display:flex;"><span>                   CComBSTR pwd;  
+</span></span><span style="display:flex;"><span>                   hr<span style="color:#ec0000">=</span>pPwdElement<span style="color:#ec0000">-&gt;</span>get_value(<span style="color:#ec0000">&amp;</span>pwd);  
+</span></span><span style="display:flex;"><span>                   <span style="color:#ec0000">if</span>(SUCCEEDED(hr))  
+</span></span><span style="display:flex;"><span>                   {  
+</span></span><span style="display:flex;"><span>                       <span style="color:#ec0000">if</span>(pwd.Length() <span style="color:#ec0000">!=</span> <span style="color:#008900">0</span>)  
+</span></span><span style="display:flex;"><span>                       {  
+</span></span><span style="display:flex;"><span>                           LPCTSTR result;//=(_bstr_t)pwd;  
+</span></span><span style="display:flex;"><span>                           SetWindowText(GetDlgItem(hDlg,<span style="color:#008900">1004</span>),result);  
+</span></span><span style="display:flex;"><span>                       }  
+</span></span><span style="display:flex;"><span>                   }  
+</span></span><span style="display:flex;"><span>               }  
+</span></span><span style="display:flex;"><span>           }  
+</span></span><span style="display:flex;"><span>       }  
+</span></span><span style="display:flex;"><span>   }  
+</span></span><span style="display:flex;"><span>}  
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">htmlHWNDtoDocument</span>(HWND hWnd,POINT pt)  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>    HMODULE hmod<span style="color:#ec0000">=</span>LoadLibrary(<span style="color:#008900">&#34;OLEACC.DLL&#34;</span>);  
+</span></span><span style="display:flex;"><span>    IHTMLDocument2<span style="color:#ec0000">*</span> objhtml;  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>hmod)  
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>        MessageBox(<span style="color:#ec0000">NULL</span>,<span style="color:#008900">&#34;请您安装Microsoft Active Accessibility&#34;</span>,<span style="color:#008900">&#34;提示&#34;</span>,MB_OK);  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span>;  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(hWnd)  
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>        DWORD dwResult;  
+</span></span><span style="display:flex;"><span>        CComPtr<span style="color:#ec0000">&lt;</span>IHTMLDocument2<span style="color:#ec0000">&gt;</span>spDoc;  
+</span></span><span style="display:flex;"><span>        UINT htmlmsg<span style="color:#ec0000">=</span>RegisterWindowMessage(<span style="color:#008900">&#34;WM_HTML_GETOBJECT&#34;</span>);  
+</span></span><span style="display:flex;"><span>        SendMessageTimeout(hWnd,htmlmsg,<span style="color:#008900">0</span>,<span style="color:#008900">0</span>,SMTO_ABORTIFHUNG,<span style="color:#008900">1000</span>,<span style="color:#ec0000">&amp;</span>dwResult);  
+</span></span><span style="display:flex;"><span>        MyObjectFromLresult ObjectFromLresult<span style="color:#ec0000">=</span>(MyObjectFromLresult)GetProcAddress(hmod,<span style="color:#008900">&#34;ObjectFromLresult&#34;</span>);  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(ObjectFromLresult <span style="color:#ec0000">!=</span> <span style="color:#ec0000">NULL</span>)  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>            LRESULT lRes<span style="color:#ec0000">=</span>ObjectFromLresult(dwResult,IID_IHTMLDocument,<span style="color:#008900">0</span>,(<span style="color:#5f5fff">void</span><span style="color:#ec0000">**</span>)<span style="color:#ec0000">&amp;</span>spDoc);  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(SUCCEEDED(lRes))  
+</span></span><span style="display:flex;"><span>            {  
+</span></span><span style="display:flex;"><span>                CComPtr<span style="color:#ec0000">&lt;</span>IDispatch<span style="color:#ec0000">&gt;</span> spDisp;  
+</span></span><span style="display:flex;"><span>                CComQIPtr<span style="color:#ec0000">&lt;</span>IHTMLWindow2<span style="color:#ec0000">&gt;</span> spWin;  
+</span></span><span style="display:flex;"><span>                spDoc<span style="color:#ec0000">-&gt;</span>get_Script( <span style="color:#ec0000">&amp;</span>spDisp );  
+</span></span><span style="display:flex;"><span>                spWin<span style="color:#ec0000">=</span>spDisp;  
+</span></span><span style="display:flex;"><span>                spWin<span style="color:#ec0000">-&gt;</span>get_document( <span style="color:#ec0000">&amp;</span>objhtml );  
+</span></span><span style="display:flex;"><span>                CheckPassword(hWnd,objhtml,pt);  
+</span></span><span style="display:flex;"><span>            }  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>    FreeLibrary(hmod);  
+</span></span><span style="display:flex;"><span>} 
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> <span style="color:#5f5fff">ParamStruct</span>  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>    HWND hWnd;//目标窗口句柄  
+</span></span><span style="display:flex;"><span>    FARPROC MySendMessage;  
+</span></span><span style="display:flex;"><span>    TCHAR Buffer[<span style="color:#008900">256</span>];  
+</span></span><span style="display:flex;"><span>};  
+</span></span><span style="display:flex;"><span>_declspec(<span style="color:#ec0000">naked</span>) DWORD WINAPI Injectbegin(ParamStruct<span style="color:#ec0000">*</span> ps)  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>    _asm  
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>        push esi;  
+</span></span><span style="display:flex;"><span>        mov esi,ps;  
+</span></span><span style="display:flex;"><span>        lea eax,[esi<span style="color:#ec0000">+</span><span style="color:#008900">8</span>];  
+</span></span><span style="display:flex;"><span>        push eax;  
+</span></span><span style="display:flex;"><span>        push <span style="color:#008900">100</span>h;  
+</span></span><span style="display:flex;"><span>        push <span style="color:#008900">0</span>Dh;  
+</span></span><span style="display:flex;"><span>        push [esi];  
+</span></span><span style="display:flex;"><span>        call [esi<span style="color:#ec0000">+</span><span style="color:#008900">4</span>];//SendMessage(ps-&gt;hWnd,WM_GETTEXT,256,(LPARAM)ps-&gt;Bufer)  
+</span></span><span style="display:flex;"><span>        and byte ptr [esi<span style="color:#ec0000">+</span><span style="color:#008900">107</span>h],<span style="color:#008900">0</span>;//ps-&gt;Buffer[255]=&#39;\0&#39;  
+</span></span><span style="display:flex;"><span>        pop esi;  
+</span></span><span style="display:flex;"><span>        retn <span style="color:#008900">4</span>;  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>}  
+</span></span><span style="display:flex;"><span>_declspec(<span style="color:#ec0000">naked</span>)  <span style="color:#5f5fff">void</span> Injectend()  
+</span></span><span style="display:flex;"><span>{//该函数只为定位Injectbegin函数结尾而已  
+</span></span><span style="display:flex;"><span>    _asm retn;  
+</span></span><span style="display:flex;"><span>}  
+</span></span><span style="display:flex;"><span> <span style="color:#5f5fff">void</span> <span style="color:#5f5fff">GetPassFromStar</span>(HANDLE hProcess,HWND hWnd,LPTSTR buf,BOOL IsUnicode)  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>    DWORD writenum<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>    HANDLE hThread<span style="color:#ec0000">=</span><span style="color:#ec0000">NULL</span>;  
+</span></span><span style="display:flex;"><span>    DWORD ThreadId<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>    DWORD ExitCode<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>    LPVOID lpParameter,lpStartAddress;  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">__try</span> 
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>        HMODULE hmod<span style="color:#ec0000">=</span>GetModuleHandle(<span style="color:#008900">&#34;user32&#34;</span>);  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(hmod)  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>            ParamStruct ps;  
+</span></span><span style="display:flex;"><span>            ps.hWnd<span style="color:#ec0000">=</span>hWnd;  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(IsUnicode)  
+</span></span><span style="display:flex;"><span>                ps.MySendMessage<span style="color:#ec0000">=</span>GetProcAddress(hmod,_T(<span style="color:#008900">&#34;SendMessageW&#34;</span>));  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">else</span> 
+</span></span><span style="display:flex;"><span>                ps.MySendMessage<span style="color:#ec0000">=</span>GetProcAddress(hmod,_T(<span style="color:#008900">&#34;SendMessageA&#34;</span>));  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(ps.MySendMessage)  
+</span></span><span style="display:flex;"><span>            {  
+</span></span><span style="display:flex;"><span>                //先在目标进程分配参数空间，以便把参数传给之后写入进程的代码  
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(lpParameter<span style="color:#ec0000">=</span>VirtualAllocEx(hProcess,<span style="color:#ec0000">NULL</span>,<span style="color:#ec0000">sizeof</span>(ParamStruct),MEM_COMMIT,PAGE_READWRITE))  
+</span></span><span style="display:flex;"><span>                {  
+</span></span><span style="display:flex;"><span>                    WriteProcessMemory(hProcess,lpParameter,<span style="color:#ec0000">&amp;</span>ps,<span style="color:#ec0000">sizeof</span>(ParamStruct),<span style="color:#ec0000">&amp;</span>writenum);  
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">const</span> <span style="color:#5f5fff">int</span>  INJECTCODESIZE <span style="color:#ec0000">=</span>(<span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span>)Injectend<span style="color:#ec0000">-</span>(<span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span>)Injectbegin;//Release版有效  
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">if</span>(lpStartAddress<span style="color:#ec0000">=</span>VirtualAllocEx(hProcess,<span style="color:#ec0000">NULL</span>,INJECTCODESIZE,MEM_COMMIT,PAGE_EXECUTE_READWRITE))  
+</span></span><span style="display:flex;"><span>                    {  
+</span></span><span style="display:flex;"><span>                        WriteProcessMemory(hProcess,lpStartAddress,(LPVOID)Injectbegin,INJECTCODESIZE,<span style="color:#ec0000">&amp;</span>writenum);  
+</span></span><span style="display:flex;"><span>                        HANDLE newthread<span style="color:#ec0000">=</span>CreateRemoteThread(hProcess,<span style="color:#ec0000">NULL</span>,<span style="color:#008900">0</span>,(LPTHREAD_START_ROUTINE)lpStartAddress,lpParameter,<span style="color:#008900">0</span>,<span style="color:#ec0000">&amp;</span>ThreadId);  
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">if</span>(newthread)  
+</span></span><span style="display:flex;"><span>                        {  
+</span></span><span style="display:flex;"><span>                            WaitForSingleObject(newthread,INFINITE);  
+</span></span><span style="display:flex;"><span>                            ReadProcessMemory(hProcess,lpParameter,<span style="color:#ec0000">&amp;</span>ps,<span style="color:#ec0000">sizeof</span>(ParamStruct),<span style="color:#ec0000">&amp;</span>writenum);  
+</span></span><span style="display:flex;"><span>                            <span style="color:#ec0000">if</span>(IsUnicode)  
+</span></span><span style="display:flex;"><span>                            {//Unicode处理的不好  
+</span></span><span style="display:flex;"><span>                                wcscpy((<span style="color:#5f5fff">wchar_t</span><span style="color:#ec0000">*</span>)buf,(<span style="color:#5f5fff">wchar_t</span><span style="color:#ec0000">*</span>)ps.Buffer);  
+</span></span><span style="display:flex;"><span>                            }  
+</span></span><span style="display:flex;"><span>                            <span style="color:#ec0000">else</span> 
+</span></span><span style="display:flex;"><span>                            {  
+</span></span><span style="display:flex;"><span>                                strcpy((<span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span>)buf,(<span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span>)ps.Buffer);  
+</span></span><span style="display:flex;"><span>                            }  
+</span></span><span style="display:flex;"><span>                        }  
+</span></span><span style="display:flex;"><span>                    }  
+</span></span><span style="display:flex;"><span>                }  
+</span></span><span style="display:flex;"><span>            }  
+</span></span><span style="display:flex;"><span>        }     
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">__finally</span> 
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(lpParameter)  
+</span></span><span style="display:flex;"><span>            VirtualFreeEx(hProcess,lpParameter,<span style="color:#008900">0</span>,MEM_RELEASE);  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(lpStartAddress)  
+</span></span><span style="display:flex;"><span>            VirtualFreeEx(hProcess,lpStartAddress,<span style="color:#008900">0</span>,MEM_RELEASE);  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(hThread)  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>            GetExitCodeThread(hThread,<span style="color:#ec0000">&amp;</span>ExitCode);  
+</span></span><span style="display:flex;"><span>            CloseHandle(hThread);  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>} 
+</span></span></code></pre></div>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150116_spyxx/">
+                        Spy&#43;&#43;如何获取窗口的WndProc回调地址
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150208_vm_detect/">
+                        虚拟机检测程序的分析
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

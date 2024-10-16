@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Py_posts on 超哥的博客</title>
+    <link>https://lich4.github.io/py_posts/</link>
+    <description>Recent content in Py_posts on 超哥的博客</description>
+    <generator>Hugo</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Sat, 08 Jun 2024 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://lich4.github.io/py_posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Python封装rest_rpc</title>
+      <link>https://lich4.github.io/py_posts/20240608_pybind_rpc/</link>
+      <pubDate>Sat, 08 Jun 2024 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/py_posts/20240608_pybind_rpc/</guid>
+      <description>Python封装rest_rpc</description>
+    </item>
+    <item>
+      <title>Python封装TinyAES</title>
+      <link>https://lich4.github.io/py_posts/20230319_pybind_tinyaes/</link>
+      <pubDate>Sun, 19 Mar 2023 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/py_posts/20230319_pybind_tinyaes/</guid>
+      <description>Python封装TinyAES</description>
+    </item>
+    <item>
+      <title>常见的序列化方式性能测试</title>
+      <link>https://lich4.github.io/py_posts/20211019_serial_lib_benchmark/</link>
+      <pubDate>Tue, 19 Oct 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/py_posts/20211019_serial_lib_benchmark/</guid>
+      <description>常见的序列化方式性能测试</description>
+    </item>
+    <item>
+      <title>Python的几个http库性能测试</title>
+      <link>https://lich4.github.io/py_posts/20210904_http_lib_benchmark/</link>
+      <pubDate>Sat, 04 Sep 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/py_posts/20210904_http_lib_benchmark/</guid>
+      <description>Python的几个http库性能测试</description>
+    </item>
+    <item>
+      <title>Python爬虫笔记</title>
+      <link>https://lich4.github.io/py_posts/20190729_scrawler/</link>
+      <pubDate>Mon, 29 Jul 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/py_posts/20190729_scrawler/</guid>
+      <description>Python爬虫笔记</description>
+    </item>
+  </channel>
+</rss>

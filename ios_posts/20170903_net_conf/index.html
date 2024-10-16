@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    动态修改iOS网络配置 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/ios_posts/20170903_net_conf/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/ios_posts/">Ios_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/ios_posts/20170903_net_conf/">动态修改iOS网络配置</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">动态修改iOS网络配置</h1>
+    
+    <p class="single-summary">动态修改iOS网络配置</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2019-07-03T00:00:00&#43;00:00">July 3, 2019</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#失败的尝试">失败的尝试</a></li>
+    <li><a href="#api">API</a></li>
+    <li><a href="#具体实现">具体实现</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="失败的尝试">失败的尝试</h2>
+<p>  系统网络配置默认存储在<code>/Library/Preferences/SystemConfiguration/preferences.plist</code><br>
+尝试直接修改该文件，这样的效果是再次打开设置app，显示结果是更新后的配置， 然而并没有触发真正的逻辑，比如PAC更新<br>
+跟踪了一天发现系统使用SCPreferences API对配置进行增删改查，SCPreferences API通过受控方式存取XML配置并在必要时自动发送通知给其他监控配置改变的进程。使用时首先使用SCPreferencesCreate建立一个preferences的会话，在指定特定的preferences时需要传入prefsID参数，0代表访问系统默认配置；路径以/开头用于指定配置文件的绝对路径，否则是相对路径；最后使用CFRelease释放对象。SCPreferencesPath API可以以字典方式访问配置；</p>
+<h2 id="api">API</h2>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-objc" data-lang="objc"><span style="display:flex;"><span>SCPreferencesRef SCPreferencesCreate(CFAllocatorRef allocator, 
+</span></span><span style="display:flex;"><span>    CFStringRef name,       // 进程标识
+</span></span><span style="display:flex;"><span>    CFStringRef prefsID)    // preferences组名
+</span></span><span style="display:flex;"><span>SCPreferencesRef SCPreferencesCreateWithAuthorization(CFAllocatorRef allocator,
+</span></span><span style="display:flex;"><span>    CFStringRef name,
+</span></span><span style="display:flex;"><span>    CFStringRef prefsID,
+</span></span><span style="display:flex;"><span>    AuthorizationRef authorization) // 提权访问
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> SCPreferencesLock(SCPreferencesRef prefs, <span style="color:#5f5fff">Boolean</span> wait) // exclusive方式锁定preferences
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> SCPreferencesCommitChanges(SCPreferencesRef prefs)      // commit对preferences的修改并持久化存储
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> SCPreferencesApplyChanges(SCPreferencesRef prefs)       // 将当前存储的preferences应用到活跃的配置中
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> SCPreferencesUnlock(SCPreferencesRef prefs)
+</span></span><span style="display:flex;"><span>CFArrayRef SCPreferencesCopyKeyList(SCPreferencesRef prefs)     // 获取当前定义的preferences键
+</span></span><span style="display:flex;"><span>CFPropertyListRef SCPreferencesGetValue(SCPreferencesRef prefs, CFStringRef key)
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> SCPreferencesAddValue(SCPreferencesRef prefs, CFStringRef key, CFPropertyListRef value)
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> SCPreferencesSetValue(SCPreferencesRef prefs, CFStringRef key, CFPropertyListRef value)
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> SCPreferencesRemoveValue(SCPreferencesRef prefs, CFStringRef key)
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> SCPreferencesSynchronize(SCPreferencesRef prefs)           // 使用commit的preferences来访问
+</span></span><span style="display:flex;"><span>CFDictionaryRef SCPreferencesPathGetValue(SCPreferencesRef prefs, CFStringRef path)
+</span></span><span style="display:flex;"><span>CFStringRef SCPreferencesPathGetLink(SCPreferencesRef prefs, CFStringRef path)
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> SCPreferencesPathSetValue(SCPreferencesRef prefs, CFStringRef path, CFDictionaryRef value)
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> SCPreferencesPathSetLink(SCPreferencesRef prefs, CFStringRef path, CFStringRef link)
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> SCPreferencesPathRemoveValue(SCPreferencesRef prefs, CFStringRef path)                          
+</span></span></code></pre></div><h2 id="具体实现">具体实现</h2>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-objc" data-lang="objc"><span style="display:flex;"><span>#include &lt;stdio.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;stdlib.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;stdio.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;dlfcn.h&gt;
+</span></span><span style="display:flex;"><span>#import &lt;Foundation/Foundation.h&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span> SCPreferencesRef;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span> AuthorizationRef;
+</span></span><span style="display:flex;"><span>SCPreferencesRef (<span style="color:#ec0000">*</span>_SCPreferencesCreate)(CFAllocatorRef allocator, NSString<span style="color:#ec0000">*</span> name, NSString<span style="color:#ec0000">*</span> prefsID);
+</span></span><span style="display:flex;"><span>SCPreferencesRef (<span style="color:#ec0000">*</span>_SCPreferencesCreateWithAuthorization)(CFAllocatorRef allocator, NSString<span style="color:#ec0000">*</span> name,
+</span></span><span style="display:flex;"><span>    NSString<span style="color:#ec0000">*</span> prefsID, AuthorizationRef authorization);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> (<span style="color:#ec0000">*</span>_SCPreferencesLock)(SCPreferencesRef prefs, <span style="color:#5f5fff">Boolean</span> wait);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> (<span style="color:#ec0000">*</span>_SCPreferencesCommitChanges)(SCPreferencesRef prefs);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> (<span style="color:#ec0000">*</span>_SCPreferencesApplyChanges)(SCPreferencesRef prefs);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> (<span style="color:#ec0000">*</span>_SCPreferencesUnlock)(SCPreferencesRef prefs);
+</span></span><span style="display:flex;"><span>NSArray<span style="color:#ec0000">*</span> (<span style="color:#ec0000">*</span>_SCPreferencesCopyKeyList)(SCPreferencesRef prefs);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">id</span> (<span style="color:#ec0000">*</span>_SCPreferencesGetValue)(SCPreferencesRef prefs, NSString<span style="color:#ec0000">*</span> key);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> (<span style="color:#ec0000">*</span>_SCPreferencesAddValue)(SCPreferencesRef prefs, NSString<span style="color:#ec0000">*</span> key, <span style="color:#5f5fff">id</span> value);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> (<span style="color:#ec0000">*</span>_SCPreferencesSetValue)(SCPreferencesRef prefs, NSString<span style="color:#ec0000">*</span> key, <span style="color:#5f5fff">id</span> value);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> (<span style="color:#ec0000">*</span>_SCPreferencesRemoveValue)(SCPreferencesRef prefs, NSString<span style="color:#ec0000">*</span> key);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> (<span style="color:#ec0000">*</span>_SCPreferencesSynchronize)(SCPreferencesRef prefs);
+</span></span><span style="display:flex;"><span>NSDictionary<span style="color:#ec0000">*</span> (<span style="color:#ec0000">*</span>_SCPreferencesPathGetValue)(SCPreferencesRef prefs, NSString<span style="color:#ec0000">*</span> path);
+</span></span><span style="display:flex;"><span>NSString<span style="color:#ec0000">*</span> (<span style="color:#ec0000">*</span>_SCPreferencesPathGetLink)(SCPreferencesRef prefs, NSString<span style="color:#ec0000">*</span> path);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> (<span style="color:#ec0000">*</span>_SCPreferencesPathSetValue)(SCPreferencesRef prefs, NSString<span style="color:#ec0000">*</span> path, NSDictionary<span style="color:#ec0000">*</span> value);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> (<span style="color:#ec0000">*</span>_SCPreferencesPathSetLink)(SCPreferencesRef prefs, NSString<span style="color:#ec0000">*</span> path, NSString<span style="color:#ec0000">*</span> link);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Boolean</span> (<span style="color:#ec0000">*</span>_SCPreferencesPathRemoveValue)(SCPreferencesRef prefs, NSString<span style="color:#ec0000">*</span> path);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">FLog</span>(NSString<span style="color:#ec0000">*</span> msg) {
+</span></span><span style="display:flex;"><span>	NSLog(<span style="color:#008900">@&#34;%@&#34;</span>, msg);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">main</span>(<span style="color:#5f5fff">int</span> argc, <span style="color:#5f5fff">char</span> <span style="color:#ec0000">**</span>argv, <span style="color:#5f5fff">char</span> <span style="color:#ec0000">**</span>envp) {
+</span></span><span style="display:flex;"><span>	_SCPreferencesCreate <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesCreate))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesCreate&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesCreateWithAuthorization <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesCreateWithAuthorization))dlsym(RTLD_DEFAULT, 
+</span></span><span style="display:flex;"><span>		<span style="color:#008900">&#34;SCPreferencesCreateWithAuthorization&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesLock <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesLock))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesLock&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesCommitChanges <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesCommitChanges))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesCommitChanges&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesApplyChanges <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesApplyChanges))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesApplyChanges&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesUnlock <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesUnlock))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesUnlock&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesCopyKeyList <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesCopyKeyList))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesCopyKeyList&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesGetValue <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesGetValue))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesGetValue&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesAddValue <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesAddValue))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesAddValue&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesSetValue <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesSetValue))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesSetValue&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesRemoveValue <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesRemoveValue))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesRemoveValue&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesSynchronize <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesSynchronize))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesSynchronize&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesPathGetValue <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesPathGetValue))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesPathGetValue&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesPathGetLink <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesPathGetLink))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesPathGetLink&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesPathSetValue <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesPathSetValue))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesPathSetValue&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesPathSetLink <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesPathSetLink))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesPathSetLink&#34;</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesPathRemoveValue <span style="color:#ec0000">=</span> (<span style="color:#ec0000">typeof</span>(_SCPreferencesPathRemoveValue))dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SCPreferencesPathRemoveValue&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">if</span> (argc <span style="color:#ec0000">&lt;</span> <span style="color:#008900">2</span>) {
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">return</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	NSMutableDictionary<span style="color:#ec0000">*</span> proxyconf <span style="color:#ec0000">=</span> [[NSMutableDictionary alloc] init];
+</span></span><span style="display:flex;"><span>	proxyconf[<span style="color:#008900">@&#34;proxymode&#34;</span>] <span style="color:#ec0000">=</span> [NSString <span style="color:#ec0000">stringWithUTF8String</span>:argv[<span style="color:#008900">1</span>]];
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">if</span> ([proxyconf[<span style="color:#008900">@&#34;proxymode&#34;</span>] <span style="color:#ec0000">isEqualToString</span>:<span style="color:#008900">@&#34;close&#34;</span>]) {
+</span></span><span style="display:flex;"><span>	} <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> ([proxyconf[<span style="color:#008900">@&#34;proxymode&#34;</span>] <span style="color:#ec0000">isEqualToString</span>:<span style="color:#008900">@&#34;manual&#34;</span>]) {
+</span></span><span style="display:flex;"><span>		proxyconf[<span style="color:#008900">@&#34;proxyhost&#34;</span>] <span style="color:#ec0000">=</span> [NSString <span style="color:#ec0000">stringWithUTF8String</span>:argv[<span style="color:#008900">2</span>]];
+</span></span><span style="display:flex;"><span>		proxyconf[<span style="color:#008900">@&#34;proxyport&#34;</span>] <span style="color:#ec0000">=</span> @([[NSString <span style="color:#ec0000">stringWithUTF8String</span>:argv[<span style="color:#008900">3</span>]] integerValue]);
+</span></span><span style="display:flex;"><span>	} <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> ([proxyconf[<span style="color:#008900">@&#34;proxymode&#34;</span>] <span style="color:#ec0000">isEqualToString</span>:<span style="color:#008900">@&#34;auto&#34;</span>]) {
+</span></span><span style="display:flex;"><span>		proxyconf[<span style="color:#008900">@&#34;proxyurl&#34;</span>] <span style="color:#ec0000">=</span> [NSString <span style="color:#ec0000">stringWithUTF8String</span>:argv[<span style="color:#008900">2</span>]];
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	SCPreferencesRef prefs <span style="color:#ec0000">=</span> _SCPreferencesCreate(<span style="color:#ec0000">nil</span>, <span style="color:#008900">@&#34;&#34;</span>, <span style="color:#ec0000">nil</span>);
+</span></span><span style="display:flex;"><span>	_SCPreferencesLock(prefs, <span style="color:#ec0000">TRUE</span>);
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">BOOL</span> change_proxy_success <span style="color:#ec0000">=</span> <span style="color:#ec0000">NO</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">do</span> {
+</span></span><span style="display:flex;"><span>		NSString<span style="color:#ec0000">*</span> CurrentSet <span style="color:#ec0000">=</span> (NSString<span style="color:#ec0000">*</span>)_SCPreferencesGetValue(prefs, <span style="color:#008900">@&#34;CurrentSet&#34;</span>);
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> (CurrentSet <span style="color:#ec0000">==</span> <span style="color:#ec0000">nil</span>) {
+</span></span><span style="display:flex;"><span>			FLog(<span style="color:#008900">@&#34;unchroot CurrentSet nil&#34;</span>);
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		NSString<span style="color:#ec0000">*</span> IPv4Path <span style="color:#ec0000">=</span> [NSString <span style="color:#ec0000">stringWithFormat</span>:<span style="color:#008900">@&#34;%@/Network/Global/IPv4&#34;</span>, CurrentSet];
+</span></span><span style="display:flex;"><span>		NSDictionary<span style="color:#ec0000">*</span> IPv4 <span style="color:#ec0000">=</span> _SCPreferencesPathGetValue(prefs, IPv4Path);
+</span></span><span style="display:flex;"><span>		NSString<span style="color:#ec0000">*</span> service_en0 <span style="color:#ec0000">=</span> <span style="color:#ec0000">nil</span>;
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> (IPv4 <span style="color:#ec0000">==</span> <span style="color:#ec0000">nil</span> <span style="color:#ec0000">||</span> <span style="color:#ec0000">!</span>[[IPv4 allKeys] <span style="color:#ec0000">containsObject</span>:<span style="color:#008900">@&#34;ServiceOrder&#34;</span>]) {
+</span></span><span style="display:flex;"><span>			FLog(<span style="color:#008900">@&#34;unchroot IPv4 nil&#34;</span>);
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">for</span> (NSString<span style="color:#ec0000">*</span> service <span style="color:#ec0000">in</span> IPv4[<span style="color:#008900">@&#34;ServiceOrder&#34;</span>]) {
+</span></span><span style="display:flex;"><span>			NSString<span style="color:#ec0000">*</span> InterfacePath <span style="color:#ec0000">=</span> [NSString <span style="color:#ec0000">stringWithFormat</span>:<span style="color:#008900">@&#34;/NetworkServices/%@/Interface&#34;</span>, service];
+</span></span><span style="display:flex;"><span>			NSDictionary<span style="color:#ec0000">*</span> Interface <span style="color:#ec0000">=</span> _SCPreferencesPathGetValue(prefs, InterfacePath);
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">if</span> (Interface <span style="color:#ec0000">==</span> <span style="color:#ec0000">nil</span>) {
+</span></span><span style="display:flex;"><span>				<span style="color:#ec0000">continue</span>;
+</span></span><span style="display:flex;"><span>			}
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">if</span> ([Interface[<span style="color:#008900">@&#34;DeviceName&#34;</span>] <span style="color:#ec0000">isEqualToString</span>:<span style="color:#008900">@&#34;en0&#34;</span>]) {
+</span></span><span style="display:flex;"><span>				service_en0 <span style="color:#ec0000">=</span> service;
+</span></span><span style="display:flex;"><span>			}
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> (service_en0 <span style="color:#ec0000">==</span> <span style="color:#ec0000">nil</span>) {
+</span></span><span style="display:flex;"><span>			FLog(<span style="color:#008900">@&#34;unchroot service.en0 not exist&#34;</span>);
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		NSString<span style="color:#ec0000">*</span> ServiceEn0Path <span style="color:#ec0000">=</span> [NSString <span style="color:#ec0000">stringWithFormat</span>:<span style="color:#008900">@&#34;/NetworkServices/%@&#34;</span>, service_en0];
+</span></span><span style="display:flex;"><span>		NSDictionary<span style="color:#ec0000">*</span> ServiceEn0 <span style="color:#ec0000">=</span> _SCPreferencesPathGetValue(prefs, ServiceEn0Path);
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> (ServiceEn0 <span style="color:#ec0000">==</span> <span style="color:#ec0000">nil</span>) {
+</span></span><span style="display:flex;"><span>			FLog(<span style="color:#008900">@&#34;unchroot service.en0 nil&#34;</span>);
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		NSMutableDictionary<span style="color:#ec0000">*</span> serviceobj <span style="color:#ec0000">=</span> [[ServiceEn0 mutableCopy] autorelease];
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> ([proxyconf[<span style="color:#008900">@&#34;proxymode&#34;</span>] <span style="color:#ec0000">isEqualToString</span>:<span style="color:#008900">@&#34;close&#34;</span>]) {
+</span></span><span style="display:flex;"><span>			serviceobj[<span style="color:#008900">@&#34;Proxies&#34;</span>] <span style="color:#ec0000">=</span> @{
+</span></span><span style="display:flex;"><span>				<span style="color:#008900">@&#34;FTPPassive&#34;</span><span style="color:#ec0000">:</span> <span style="color:#008900">@1</span>, 
+</span></span><span style="display:flex;"><span>				<span style="color:#008900">@&#34;ExceptionsList&#34;</span><span style="color:#ec0000">:</span> @[
+</span></span><span style="display:flex;"><span>					<span style="color:#008900">@&#34;*.local&#34;</span>, 
+</span></span><span style="display:flex;"><span>					<span style="color:#008900">@&#34;169.254/16&#34;</span>
+</span></span><span style="display:flex;"><span>				]
+</span></span><span style="display:flex;"><span>			};
+</span></span><span style="display:flex;"><span>		} <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> ([proxyconf[<span style="color:#008900">@&#34;proxymode&#34;</span>] <span style="color:#ec0000">isEqualToString</span>:<span style="color:#008900">@&#34;manual&#34;</span>]) {
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">if</span> (<span style="color:#ec0000">!</span>[[proxyconf allKeys] <span style="color:#ec0000">containsObject</span>:<span style="color:#008900">@&#34;proxyhost&#34;</span>] <span style="color:#ec0000">||</span> 
+</span></span><span style="display:flex;"><span>					<span style="color:#ec0000">!</span>[[proxyconf allKeys] <span style="color:#ec0000">containsObject</span>:<span style="color:#008900">@&#34;proxyport&#34;</span>]) {
+</span></span><span style="display:flex;"><span>				FLog(<span style="color:#008900">@&#34;unchroot lack of param proxyhost or proxyport&#34;</span>);
+</span></span><span style="display:flex;"><span>				<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>			}
+</span></span><span style="display:flex;"><span>			serviceobj[<span style="color:#008900">@&#34;Proxies&#34;</span>] <span style="color:#ec0000">=</span> @{
+</span></span><span style="display:flex;"><span>				<span style="color:#008900">@&#34;HTTPProxy&#34;</span><span style="color:#ec0000">:</span> proxyconf[<span style="color:#008900">@&#34;proxyhost&#34;</span>], 
+</span></span><span style="display:flex;"><span>				<span style="color:#008900">@&#34;HTTPPort&#34;</span><span style="color:#ec0000">:</span> proxyconf[<span style="color:#008900">@&#34;proxyport&#34;</span>], 
+</span></span><span style="display:flex;"><span>				<span style="color:#008900">@&#34;HTTPSProxy&#34;</span><span style="color:#ec0000">:</span> proxyconf[<span style="color:#008900">@&#34;proxyhost&#34;</span>], 
+</span></span><span style="display:flex;"><span>				<span style="color:#008900">@&#34;HTTPSPort&#34;</span><span style="color:#ec0000">:</span> proxyconf[<span style="color:#008900">@&#34;proxyport&#34;</span>],
+</span></span><span style="display:flex;"><span>				<span style="color:#008900">@&#34;HTTPEnable&#34;</span><span style="color:#ec0000">:</span> <span style="color:#008900">@1</span>, 
+</span></span><span style="display:flex;"><span>				<span style="color:#008900">@&#34;HTTPSEnable&#34;</span><span style="color:#ec0000">:</span> <span style="color:#008900">@1</span>, 
+</span></span><span style="display:flex;"><span>				<span style="color:#008900">@&#34;FTPPassive&#34;</span><span style="color:#ec0000">:</span> <span style="color:#008900">@1</span>,
+</span></span><span style="display:flex;"><span>				<span style="color:#008900">@&#34;ExceptionsList&#34;</span><span style="color:#ec0000">:</span> @[
+</span></span><span style="display:flex;"><span>					<span style="color:#008900">@&#34;*.local&#34;</span>, 
+</span></span><span style="display:flex;"><span>					<span style="color:#008900">@&#34;169.254/16&#34;</span>
+</span></span><span style="display:flex;"><span>				]
+</span></span><span style="display:flex;"><span>			};
+</span></span><span style="display:flex;"><span>		} <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> ([proxyconf[<span style="color:#008900">@&#34;proxymode&#34;</span>] <span style="color:#ec0000">isEqualToString</span>:<span style="color:#008900">@&#34;auto&#34;</span>]) {
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">if</span> (<span style="color:#ec0000">!</span>[[proxyconf allKeys] <span style="color:#ec0000">containsObject</span>:<span style="color:#008900">@&#34;proxyurl&#34;</span>]) {
+</span></span><span style="display:flex;"><span>				FLog(<span style="color:#008900">@&#34;unchroot lack of param proxyurl&#34;</span>);
+</span></span><span style="display:flex;"><span>				<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>			}
+</span></span><span style="display:flex;"><span>			serviceobj[<span style="color:#008900">@&#34;Proxies&#34;</span>] <span style="color:#ec0000">=</span> @{
+</span></span><span style="display:flex;"><span>				<span style="color:#008900">@&#34;FTPPassive&#34;</span><span style="color:#ec0000">:</span> <span style="color:#008900">@1</span>, 
+</span></span><span style="display:flex;"><span>				<span style="color:#008900">@&#34;ExceptionsList&#34;</span><span style="color:#ec0000">:</span> @[
+</span></span><span style="display:flex;"><span>					<span style="color:#008900">@&#34;*.local&#34;</span>, 
+</span></span><span style="display:flex;"><span>					<span style="color:#008900">@&#34;169.254/16&#34;</span>
+</span></span><span style="display:flex;"><span>				], 
+</span></span><span style="display:flex;"><span>				<span style="color:#008900">@&#34;ProxyAutoConfigEnable&#34;</span><span style="color:#ec0000">:</span> <span style="color:#008900">@1</span>, 
+</span></span><span style="display:flex;"><span>				<span style="color:#008900">@&#34;ProxyAutoConfigURLString&#34;</span><span style="color:#ec0000">:</span> proxyconf[<span style="color:#008900">@&#34;proxyurl&#34;</span>]
+</span></span><span style="display:flex;"><span>			};
+</span></span><span style="display:flex;"><span>		} <span style="color:#ec0000">else</span> {
+</span></span><span style="display:flex;"><span>			FLog(<span style="color:#008900">@&#34;unchroot unknown proxymode&#34;</span>);
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> (_SCPreferencesPathSetValue(prefs, ServiceEn0Path, serviceobj)) {
+</span></span><span style="display:flex;"><span>			change_proxy_success <span style="color:#ec0000">=</span> <span style="color:#ec0000">YES</span>;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	} <span style="color:#ec0000">while</span> (<span style="color:#ec0000">false</span>);
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">if</span> (change_proxy_success) {
+</span></span><span style="display:flex;"><span>		_SCPreferencesCommitChanges(prefs);
+</span></span><span style="display:flex;"><span>		_SCPreferencesApplyChanges(prefs);
+</span></span><span style="display:flex;"><span>		_SCPreferencesSynchronize(prefs);
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	_SCPreferencesUnlock(prefs);
+</span></span><span style="display:flex;"><span>	CFRelease(prefs);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">if</span> (change_proxy_success) {
+</span></span><span style="display:flex;"><span>		printf(<span style="color:#008900">&#34;change ok</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>);
+</span></span><span style="display:flex;"><span>	} <span style="color:#ec0000">else</span> {
+</span></span><span style="display:flex;"><span>		printf(<span style="color:#008900">&#34;change fail</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>);
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">return</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>最后要注意，使用SCPreferences API需要签名:</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span>&lt;!DOCTYPE plist PUBLIC &#34;-//Apple//DTD PLIST 1.0//EN&#34; &#34;http://www.apple.com/DTDs/PropertyList-1.0.dtd&#34;&gt;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">&lt;plist</span> <span style="color:#5f5fff">version=</span><span style="color:#008900">&#34;1.0&#34;</span><span style="color:#ec0000">&gt;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&lt;key&gt;</span>platform-application<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">&lt;/plist&gt;</span>
+</span></span></code></pre></div>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20190516_theos/">
+                        Theos环境搭建
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20190717_jb_detect/">
+                        某缘App越狱检测分析
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

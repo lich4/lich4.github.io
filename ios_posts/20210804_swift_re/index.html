@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    Swift逆向 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/ios_posts/20210804_swift_re/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/ios_posts/">Ios_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/ios_posts/20210804_swift_re/">Swift逆向</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">Swift逆向</h1>
+    
+    <p class="single-summary">Swift逆向</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2021-08-04T00:00:00&#43;00:00">August 4, 2021</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#demangle">Demangle</a></li>
+    <li><a href="#string内存分析">String内存分析</a></li>
+    <li><a href="#objc转换">ObjC转换</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="demangle">Demangle</h2>
+<pre tabindex="0"><code>$s10testswift111AppDelegateCMa
+等价：AppDelegate.class
+解析：type metadata accessor for AppDelegate
+
+$s10testswift113SceneDelegateC18sceneDidDisconnectyySo7UISceneCF 
+等价：-[SceneDelegate sceneDidDisconnect:(UIScene*)scene]
+解析：SceneDelegate.sceneDidDisconnect(__C.UIScene)
+
+$s10testswift113SceneDelegateC5scene_13willConnectTo7optionsySo7UISceneC_So0I7SessionCSo0I17ConnectionOptionsCtF
+等价：-[SceneDelegate scene:(UIScene*)scene willConnectTo:(UISceneSession*)session options:(UISceneConnectionOptions)options]
+解析：SceneDelegate.scene(_: __C.UIScene, willConnectTo: __C.UISceneSession, options: __C.UISceneConnectionOptions) -&gt; ()
+
+$ss27_allocateUninitializedArrayySayxG_BptBwlF
+等价：_allocateUninitializedArray()
+解析：Swift._allocateUninitializedArray&lt;A&gt;(Builtin.Word) -&gt; ([A], Builtin.RawPointer)
+
+$sypN
+等价：Any.class
+解析：type metadata for Any
+
+$sSSN
+等价：String.class
+解析：type metadata for Swift.String
+
+$sSS21_builtinStringLiteral17utf8CodeUnitCount7isASCIISSBp_BwBi1_tcfC
+等价：-[String init_builtinStringLiteral:(char*) utf8CodeUnitCount:(int) isASCII:(bool)]
+解析：Swift.String.init(_builtinStringLiteral: Builtin.RawPointer, utf8CodeUnitCount: Builtin.Word, isASCII: Builtin.Int1) -&gt; Swift.String
+
+$ss5print_9separator10terminatoryypd_S2StFfA0_
+解析：default argument 1 of Swift.print(_: Any..., separator: Swift.String, terminator: Swift.String) -&gt; ()
+
+$ss5print_9separator10terminatoryypd_S2StFfA1_
+解析：default argument 2 of Swift.print(_: Any..., separator: Swift.String, terminator: Swift.String) -&gt; ()
+
+$ss5print_9separator10terminatoryypd_S2StF
+等价：print(...)  等价于ObjC中的NSLog
+解析：Swift.print(_: Any..., separator: Swift.String, terminator: Swift.String) -&gt; ()
+
+注：String类型作为参数占2个寄存器，作为返回值也占2个寄存器(X0/X1)
+
+$s10testswift113SceneDelegateCACycfC
+等价：-[SceneDelegate __allocating_init]
+解析：SceneDelegate.__allocating_init() -&gt; SceneDelegate
+
+$s10testswift113SceneDelegateCACycfc
+等价：-[SceneDelegate init]
+解析：SceneDelegate.init() -&gt; SceneDelegate
+
+$s10testswift113SceneDelegateCfD
+等价：-[SceneDelegate __deallocating_deinit]
+解析：SceneDelegate.__deallocating_deinit
+
+$sSSSgWOe
+等价：-[String consume]
+解析：outlined consume of Swift.String?
+
+$sSSSgWOy
+等价：-[String copy]
+解析：outlined copy of Swift.String?
+
+$sSSSgWOc
+等价：-[String init]
+解析：outlined init with copy of Swift.String?
+
+$sSSSgWOh
+等价：-[String destroy]
+解析：outlined destroy of Swift.String?
+</code></pre><h2 id="string内存分析">String内存分析</h2>
+<p>String是Swift的常见结构，下面来动手分析</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-swift" data-lang="swift"><span style="display:flex;"><span><span style="color:#ec0000">let</span> <span style="color:#ec0000">s1</span> = <span style="color:#008900">&#34;abc&#34;</span> <span style="color:#ec0000">as</span> <span style="color:#ec0000">String</span>
+</span></span><span style="display:flex;"><span>test(s:s1)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">let</span> <span style="color:#ec0000">s2</span> = <span style="color:#008900">&#34;abcabcabcabcabcabcabcabcabcabc&#34;</span> <span style="color:#ec0000">as</span> <span style="color:#ec0000">String</span>
+</span></span><span style="display:flex;"><span>test(s:s2)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">let</span> <span style="color:#ec0000">s3</span> = <span style="color:#008900">&#34;bcd&#34;</span> <span style="color:#ec0000">as</span> <span style="color:#ec0000">StaticString</span>
+</span></span><span style="display:flex;"><span>test(s:s3)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">let</span> <span style="color:#ec0000">s4</span> = <span style="color:#008900">&#34;bcdbcdbcdbcdbcdbcdbcdbcdbcdbcd&#34;</span> <span style="color:#ec0000">as</span> <span style="color:#ec0000">StaticString</span>
+</span></span><span style="display:flex;"><span>test(s:s4)  
+</span></span></code></pre></div><p>其伪代码如下:</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>v14.n128_u64[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">6513249LL</span>;
+</span></span><span style="display:flex;"><span>v16 <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>_sSSN;
+</span></span><span style="display:flex;"><span>v14.n128_u64[<span style="color:#008900">1</span>] <span style="color:#ec0000">=</span> <span style="color:#ec0000">-</span><span style="color:#008900">2089670227099910144LL</span>;
+</span></span><span style="display:flex;"><span>v1 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">__swift_instantiateConcreteTypeFromMangledName</span>(<span style="color:#ec0000">&amp;</span>_ss23_ContiguousArrayStorageCyypGMD);
+</span></span><span style="display:flex;"><span>v2 <span style="color:#ec0000">=</span> v1;
+</span></span><span style="display:flex;"><span>v3 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">swift_allocObject</span>(v1, <span style="color:#008900">64LL</span>, <span style="color:#008900">7LL</span>);
+</span></span><span style="display:flex;"><span>v4 <span style="color:#ec0000">=</span> v3;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">*</span>(_OWORD <span style="color:#ec0000">*</span>)(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">16</span>) <span style="color:#ec0000">=</span> xmmword_100006BE0;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">_sypWOc</span>(<span style="color:#ec0000">&amp;</span>v14, v3 <span style="color:#ec0000">+</span> <span style="color:#008900">32</span>);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">_ss5print_9separator10terminatoryypd_S2StF</span>(v4, <span style="color:#008900">32LL</span>, <span style="color:#ec0000">-</span><span style="color:#008900">2233785415175766016LL</span>, <span style="color:#008900">10LL</span>, <span style="color:#ec0000">-</span><span style="color:#008900">2233785415175766016LL</span>);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">swift_release</span>(v4);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">__swift_destroy_boxed_opaque_existential_0</span>(<span style="color:#ec0000">&amp;</span>v14);
+</span></span><span style="display:flex;"><span>v14.n128_u64[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#ec0000">-</span><span style="color:#008900">3458764513820540898LL</span>;
+</span></span><span style="display:flex;"><span>v16 <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>_sSSN;
+</span></span><span style="display:flex;"><span>v14.n128_u64[<span style="color:#008900">1</span>] <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span>)<span style="color:#008900">&#34;&#34;</span> <span style="color:#ec0000">|</span> <span style="color:#008900">0x8000000000000000LL</span>;
+</span></span><span style="display:flex;"><span>v5 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">swift_allocObject</span>(v2, <span style="color:#008900">64LL</span>, <span style="color:#008900">7LL</span>);
+</span></span><span style="display:flex;"><span>v6 <span style="color:#ec0000">=</span> v5;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">*</span>(_OWORD <span style="color:#ec0000">*</span>)(v5 <span style="color:#ec0000">+</span> <span style="color:#008900">16</span>) <span style="color:#ec0000">=</span> xmmword_100006BE0;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">_sypWOc</span>(<span style="color:#ec0000">&amp;</span>v14, v5 <span style="color:#ec0000">+</span> <span style="color:#008900">32</span>);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">_ss5print_9separator10terminatoryypd_S2StF</span>(v6, <span style="color:#008900">32LL</span>, <span style="color:#ec0000">-</span><span style="color:#008900">2233785415175766016LL</span>, <span style="color:#008900">10LL</span>, <span style="color:#ec0000">-</span><span style="color:#008900">2233785415175766016LL</span>);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">swift_release</span>(v6);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">__swift_destroy_boxed_opaque_existential_0</span>(<span style="color:#ec0000">&amp;</span>v14);
+</span></span><span style="display:flex;"><span>v7 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">vdupq_n_s64</span>(<span style="color:#008900">3uLL</span>);
+</span></span><span style="display:flex;"><span>v16 <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>_ss12StaticStringVN;
+</span></span><span style="display:flex;"><span>v7.n128_u64[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span>)<span style="color:#008900">&#34;bcd&#34;</span>;
+</span></span><span style="display:flex;"><span>v14 <span style="color:#ec0000">=</span> v7;
+</span></span><span style="display:flex;"><span>v15 <span style="color:#ec0000">=</span> <span style="color:#008900">2</span>;
+</span></span><span style="display:flex;"><span>v8 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">swift_allocObject</span>(v2, <span style="color:#008900">64LL</span>, <span style="color:#008900">7LL</span>);
+</span></span><span style="display:flex;"><span>v9 <span style="color:#ec0000">=</span> v8;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">*</span>(_OWORD <span style="color:#ec0000">*</span>)(v8 <span style="color:#ec0000">+</span> <span style="color:#008900">16</span>) <span style="color:#ec0000">=</span> xmmword_100006BE0;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">_sypWOc</span>(<span style="color:#ec0000">&amp;</span>v14, v8 <span style="color:#ec0000">+</span> <span style="color:#008900">32</span>);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">_ss5print_9separator10terminatoryypd_S2StF</span>(v9, <span style="color:#008900">32LL</span>, <span style="color:#ec0000">-</span><span style="color:#008900">2233785415175766016LL</span>, <span style="color:#008900">10LL</span>, <span style="color:#ec0000">-</span><span style="color:#008900">2233785415175766016LL</span>);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">swift_release</span>(v9);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">__swift_destroy_boxed_opaque_existential_0</span>(<span style="color:#ec0000">&amp;</span>v14);
+</span></span><span style="display:flex;"><span>v16 <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>_ss12StaticStringVN;
+</span></span><span style="display:flex;"><span>v10 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">vdupq_n_s64</span>(<span style="color:#008900">0x1EuLL</span>);
+</span></span><span style="display:flex;"><span>v10.n128_u64[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span>)<span style="color:#008900">&#34;bcdbcdbcdbcdbcdbcdbcdbcdbcdbcd&#34;</span>;
+</span></span><span style="display:flex;"><span>v14 <span style="color:#ec0000">=</span> v10;
+</span></span><span style="display:flex;"><span>v15 <span style="color:#ec0000">=</span> <span style="color:#008900">2</span>;
+</span></span><span style="display:flex;"><span>v11 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">swift_allocObject</span>(v2, <span style="color:#008900">64LL</span>, <span style="color:#008900">7LL</span>);
+</span></span><span style="display:flex;"><span>v12 <span style="color:#ec0000">=</span> v11;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">*</span>(_OWORD <span style="color:#ec0000">*</span>)(v11 <span style="color:#ec0000">+</span> <span style="color:#008900">16</span>) <span style="color:#ec0000">=</span> xmmword_100006BE0;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">_sypWOc</span>(<span style="color:#ec0000">&amp;</span>v14, v11 <span style="color:#ec0000">+</span> <span style="color:#008900">32</span>);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">_ss5print_9separator10terminatoryypd_S2StF</span>(v12, <span style="color:#008900">32LL</span>, <span style="color:#ec0000">-</span><span style="color:#008900">2233785415175766016LL</span>, <span style="color:#008900">10LL</span>, <span style="color:#ec0000">-</span><span style="color:#008900">2233785415175766016LL</span>);
+</span></span></code></pre></div><p>经过调试分析，可以知道String类大小为16字节，在函数传参中默认以值传递(X0/X1)，而返回时也以值传递(X0/X1)，可以得到如下结构。可以看到String结构在长度&lt;=15时使用short方式存储，长度&gt;=16时使用long方式存储。使用long方式存储时，还有存在偏移，不知道为何如此设计。从总体看形似std::string结构，但是更复杂。</p>
+<p>分析String作为参数传递</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-swift" data-lang="swift"><span style="display:flex;"><span><span style="color:#ec0000">func</span> <span style="color:#5f5fff">runoob</span>(site: <span style="color:#ec0000">String</span>) -&gt; <span style="color:#ec0000">String</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> (site)
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>runoob(site: <span style="color:#008900">&#34;www.runoob.com&#34;</span>)
+</span></span></code></pre></div><p>可以发现runoob函数传参很特殊，字符串www.runoob.com的直接拆成2个8字节存到X0/X1.</p>
+<pre tabindex="0"><code>x0 = 0x6f6e75722e777777  www.runo
+x1 = 0xee006d6f632e626f   oob.com   长度0xe
+</code></pre><p>若将字符串长度&gt;=16则会出现.</p>
+<pre tabindex="0"><code>x0 = 0xd000000000000010 长度0x10
+x1 = 0x800000010096e780  地址0x10096e780+0x20处指向C字符串
+</code></pre><p>因此Swift.String在内存和寄存器中永远占2个坑位，其内存结构类似于std::string，下面以结构体表示.</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ec0000">struct</span> Swift.StaticString {
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int64_t</span> _addr;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int64_t</span> _len;
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">union</span> Swift.String {
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">struct</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">char</span> _buf[<span style="color:#008900">15</span>];
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> <span style="color:#ec0000">_type</span> : <span style="color:#008900">4</span>;        // short的type=0xe
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> <span style="color:#ec0000">_len</span> : <span style="color:#008900">4</span>;          // 字符串长度
+</span></span><span style="display:flex;"><span>    } <span style="color:#5f5fff">short</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">struct</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int64_t</span> <span style="color:#ec0000">_len</span> : <span style="color:#008900">60</span>;  // 字符串长度
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int64_t</span> <span style="color:#ec0000">_type</span> : <span style="color:#008900">4</span>;  // long的type=0xd
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int64_t</span> _addr;      // (_addr&amp;0x7ffffffffffffffff)+0x20为真实地址(十分奇葩)
+</span></span><span style="display:flex;"><span>    } <span style="color:#5f5fff">long</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="objc转换">ObjC转换</h2>
+<pre tabindex="0"><code>String &lt;-&gt; NSString
+$sSS10FoundationE19_bridgeToObjectiveCSo8NSStringCyF
+    Swift.String._bridgeToObjectiveC(String) -&gt; NSString
+$sSs10FoundationE19_bridgeToObjectiveCSo8NSStringCyF
+    Swift.String._bridgeToObjectiveC(Substring) -&gt; NSString
+$sSs10FoundationE36_unconditionallyBridgeFromObjectiveCySsSo8NSStringCSgFZ
+    Swift.Substring._unconditionallyBridgeFromObjectiveC(NSString) -&gt; Substring
+$sSS23_bridgeToObjectiveCImplyXlyF
+    Swift.String._bridgeToObjectiveCImpl() -&gt; Swift.AnyObject
+$sSS10FoundationE36_unconditionallyBridgeFromObjectiveCySSSo8NSStringCSgFZ
+    Swift.String._unconditionallyBridgeFromObjectiveC(NSString) -&gt; Swift.String
+
+ALL &lt;-&gt; NSNumber
+$sSi10FoundationE19_bridgeToObjectiveCSo8NSNumberCyF
+    Swift.Int._bridgeToObjectiveC(Int) -&gt; NSNumber
+$sSi10FoundationE36_unconditionallyBridgeFromObjectiveCySiSo8NSNumberCSgFZ
+    Swift.Int._unconditionallyBridgeFromObjectiveC(NSNumber) -&gt; Int
+$sSu10FoundationE19_bridgeToObjectiveCSo8NSNumberCyF
+    Swift.UInt._bridgeToObjectiveC(UInt) -&gt; NSNumber
+$sSu10FoundationE36_unconditionallyBridgeFromObjectiveCySuSo8NSNumberCSgFZ
+    Swift.UInt._unconditionallyBridgeFromObjectiveC(NSNumber?) -&gt; UInt
+$ss4Int8V10FoundationE19_bridgeToObjectiveCSo8NSNumberCyF
+    Swift.Int8._bridgeToObjectiveC(Int8) -&gt; NSNumber
+$ss4Int8V10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo8NSNumberCSgFZ
+    Swift.Int8._unconditionallyBridgeFromObjectiveC(NSNumber) -&gt; Int8
+$ss5UInt8V10FoundationE19_bridgeToObjectiveCSo8NSNumberCyF
+    Swift.UInt8._bridgeToObjectiveC(UInt8) -&gt; NSNumber
+$ss5UInt8V10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo8NSNumberCSgFZ
+    Swift.UInt8._unconditionallyBridgeFromObjectiveC(NSNumber?) -&gt; UInt8
+$ss5Int16V10FoundationE19_bridgeToObjectiveCSo8NSNumberCyF
+    Swift.Int16._bridgeToObjectiveC(Int16) -&gt; NSNumber
+$ss5Int16V10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo8NSNumberCSgFZ
+    Swift.Int16._unconditionallyBridgeFromObjectiveC(NSNumber?) -&gt; Int16
+$ss6UInt16V10FoundationE19_bridgeToObjectiveCSo8NSNumberCyF
+    Swift.UInt16._bridgeToObjectiveC(UInt16) -&gt; NSNumber
+$ss6UInt16V10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo8NSNumberCSgFZ
+    Swift.UInt16._unconditionallyBridgeFromObjectiveC(NSNumber) -&gt; UInt16
+$ss5Int32V10FoundationE19_bridgeToObjectiveCSo8NSNumberCyF
+    Swift.Int32._bridgeToObjectiveC(Int32) -&gt; NSNumber
+$ss5Int32V10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo8NSNumberCSgFZ
+    Swift.Int32._unconditionallyBridgeFromObjectiveC(NSNumber?) -&gt; Int32
+$ss6UInt32V10FoundationE19_bridgeToObjectiveCSo8NSNumberCyF
+    Swift.UInt32._bridgeToObjectiveC(UInt32) -&gt; NSNumber
+$ss6UInt32V10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo8NSNumberCSgFZ
+    Swift.UInt32._unconditionallyBridgeFromObjectiveC(NSNumber?) -&gt; UInt32
+$ss5Int64V10FoundationE19_bridgeToObjectiveCSo8NSNumberCyF
+    Swift.Int64._bridgeToObjectiveC(Int64) -&gt; NSNumber
+$ss5Int64V10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo8NSNumberCSgFZ
+    Swift.Int64._unconditionallyBridgeFromObjectiveC(NSNumber) -&gt; Int64
+$ss6UInt64V10FoundationE19_bridgeToObjectiveCSo8NSNumberCyF
+    Swift.UInt64._bridgeToObjectiveC(UInt64) -&gt; NSNumber
+$ss6UInt64V10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo8NSNumberCSgFZ
+    Swift.UInt64._unconditionallyBridgeFromObjectiveC(NSNumber) -&gt; UInt64
+$sSd10FoundationE19_bridgeToObjectiveCSo8NSNumberCyF
+    Swift.Double._bridgeToObjectiveC(Double) -&gt; NSNumber
+$sSd10FoundationE36_unconditionallyBridgeFromObjectiveCySdSo8NSNumberCSgFZ
+    Swift.Double._unconditionallyBridgeFromObjectiveC(NSNumber) -&gt; Double
+$sSf10FoundationE19_bridgeToObjectiveCSo8NSNumberCyF
+    Swift.Float._bridgeToObjectiveC(Float) -&gt; NSNumber
+$sSf10FoundationE36_unconditionallyBridgeFromObjectiveCySfSo8NSNumberCSgFZ
+    Swift.Float._unconditionallyBridgeFromObjectiveC(NSNumber) -&gt; Float
+$sSb10FoundationE19_bridgeToObjectiveCSo8NSNumberCyF
+    Swift.Bool._bridgeToObjectiveC(Bool) -&gt; NSNumber
+$sSb10FoundationE36_unconditionallyBridgeFromObjectiveCySbSo8NSNumberCSgFZ
+    Swift.Bool._unconditionallyBridgeFromObjectiveC(NSNumber) -&gt; Bool
+$s12CoreGraphics7CGFloatV10FoundationE19_bridgeToObjectiveCSo8NSNumberCyF
+    CoreGraphics.CGFloat._bridgeToObjectiveC() -&gt; NSNumber
+$s12CoreGraphics7CGFloatV10FoundationE36_unconditionallyBridgeFromObjectiveCyACSo8NSNumberCSgFZ
+    CoreGraphics.CGFloat._unconditionallyBridgeFromObjectiveC(NSNumber) -&gt; CGFloat
+
+Array &lt;-&gt; NSArray
+$sSa10FoundationE19_bridgeToObjectiveCSo7NSArrayCyF
+    Swift.Array._bridgeToObjectiveC(Array) -&gt; NSArray
+$sSa10FoundationE36_unconditionallyBridgeFromObjectiveCySayxGSo7NSArrayCSgFZ
+    Swift.Array._unconditionallyBridgeFromObjectiveC(NSArray?) -&gt; Array
+
+$sSa23_bridgeToObjectiveCImplyXlyF
+    Swift.Array._bridgeToObjectiveCImpl() -&gt; Swift.AnyObject
+
+Dictionary &lt;-&gt; NSDictionary
+$sSD10FoundationE19_bridgeToObjectiveCSo12NSDictionaryCyF
+    Swift.Dictionary._bridgeToObjectiveC(Dictionary) -&gt; NSDictionary
+$sSD10FoundationE36_unconditionallyBridgeFromObjectiveCySDyxq_GSo12NSDictionaryCSgFZ
+    Swift.Dictionary._unconditionallyBridgeFromObjectiveC(NSDictionary) -&gt; Dictionary
+$sSD23_bridgeToObjectiveCImplyXlyF
+    Swift.Dictionary._bridgeToObjectiveCImpl() -&gt; Swift.AnyObject
+
+AnyHashable &lt;-&gt; NSObject
+ss11AnyHashableV10FoundationE19_bridgeToObjectiveCSo8NSObjectCyF
+    Swift.AnyHashable._bridgeToObjectiveC(AnyHashable) -&gt; NSObject
+$ss11AnyHashableV10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo8NSObjectCSgFZ
+    Swift.AnyHashable._unconditionallyBridgeFromObjectiveC(NSObject) -&gt; AnyHashable
+
+Set &lt;-&gt; NSSet
+$sSh10FoundationE19_bridgeToObjectiveCSo5NSSetCyF
+    Swift.Set._bridgeToObjectiveC(Set) -&gt; NSSet
+$sSh23_bridgeToObjectiveCImplyXlyF
+    Swift.Set._bridgeToObjectiveCImpl() -&gt; Swift.AnyObject
+$sSh10FoundationE36_unconditionallyBridgeFromObjectiveCyShyxGSo5NSSetCSgFZ
+    Swift.Set._unconditionallyBridgeFromObjectiveC(NSSet) -&gt; Set
+
+Data &lt;-&gt; NSData
+$s10Foundation4DataV19_bridgeToObjectiveCSo6NSDataCyF
+    Foundation.Data._bridgeToObjectiveC(Data) -&gt; NSData
+$s10Foundation4DataV36_unconditionallyBridgeFromObjectiveCyACSo6NSDataCSgFZ
+    Foundation.Data._unconditionallyBridgeFromObjectiveC(NSData) -&gt; Data
+
+URL &lt;-&gt; NSURL
+$s10Foundation3URLV19_bridgeToObjectiveCSo5NSURLCyF
+    Foundation.URL._bridgeToObjectiveC(URL) -&gt; NSURL
+$s10Foundation3URLV36_unconditionallyBridgeFromObjectiveCyACSo5NSURLCSgFZ
+    Foundation.URL._unconditionallyBridgeFromObjectiveC(NSURL) -&gt; URL
+$s10Foundation10URLRequestV19_bridgeToObjectiveCSo12NSURLRequestCyF
+    Foundation.URLRequest._bridgeToObjectiveC() -&gt; __C.NSURLRequest
+$s10Foundation10URLRequestV36_unconditionallyBridgeFromObjectiveCyACSo12NSURLRequestCSgFZ
+    Foundation.URLRequest._unconditionallyBridgeFromObjectiveC(NSURLRequest) -&gt; URLRequest
+$s10Foundation13URLComponentsV19_bridgeToObjectiveCSo15NSURLComponentsCyF
+    Foundation.URLComponents._bridgeToObjectiveC(URLComponents) -&gt; NSURLComponents
+$s10Foundation13URLComponentsV36_unconditionallyBridgeFromObjectiveCyACSo15NSURLComponentsCSgFZ
+    Foundation.URLComponents._unconditionallyBridgeFromObjectiveC(NSURLComponents) -&gt; URLComponents
+$s10Foundation12URLQueryItemV19_bridgeToObjectiveCSo010NSURLQueryC0CyF
+    Foundation.URLQueryItem._bridgeToObjectiveC(URLQueryItem) -&gt; NSURLQueryItem
+$s10Foundation12URLQueryItemV36_unconditionallyBridgeFromObjectiveCyACSo010NSURLQueryC0CSgFZ
+    Foundation.URLQueryItem._unconditionallyBridgeFromObjectiveC(NSURLQueryItem?) -&gt; URLQueryItem
+
+Calendar &lt;-&gt; NSCalendar
+$s10Foundation8CalendarV19_bridgeToObjectiveCSo10NSCalendarCyF
+    Foundation.Calendar._bridgeToObjectiveC(Calendar) -&gt; NSCalendar
+$s10Foundation8CalendarV36_unconditionallyBridgeFromObjectiveCyACSo10NSCalendarCSgFZ
+    Foundation.Calendar._unconditionallyBridgeFromObjectiveC(NSCalendar) -&gt; Calendar
+
+TimeZone &lt;-&gt; NSTime
+$s10Foundation8TimeZoneV19_bridgeToObjectiveCSo06NSTimeC0CyF
+    Foundation.TimeZone._bridgeToObjectiveC() -&gt; NSTimeZone
+$s10Foundation8TimeZoneV36_unconditionallyBridgeFromObjectiveCyACSo06NSTimeC0CSgFZ
+    Foundation.TimeZone._unconditionallyBridgeFromObjectiveC(NSTimeZone) -&gt; TimeZone
+
+Swift.Error &lt;-&gt; NSError
+$ss20_SwiftNewtypeWrapperP10Foundations5Error_p8RawValueRtzrlE19_bridgeToObjectiveCSo7NSErrorCyF
+    Swift._SwiftNewtypeWrapper&lt; where A.RawValue == Swift.Error&gt;._bridgeToObjectiveC() -&gt; NSError
+$ss20_SwiftNewtypeWrapperP10Foundations5Error_p8RawValueRtzrlE36_unconditionallyBridgeFromObjectiveCyxSo7NSErrorCSgFZ
+    Swift._SwiftNewtypeWrapper&lt;Swift.Error&gt;._unconditionallyBridgeFromObjectiveC(NSError?) -&gt; Swift.Error
+
+Date &lt;-&gt; NSDate
+$s10Foundation4DateV19_bridgeToObjectiveCSo6NSDateCyF
+    Foundation.Date._bridgeToObjectiveC() -&gt; NSDate
+$s10Foundation4DateV36_unconditionallyBridgeFromObjectiveCyACSo6NSDateCSgFZ 
+    Date._unconditionallyBridgeFromObjectiveC(NSDate) -&gt; Date
+$s10Foundation12DateIntervalV19_bridgeToObjectiveCSo06NSDateC0CyF
+    Foundation.DateInterval._bridgeToObjectiveC() -&gt; NSDateInterval
+$s10Foundation12DateIntervalV36_unconditionallyBridgeFromObjectiveCyACSo06NSDateC0CSgFZ
+    Foundation.DateInterval._unconditionallyBridgeFromObjectiveC(NSDateInterval?) -&gt; DateInterval
+$s10Foundation14DateComponentsV19_bridgeToObjectiveCSo06NSDateC0CyF
+    Foundation.DateComponents._bridgeToObjectiveC() -&gt; NSDateComponents
+$s10Foundation14DateComponentsV36_unconditionallyBridgeFromObjectiveCyACSo06NSDateC0CSgFZ
+    Foundation.DateComponents._unconditionallyBridgeFromObjectiveC(NSDateComponents) -&gt; DateComponents
+
+UUID &lt;-&gt; NSUUID
+$s10Foundation4UUIDV19_bridgeToObjectiveCSo6NSUUIDCyF
+    Foundation.UUID._bridgeToObjectiveC() -&gt; NSUUID
+$s10Foundation4UUIDV36_unconditionallyBridgeFromObjectiveCyACSo6NSUUIDCSgFZ
+    Foundation.UUID._unconditionallyBridgeFromObjectiveC(NSUUID) -&gt; Foundation.UUID
+
+Other
+$s10Foundation8IndexSetV19_bridgeToObjectiveCSo07NSIndexC0CyF
+    Foundation.IndexSet._bridgeToObjectiveC(IndexSet) -&gt; NSIndexSet
+$s10Foundation8IndexSetV36_unconditionallyBridgeFromObjectiveCyACSo07NSIndexC0CSgFZ
+    Foundation.IndexSet._unconditionallyBridgeFromObjectiveC(NSIndexSet) -&gt; IndexSet
+$sSo8CGVectorV10FoundationE19_bridgeToObjectiveCSo7NSValueCyF
+    CGVector._bridgeToObjectiveC() -&gt; NSValue
+$sSo8CGVectorV10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo7NSValueCSgFZ
+    CGVector._unconditionallyBridgeFromObjectiveC(NSValue) -&gt; CGVector
+$sSo7CGPointV10FoundationE19_bridgeToObjectiveCSo7NSValueCyF
+    CGPoint._bridgeToObjectiveC() -&gt; NSValue
+$sSo7CGPointV10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo7NSValueCSgFZ
+    CGPoint._unconditionallyBridgeFromObjectiveC(NSValue) -&gt; CGPoint
+$sSo9NSDecimala10FoundationE19_bridgeToObjectiveCSo0A6NumberCyF
+    NSDecimal._bridgeToObjectiveC() -&gt; NSDecimalNumber
+$sSo9NSDecimala10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo0A6NumberCSgFZ
+    NSDecimal._unconditionallyBridgeFromObjectiveC(NSDecimalNumber) -&gt; NSDecimal
+$sSo17CGAffineTransformV10FoundationE19_bridgeToObjectiveCSo7NSValueCyF
+    CGAffineTransform._bridgeToObjectiveC() -&gt; NSValue
+$sSo17CGAffineTransformV10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo7NSValueCSgFZ
+    CGAffineTransform._unconditionallyBridgeFromObjectiveC(NSValue) -&gt; CGAffineTransform
+$s10Foundation12CharacterSetV19_bridgeToObjectiveCSo011NSCharacterC0CyF
+    Foundation.CharacterSet._bridgeToObjectiveC() -&gt; NSCharacterSet
+$s10Foundation12CharacterSetV36_unconditionallyBridgeFromObjectiveCyACSo011NSCharacterC0CSgFZ
+    Foundation.CharacterSet._unconditionallyBridgeFromObjectiveC(NSCharacterSet) -&gt; CharacterSet
+$s10Foundation6LocaleV19_bridgeToObjectiveCSo8NSLocaleCyF
+    Foundation.Locale._bridgeToObjectiveC() -&gt; NSLocale
+$s10Foundation6LocaleV36_unconditionallyBridgeFromObjectiveCyACSo8NSLocaleCSgFZ
+    Foundation.Locale._unconditionallyBridgeFromObjectiveC(NSLocale) -&gt; Locale
+$sSo8_NSRangeV10FoundationE19_bridgeToObjectiveCSo7NSValueCyF
+    NSRange._bridgeToObjectiveC() -&gt; NSValue
+$sSo8_NSRangeV10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo7NSValueCSgFZ
+    NSRange._unconditionallyBridgeFromObjectiveC(NSValue) -&gt; NSRange
+$sSo6CGRectV10FoundationE19_bridgeToObjectiveCSo7NSValueCyF
+    CGRect._bridgeToObjectiveC() -&gt; NSValue
+$sSo6CGRectV10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo7NSValueCSgFZ
+    CGRect._unconditionallyBridgeFromObjectiveC(NSValue) -&gt; CGRect
+$sSo6CGSizeV10FoundationE19_bridgeToObjectiveCSo7NSValueCyF
+    CGSize._bridgeToObjectiveC() -&gt; NSValue
+$sSo6CGSizeV10FoundationE36_unconditionallyBridgeFromObjectiveCyABSo7NSValueCSgFZ
+    CGSize._unconditionallyBridgeFromObjectiveC(NSValue) -&gt; CGSize
+$s10Foundation12NotificationV19_bridgeToObjectiveCSo14NSNotificationCyF 
+    Foundation.Notification._bridgeToObjectiveC() -&gt; NSNotification
+$s10Foundation12NotificationV36_unconditionallyBridgeFromObjectiveCyACSo14NSNotificationCSgFZ       
+    Foundation.Notification._unconditionallyBridgeFromObjectiveC(NSNotification?) -&gt; Notification
+$ss20_SwiftNewtypeWrapperPs8RawValueRmzCrlE19_bridgeToObjectiveCADyF
+    Swift._SwiftNewtypeWrapper&lt;AnyObject&gt;._bridgeToObjectiveC(AnyObject) -&gt; RawValue
+$ss20_SwiftNewtypeWrapperPs8RawValueRmzCrlE36_unconditionallyBridgeFromObjectiveCyxADSgFZ
+    Swift._SwiftNewtypeWrapper&lt;AnyObject&gt;._unconditionallyBridgeFromObjectiveC(RawValue) -&gt; AnyObject
+$sSq19_bridgeToObjectiveCyXlyF
+    Swift.Optional._bridgeToObjectiveC() -&gt; Swift.AnyObject
+$sSq36_unconditionallyBridgeFromObjectiveCyxSgyXlSgFZ
+    Swift.Optional._unconditionallyBridgeFromObjectiveC(Swift.AnyObject) -&gt; AnyObject
+$ss19_BridgeableMetatypeV19_bridgeToObjectiveCyXlyF
+    Swift._BridgeableMetatype._bridgeToObjectiveC() -&gt; Swift.AnyObject
+$ss19_BridgeableMetatypeV36_unconditionallyBridgeFromObjectiveCyAByXlSgFZ
+    Swift._BridgeableMetatype._unconditionallyBridgeFromObjectiveC(AnyObject) -&gt; _BridgeableMetatype
+$s8Dispatch0A4DataV19_bridgeToObjectiveCSo16OS_dispatch_dataCyF
+    Dispatch.DispatchData._bridgeToObjectiveC() -&gt; OS_dispatch_data
+$s8Dispatch0A4DataV36_unconditionallyBridgeFromObjectiveCyACSo16OS_dispatch_dataCSgFZ
+    Dispatch.DispatchData._unconditionallyBridgeFromObjectiveC(OS_dispatch_data) -&gt; DispatchData
+$s10Foundation11MeasurementV19_bridgeToObjectiveCSo13NSMeasurementCyF
+    Foundation.Measurement._bridgeToObjectiveC(Measurement) -&gt; NSMeasurement
+$s10Foundation11MeasurementV36_unconditionallyBridgeFromObjectiveCyACyxGSo13NSMeasurementCSgFZ
+    Foundation.Measurement._unconditionallyBridgeFromObjectiveC(NSMeasurement) -&gt; Measurement
+$s10Foundation9IndexPathV19_bridgeToObjectiveCSo07NSIndexC0CyF
+    Foundation.IndexPath._bridgeToObjectiveC(IndexPath) -&gt; NSIndexPath
+$s10Foundation9IndexPathV36_unconditionallyBridgeFromObjectiveCyACSo07NSIndexC0CSgFZ
+    Foundation.IndexPath._unconditionallyBridgeFromObjectiveC(NSIndexPath) -&gt; IndexPath
+$s10Foundation20PersonNameComponentsV19_bridgeToObjectiveCSo08NSPersoncD0CyF
+    Foundation.PersonNameComponents._bridgeToObjectiveC(PersonNameComponents) -&gt; NSPersonNameComponents
+$s10Foundation20PersonNameComponentsV36_unconditionallyBridgeFromObjectiveCyACSo08NSPersoncD0CSgFZ  
+    PersonNameComponents._unconditionallyBridgeFromObjectiveC(NSPersonNameComponents) -&gt; PersonNameComponents
+</code></pre>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20210804_uuid/">
+                        UUID简介
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20210805_cydia_repo/">
+                        搭建简单Cydia源
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

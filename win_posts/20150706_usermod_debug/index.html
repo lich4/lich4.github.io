@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    Windows用户态调试 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/win_posts/20150706_usermod_debug/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/win_posts/">Win_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/win_posts/20150706_usermod_debug/">Windows用户态调试</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">Windows用户态调试</h1>
+    
+    <p class="single-summary">Windows用户态调试</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2015-07-06T00:00:00&#43;00:00">July 6, 2015</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#基础知识">基础知识</a>
+      <ul>
+        <li><a href="#调试事件">调试事件</a></li>
+        <li><a href="#调试结构">调试结构</a></li>
+        <li><a href="#调试函数">调试函数</a></li>
+      </ul>
+    </li>
+    <li><a href="#用户态调试模型及相关代码">用户态调试模型及相关代码</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="基础知识">基础知识</h2>
+<p>  MSDN上的介绍：<a href="https://msdn.microsoft.com/en-us/library/ms679304(v=vs.85).aspx">https://msdn.microsoft.com/en-us/library/ms679304(v=vs.85).aspx</a>中的调试事件及调试结构节</p>
+<h3 id="调试事件">调试事件</h3>
+<p>  WaitForDebugEvent在接收到内核传递的调试信息后会由阻塞态转为激活态，内核会挂起所有线程，直到ContinueDebugEvent执行</p>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">Type</th>
+          <th style="text-align: left">Describ</th>
+          <th style="text-align: left">Struct</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: left">CREATE_PROCESS_DEBUG_EVENT</td>
+          <td style="text-align: left">创建进程事件</td>
+          <td style="text-align: left">CREATE_PROCESS_DEBUG_INFO</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">CREATE_THREAD_DEBUG_EVENT</td>
+          <td style="text-align: left">创建线程事件</td>
+          <td style="text-align: left">CREATE_THREAD_DEBUG_INFO</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">EXCEPTION_DEBUG_EVENT</td>
+          <td style="text-align: left">发生异常</td>
+          <td style="text-align: left">EXCEPTION_DEBUG_INFO</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">EXIT_PROCESS_DEBUG_EVENT</td>
+          <td style="text-align: left">进程退出</td>
+          <td style="text-align: left">EXIT_PROCESS_DEBUG_INFO</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">EXIT_THREAD_DEBUG_EVENT</td>
+          <td style="text-align: left">线程退出</td>
+          <td style="text-align: left">EXIT_THREAD_DEBUG_INFO</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">LOAD_DLL_DEBUG_EVENT</td>
+          <td style="text-align: left">加载DLL</td>
+          <td style="text-align: left">LOAD_DLL_DEBUG_INFO</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">OUTPUT_DEBUG_STRING_EVENT</td>
+          <td style="text-align: left">输出调试字符串</td>
+          <td style="text-align: left">OUTPUT_DEBUG_STRING_INFO</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">UNLOAD_DLL_DEBUG_EVENT</td>
+          <td style="text-align: left">卸载DLL</td>
+          <td style="text-align: left">UNLOAD_DLL_DEBUG_INFO</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">RIP_EVENT</td>
+          <td style="text-align: left">进程不受系统调试器控制的结束</td>
+          <td style="text-align: left">RIP_INFO</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="调试结构">调试结构</h3>
+<ul>
+<li>CONTEXT：ring3下不能直接读写寄存器，而间接通过设置context结构完成</li>
+<li>DEBUG_EVENT：接受的调试事件结构</li>
+<li>LDT_ENTRY：用于获得描述符表</li>
+</ul>
+<h3 id="调试函数">调试函数</h3>
+<ul>
+<li>CheckRemoteDebuggerPresent  检查debug port是否存在</li>
+<li>ContinueDebugEvent  继续执行由调试事件打断的线程.</li>
+<li>DebugActiveProcess  附加调试</li>
+<li>DebugActiveProcessStop  停止附加调试</li>
+<li>DebugBreak  在当前进程中产生断点</li>
+<li>DebugBreakProcess  在指定进程中产生断点（远程线程注入）</li>
+<li>DebugSetProcessKillOnExit  调试器退出时结束进程</li>
+<li>FatalExit  退出进程并将执行权交给调试器</li>
+<li>FlushInstructionCache  刷新指令缓存（在修改内存指令后使用）</li>
+<li>GetThreadContext  获取线程上下文</li>
+<li>GetThreadSelectorEntry  获取线程的选择子的描述符表</li>
+<li>IsDebuggerPresent  用调试标志检查用户态调试器是否存在</li>
+<li>OutputDebugString  输出调试信息给调试器</li>
+<li>SetThreadContext  设置线程上下文</li>
+<li>WaitForDebugEvent  等待调试事件</li>
+</ul>
+<h2 id="用户态调试模型及相关代码">用户态调试模型及相关代码</h2>
+<p>  windows用户态调试器是基于事件模式的，由内核做中介的被调试进程和调试器进程的交互，也就是说被调试者和调试器处于不同进程（见《软件调试》），流程如下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">main</span>()
+</span></span><span style="display:flex;"><span> {
+</span></span><span style="display:flex;"><span>         (OpenProcess);
+</span></span><span style="display:flex;"><span>         DebugActiveProcess;
+</span></span><span style="display:flex;"><span>         <span style="color:#ec0000">while</span>(Alive)
+</span></span><span style="display:flex;"><span>         {
+</span></span><span style="display:flex;"><span>                 WaitForDebugEvent;
+</span></span><span style="display:flex;"><span>                 <span style="color:#ec0000">switch</span>(DebugEvent.dwDebugEventCode)
+</span></span><span style="display:flex;"><span>                 {
+</span></span><span style="display:flex;"><span>                         ....
+</span></span><span style="display:flex;"><span>         
+</span></span><span style="display:flex;"><span>                 }
+</span></span><span style="display:flex;"><span>                 ContinueDebugEvent;
+</span></span><span style="display:flex;"><span>         }
+</span></span><span style="display:flex;"><span> }
+</span></span></code></pre></div><p>  无疑这里最重要的函数就是DebugActiveProcess和ContinueDebugEvent，是调试器最表层的接口，而调试器源码位于ntos/dbgk文件夹下，dbgkobj.c dbgkp.h dbgkport.c dbgkproc.c</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">DebugActiveProcess-&gt;NtDebugActiveProcess-&gt;DbgkpPostFakeProcessCreateMessages DbgkpSetProcessDebugObject
+ContinueDebugEvent-&gt;NtDebugContinue-&gt;DbgkpWakeTarget-&gt;DbgkpFreeDebugEvent
+DbgkpPostFakeProcessCreateMessages-&gt;DbgkpPostFakeThreadMessages DbgkpPostFakeModuleMessages
+</code></pre><ul>
+<li>DbgkpSendApiMessage 调试消息函数，在某些内核api操作中会将调试事件添加到队列中</li>
+<li>DbgkpSuspendProcess 挂起进程</li>
+<li>DbgkpResumeProcess 恢复线程</li>
+</ul>
+<p>  默认下windows只能支持一个调试器，绑定到进程peb的debugport成员中，由于内核代码已经写死了，因此想支持多个调试器同时调试一个进程，只能另寻办法，我的构想是将调试器和内核之间的通信，中间插入一个中介调试器进行协调，同时一个调试器的行为生效则刷新到所有调试器，这样就需要中介调试器hook一些调试api，并完成和这些调试器的通信，而中介调试器直接接收内核发出的调试信息。正在深入研究调试源码并完善设计思路。</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span>//DbgSsReserved[0]-&gt;PDBGSS_THREAD_DATA*
+</span></span><span style="display:flex;"><span>//DbgSsReserved[1]-&gt;DebugObjectHandle
+</span></span><span style="display:flex;"><span>BOOL WINAPI <span style="color:#5f5fff">ContinueDebugEvent</span>(DWORD dwProcessId, DWORD dwThreadId, DWORD dwContinueStatus)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	ClientId.UniqueProcess <span style="color:#ec0000">=</span> (HANDLE)dwProcessId;
+</span></span><span style="display:flex;"><span>	ClientId.UniqueThread <span style="color:#ec0000">=</span> (HANDLE)dwThreadId;
+</span></span><span style="display:flex;"><span>	ZwDebugContinue(NtCurrentTeb()<span style="color:#ec0000">-&gt;</span>DbgSsReserved[<span style="color:#008900">1</span>], ClientId, dwContinueStatus);
+</span></span><span style="display:flex;"><span>	//移除进程线程句柄
+</span></span><span style="display:flex;"><span>	ThreadData <span style="color:#ec0000">=</span> (PDBGSS_THREAD_DATA<span style="color:#ec0000">*</span>)NtCurrentTeb()<span style="color:#ec0000">-&gt;</span>DbgSsReserved;
+</span></span><span style="display:flex;"><span>	ThisData <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>ThreadData;
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">while</span>(ThisData)
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> ((ThisData<span style="color:#ec0000">-&gt;</span>HandleMarked) <span style="color:#ec0000">&amp;&amp;</span> ((ThisData<span style="color:#ec0000">-&gt;</span>ProcessId <span style="color:#ec0000">==</span> dwProcessId) <span style="color:#ec0000">||</span> (ThisData<span style="color:#ec0000">-&gt;</span>ThreadId <span style="color:#ec0000">==</span> dwThreadId)))
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">if</span> (ThisData<span style="color:#ec0000">-&gt;</span>ThreadHandle) CloseHandle(ThisData<span style="color:#ec0000">-&gt;</span>ThreadHandle);
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">if</span> (ThisData<span style="color:#ec0000">-&gt;</span>ProcessHandle) CloseHandle(ThisData<span style="color:#ec0000">-&gt;</span>ProcessHandle);
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">*</span>ThreadData <span style="color:#ec0000">=</span> ThisData<span style="color:#ec0000">-&gt;</span>Next;
+</span></span><span style="display:flex;"><span>			RtlFreeHeap(RtlGetProcessHeap(), <span style="color:#008900">0</span>, ThisData);
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			ThreadData <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>ThisData<span style="color:#ec0000">-&gt;</span>Next;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		ThisData <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>ThreadData;
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>BOOL WINAPI <span style="color:#5f5fff">DebugActiveProcess</span>(DWORD dwProcessId)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	//创建调试对象
+</span></span><span style="display:flex;"><span>	InitializeObjectAttributes(<span style="color:#ec0000">&amp;</span>ObjectAttributes, <span style="color:#ec0000">NULL</span>, <span style="color:#008900">0</span>, <span style="color:#ec0000">NULL</span>, <span style="color:#008900">0</span>);
+</span></span><span style="display:flex;"><span>	Status <span style="color:#ec0000">=</span> ZwCreateDebugObject(<span style="color:#ec0000">&amp;</span>NtCurrentTeb()<span style="color:#ec0000">-&gt;</span>DbgSsReserved[<span style="color:#008900">1</span>], DEBUG_OBJECT_ALL_ACCESS, <span style="color:#ec0000">&amp;</span>ObjectAttributes, DBGK_KILL_PROCESS_ON_EXIT);
+</span></span><span style="display:flex;"><span>	//OpenProcess获取进程句柄
+</span></span><span style="display:flex;"><span>	ClientId.UniqueThread <span style="color:#ec0000">=</span> <span style="color:#ec0000">NULL</span>;
+</span></span><span style="display:flex;"><span>	ClientId.UniqueProcess <span style="color:#ec0000">=</span> UlongToHandle(dwProcessId);
+</span></span><span style="display:flex;"><span>	InitializeObjectAttributes(<span style="color:#ec0000">&amp;</span>ObjectAttributes, <span style="color:#ec0000">NULL</span>, <span style="color:#008900">0</span>, <span style="color:#ec0000">NULL</span>, <span style="color:#ec0000">NULL</span>);
+</span></span><span style="display:flex;"><span>	Status <span style="color:#ec0000">=</span> NtOpenProcess(<span style="color:#ec0000">&amp;</span>Handle, PROCESS_CREATE_THREAD <span style="color:#ec0000">|</span> PROCESS_VM_OPERATION <span style="color:#ec0000">|</span> PROCESS_VM_WRITE <span style="color:#ec0000">|</span> PROCESS_VM_READ 
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">|</span> PROCESS_SUSPEND_RESUME <span style="color:#ec0000">|</span> PROCESS_QUERY_INFORMATION, <span style="color:#ec0000">&amp;</span>ObjectAttributes, <span style="color:#ec0000">&amp;</span>ClientId);
+</span></span><span style="display:flex;"><span>	Status <span style="color:#ec0000">=</span> NtDebugActiveProcess(Process, NtCurrentTeb()<span style="color:#ec0000">-&gt;</span>DbgSsReserved[<span style="color:#008900">1</span>]);
+</span></span><span style="display:flex;"><span>	//注入并设置int 3
+</span></span><span style="display:flex;"><span>	NtClose(Handle);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>BOOL WINAPI <span style="color:#5f5fff">DebugActiveProcessStop</span>(DWORD dwProcessId)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	//OpenProcess获取进程句柄
+</span></span><span style="display:flex;"><span>	ClientId.UniqueThread <span style="color:#ec0000">=</span> <span style="color:#ec0000">NULL</span>;
+</span></span><span style="display:flex;"><span>	ClientId.UniqueProcess <span style="color:#ec0000">=</span> UlongToHandle(dwProcessId);
+</span></span><span style="display:flex;"><span>	InitializeObjectAttributes(<span style="color:#ec0000">&amp;</span>ObjectAttributes, <span style="color:#ec0000">NULL</span>, <span style="color:#008900">0</span>, <span style="color:#ec0000">NULL</span>, <span style="color:#ec0000">NULL</span>);
+</span></span><span style="display:flex;"><span>	Status <span style="color:#ec0000">=</span> NtOpenProcess(<span style="color:#ec0000">&amp;</span>Handle, PROCESS_CREATE_THREAD <span style="color:#ec0000">|</span> PROCESS_VM_OPERATION <span style="color:#ec0000">|</span> PROCESS_VM_WRITE <span style="color:#ec0000">|</span> PROCESS_VM_READ 
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">|</span> PROCESS_SUSPEND_RESUME <span style="color:#ec0000">|</span> PROCESS_QUERY_INFORMATION, <span style="color:#ec0000">&amp;</span>ObjectAttributes, <span style="color:#ec0000">&amp;</span>ClientId);
+</span></span><span style="display:flex;"><span>	//关闭所有进程句柄
+</span></span><span style="display:flex;"><span>	ThreadData <span style="color:#ec0000">=</span> (PDBGSS_THREAD_DATA<span style="color:#ec0000">*</span>)NtCurrentTeb()<span style="color:#ec0000">-&gt;</span>DbgSsReserved;
+</span></span><span style="display:flex;"><span>	ThisData <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>ThreadData;
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">while</span>(ThisData)
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> (ThisData<span style="color:#ec0000">-&gt;</span>ProcessId <span style="color:#ec0000">==</span> dwProcessId)
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">if</span> (ThisData<span style="color:#ec0000">-&gt;</span>ThreadHandle) CloseHandle(ThisData<span style="color:#ec0000">-&gt;</span>ThreadHandle);
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">if</span> (ThisData<span style="color:#ec0000">-&gt;</span>ProcessHandle) CloseHandle(ThisData<span style="color:#ec0000">-&gt;</span>ProcessHandle);
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">*</span>ThreadData <span style="color:#ec0000">=</span> ThisData<span style="color:#ec0000">-&gt;</span>Next;
+</span></span><span style="display:flex;"><span>			RtlFreeHeap(RtlGetProcessHeap(), <span style="color:#008900">0</span>, ThisData);
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			ThreadData <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>ThisData<span style="color:#ec0000">-&gt;</span>Next;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		ThisData <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>ThreadData;
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	Status <span style="color:#ec0000">=</span> NtRemoveProcessDebug(Process, NtCurrentTeb()<span style="color:#ec0000">-&gt;</span>DbgSsReserved[<span style="color:#008900">1</span>]);
+</span></span><span style="display:flex;"><span>	NtClose(Handle);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>BOOL WINAPI <span style="color:#5f5fff">DebugSetProcessKillOnExit</span>(BOOL KillOnExit)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	STATE <span style="color:#ec0000">=</span> KillOnExit <span style="color:#ec0000">!=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>	Handle <span style="color:#ec0000">=</span> NtCurrentTeb()<span style="color:#ec0000">-&gt;</span>DbgSsReserved[<span style="color:#008900">1</span>];
+</span></span><span style="display:flex;"><span>	Status <span style="color:#ec0000">=</span> NtSetInformationDebugObject(Handle, DebugObjectKillProcessOnExitInformation, <span style="color:#ec0000">&amp;</span>State, <span style="color:#ec0000">sizeof</span>(State), <span style="color:#ec0000">NULL</span>);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>BOOL WINAPI <span style="color:#5f5fff">WaitForDebugEvent</span>(LPDEBUG_EVENT lpDebugEvent, DWORD dwMilliseconds)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">do</span>
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		Status <span style="color:#ec0000">=</span> NtWaitForDebugEvent(NtCurrentTeb()<span style="color:#ec0000">-&gt;</span>DbgSsReserved[<span style="color:#008900">1</span>], TRUE, TimeOut, <span style="color:#ec0000">&amp;</span>WaitStateChange);
+</span></span><span style="display:flex;"><span>	} <span style="color:#ec0000">while</span> ((Status <span style="color:#ec0000">==</span> STATUS_ALERTED) <span style="color:#ec0000">||</span> (Status <span style="color:#ec0000">==</span> STATUS_USER_APC));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	lpDebugEvent<span style="color:#ec0000">-&gt;</span>dwProcessId <span style="color:#ec0000">=</span> (DWORD)WaitStateChange<span style="color:#ec0000">-&gt;</span>AppClientId.UniqueProcess;
+</span></span><span style="display:flex;"><span>	lpDebugEvent<span style="color:#ec0000">-&gt;</span>dwThreadId <span style="color:#ec0000">=</span> (DWORD)WaitStateChange<span style="color:#ec0000">-&gt;</span>AppClientId.UniqueThread;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">switch</span> (WaitStateChange<span style="color:#ec0000">-&gt;</span>NewState)
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">DbgCreateThreadStateChange</span>:
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>dwDebugEventCode <span style="color:#ec0000">=</span> CREATE_THREAD_DEBUG_EVENT;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateThread.hThread <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.CreateThread.HandleToThread;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateThread.lpStartAddress <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.CreateThread.NewThread.StartAddress;
+</span></span><span style="display:flex;"><span>		Status <span style="color:#ec0000">=</span> NtQueryInformationThread(WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.CreateThread.HandleToThread, ThreadBasicInformation, <span style="color:#ec0000">&amp;</span>ThreadBasicInfo, <span style="color:#ec0000">sizeof</span>(ThreadBasicInfo), <span style="color:#ec0000">NULL</span>);
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateThread.lpThreadLocalBase <span style="color:#ec0000">=</span> ThreadBasicInfo.TebBaseAddress;
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">DbgCreateProcessStateChange</span>:
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>dwDebugEventCode <span style="color:#ec0000">=</span> CREATE_PROCESS_DEBUG_EVENT;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateProcessInfo.hProcess <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.CreateProcessInfo.HandleToProcess;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateProcessInfo.hThread <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.CreateProcessInfo.HandleToThread;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateProcessInfo.hFile <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.CreateProcessInfo.NewProcess.FileHandle;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateProcessInfo.lpBaseOfImage <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.CreateProcessInfo.NewProcess.BaseOfImage;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateProcessInfo.dwDebugInfoFileOffset <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.CreateProcessInfo.NewProcess.DebugInfoFileOffset;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateProcessInfo.nDebugInfoSize <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.CreateProcessInfo.NewProcess.DebugInfoSize;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateProcessInfo.lpStartAddress <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.CreateProcessInfo.NewProcess.InitialThread.StartAddress;
+</span></span><span style="display:flex;"><span>		Status <span style="color:#ec0000">=</span> NtQueryInformationThread(WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.CreateProcessInfo.HandleToThread, ThreadBasicInformation,
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">&amp;</span>ThreadBasicInfo, <span style="color:#ec0000">sizeof</span>(ThreadBasicInfo), <span style="color:#ec0000">NULL</span>);
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateProcessInfo.lpThreadLocalBase <span style="color:#ec0000">=</span> ThreadBasicInfo.TebBaseAddress;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateProcessInfo.lpImageName <span style="color:#ec0000">=</span> <span style="color:#ec0000">NULL</span>;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateProcessInfo.fUnicode <span style="color:#ec0000">=</span> TRUE;
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">DbgExitThreadStateChange</span>:
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>dwDebugEventCode <span style="color:#ec0000">=</span> EXIT_THREAD_DEBUG_EVENT;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.ExitThread.dwExitCode <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.ExitThread.ExitStatus;
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">DbgExitProcessStateChange</span>:
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>dwDebugEventCode <span style="color:#ec0000">=</span> EXIT_PROCESS_DEBUG_EVENT;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.ExitProcess.dwExitCode <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.ExitProcess.ExitStatus;
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">DbgExceptionStateChange</span>:
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">DbgBreakpointStateChange</span>:
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">DbgSingleStepStateChange</span>:
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> (WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.Exception.ExceptionRecord.ExceptionCode <span style="color:#ec0000">==</span> DBG_PRINTEXCEPTION_C)
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			DebugEvent<span style="color:#ec0000">-&gt;</span>dwDebugEventCode <span style="color:#ec0000">=</span> OUTPUT_DEBUG_STRING_EVENT;
+</span></span><span style="display:flex;"><span>			DebugEvent<span style="color:#ec0000">-&gt;</span>u.DebugString.lpDebugStringData <span style="color:#ec0000">=</span> (PVOID)WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.Exception.ExceptionRecord.ExceptionInformation[<span style="color:#008900">1</span>];
+</span></span><span style="display:flex;"><span>			DebugEvent<span style="color:#ec0000">-&gt;</span>u.DebugString.nDebugStringLength <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.Exception.ExceptionRecord.ExceptionInformation[<span style="color:#008900">0</span>];
+</span></span><span style="display:flex;"><span>			DebugEvent<span style="color:#ec0000">-&gt;</span>u.DebugString.fUnicode <span style="color:#ec0000">=</span> FALSE;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.Exception.ExceptionRecord.ExceptionCode <span style="color:#ec0000">==</span> DBG_RIPEXCEPTION)
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			DebugEvent<span style="color:#ec0000">-&gt;</span>dwDebugEventCode <span style="color:#ec0000">=</span> RIP_EVENT;
+</span></span><span style="display:flex;"><span>			DebugEvent<span style="color:#ec0000">-&gt;</span>u.RipInfo.dwType <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.Exception.ExceptionRecord.ExceptionInformation[<span style="color:#008900">1</span>];
+</span></span><span style="display:flex;"><span>			DebugEvent<span style="color:#ec0000">-&gt;</span>u.RipInfo.dwError <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.Exception.ExceptionRecord.ExceptionInformation[<span style="color:#008900">0</span>];
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			DebugEvent<span style="color:#ec0000">-&gt;</span>dwDebugEventCode <span style="color:#ec0000">=</span> EXCEPTION_DEBUG_EVENT;
+</span></span><span style="display:flex;"><span>			DebugEvent<span style="color:#ec0000">-&gt;</span>u.Exception.ExceptionRecord <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.Exception.ExceptionRecord;
+</span></span><span style="display:flex;"><span>			DebugEvent<span style="color:#ec0000">-&gt;</span>u.Exception.dwFirstChance <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.Exception.FirstChance;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">DbgLoadDllStateChange</span>:
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>dwDebugEventCode <span style="color:#ec0000">=</span> LOAD_DLL_DEBUG_EVENT;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.LoadDll.lpBaseOfDll <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.LoadDll.BaseOfDll;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.LoadDll.hFile <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.LoadDll.FileHandle;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.LoadDll.dwDebugInfoFileOffset <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.LoadDll.DebugInfoFileOffset;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.LoadDll.nDebugInfoSize <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.LoadDll.DebugInfoSize;
+</span></span><span style="display:flex;"><span>		InitializeObjectAttributes(<span style="color:#ec0000">&amp;</span>ObjectAttributes, <span style="color:#ec0000">NULL</span>, <span style="color:#008900">0</span>, <span style="color:#ec0000">NULL</span>, <span style="color:#ec0000">NULL</span>);
+</span></span><span style="display:flex;"><span>		Status <span style="color:#ec0000">=</span> NtOpenThread(<span style="color:#ec0000">&amp;</span>ThreadHandle, THREAD_QUERY_INFORMATION, <span style="color:#ec0000">&amp;</span>ObjectAttributes, <span style="color:#ec0000">&amp;</span>WaitStateChange<span style="color:#ec0000">-&gt;</span>AppClientId);
+</span></span><span style="display:flex;"><span>		Status <span style="color:#ec0000">=</span> NtQueryInformationThread(ThreadHandle, ThreadBasicInformation, <span style="color:#ec0000">&amp;</span>ThreadBasicInfo, <span style="color:#ec0000">sizeof</span>(ThreadBasicInfo), <span style="color:#ec0000">NULL</span>);
+</span></span><span style="display:flex;"><span>		NtClose(ThreadHandle);
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.LoadDll.lpImageName <span style="color:#ec0000">=</span> ((PTEB)ThreadBasicInfo.TebBaseAddress)<span style="color:#ec0000">-&gt;</span>NtTib.ArbitraryUserPointer;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.LoadDll.fUnicode <span style="color:#ec0000">=</span> TRUE;
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">DbgUnloadDllStateChange</span>:
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>dwDebugEventCode <span style="color:#ec0000">=</span> UNLOAD_DLL_DEBUG_EVENT;
+</span></span><span style="display:flex;"><span>		DebugEvent<span style="color:#ec0000">-&gt;</span>u.UnloadDll.lpBaseOfDll <span style="color:#ec0000">=</span> WaitStateChange<span style="color:#ec0000">-&gt;</span>StateInfo.UnloadDll.BaseAddress;
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">default</span><span style="color:#ec0000">:</span> 
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">return</span> STATUS_UNSUCCESSFUL;
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">switch</span> (lpDebugEvent<span style="color:#ec0000">-&gt;</span>dwDebugEventCode)
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">CREATE_THREAD_DEBUG_EVENT</span>:
+</span></span><span style="display:flex;"><span>		SaveThreadHandle(lpDebugEvent<span style="color:#ec0000">-&gt;</span>dwProcessId, lpDebugEvent<span style="color:#ec0000">-&gt;</span>dwThreadId, lpDebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateThread.hThread);
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">CREATE_PROCESS_DEBUG_EVENT</span>:
+</span></span><span style="display:flex;"><span>		SaveProcessHandle(lpDebugEvent<span style="color:#ec0000">-&gt;</span>dwProcessId, lpDebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateProcessInfo.hProcess);
+</span></span><span style="display:flex;"><span>		SaveThreadHandle(lpDebugEvent<span style="color:#ec0000">-&gt;</span>dwProcessId, lpDebugEvent<span style="color:#ec0000">-&gt;</span>dwThreadId, lpDebugEvent<span style="color:#ec0000">-&gt;</span>u.CreateProcessInfo.hThread);
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">EXIT_PROCESS_DEBUG_EVENT</span>:
+</span></span><span style="display:flex;"><span>		MarkProcessHandle(lpDebugEvent<span style="color:#ec0000">-&gt;</span>dwProcessId);
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">EXIT_THREAD_DEBUG_EVENT</span>:
+</span></span><span style="display:flex;"><span>		MarkThreadHandle(lpDebugEvent<span style="color:#ec0000">-&gt;</span>dwThreadId);
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">EXCEPTION_DEBUG_EVENT</span>:
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">LOAD_DLL_DEBUG_EVENT</span>:
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">UNLOAD_DLL_DEBUG_EVENT</span>:
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">OUTPUT_DEBUG_STRING_EVENT</span>:
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">case</span> <span style="color:#ec0000">RIP_EVENT</span>:
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">default</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">return</span> FALSE;
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>#define DbgSsSetThreadData(d) NtCurrentTeb()-&gt;DbgSsReserved[0] = d
+</span></span><span style="display:flex;"><span>#define DbgSsGetThreadData() ((PDBGSS_THREAD_DATA)NtCurrentTeb()-&gt;DbgSsReserved[0])
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>VOID WINAPI <span style="color:#5f5fff">SaveThreadHandle</span>(DWORD dwProcessId, DWORD dwThreadId, HANDLE hThread)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	PDBGSS_THREAD_DATA ThreadData;
+</span></span><span style="display:flex;"><span>	ThreadData <span style="color:#ec0000">=</span> RtlAllocateHeap(RtlGetProcessHeap(), <span style="color:#008900">0</span>, <span style="color:#ec0000">sizeof</span>(DBGSS_THREAD_DATA));
+</span></span><span style="display:flex;"><span>	ThreadData<span style="color:#ec0000">-&gt;</span>ThreadHandle <span style="color:#ec0000">=</span> hThread;
+</span></span><span style="display:flex;"><span>	ThreadData<span style="color:#ec0000">-&gt;</span>ProcessId <span style="color:#ec0000">=</span> dwProcessId;
+</span></span><span style="display:flex;"><span>	ThreadData<span style="color:#ec0000">-&gt;</span>ThreadId <span style="color:#ec0000">=</span> dwThreadId;
+</span></span><span style="display:flex;"><span>	ThreadData<span style="color:#ec0000">-&gt;</span>ProcessHandle <span style="color:#ec0000">=</span> <span style="color:#ec0000">NULL</span>;
+</span></span><span style="display:flex;"><span>	ThreadData<span style="color:#ec0000">-&gt;</span>HandleMarked <span style="color:#ec0000">=</span> FALSE;
+</span></span><span style="display:flex;"><span>	ThreadData<span style="color:#ec0000">-&gt;</span>Next <span style="color:#ec0000">=</span> DbgSsGetThreadData();
+</span></span><span style="display:flex;"><span>	DbgSsSetThreadData(ThreadData);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>VOID WINAPI <span style="color:#5f5fff">SaveProcessHandle</span>(DWORD dwProcessId, HANDLE hProcess)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	PDBGSS_THREAD_DATA ThreadData;
+</span></span><span style="display:flex;"><span>	ThreadData <span style="color:#ec0000">=</span> RtlAllocateHeap(RtlGetProcessHeap(), <span style="color:#008900">0</span>, <span style="color:#ec0000">sizeof</span>(DBGSS_THREAD_DATA));
+</span></span><span style="display:flex;"><span>	ThreadData<span style="color:#ec0000">-&gt;</span>ProcessHandle <span style="color:#ec0000">=</span> hProcess;
+</span></span><span style="display:flex;"><span>	ThreadData<span style="color:#ec0000">-&gt;</span>ProcessId <span style="color:#ec0000">=</span> dwProcessId;
+</span></span><span style="display:flex;"><span>	ThreadData<span style="color:#ec0000">-&gt;</span>ThreadId <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>	ThreadData<span style="color:#ec0000">-&gt;</span>ThreadHandle <span style="color:#ec0000">=</span> <span style="color:#ec0000">NULL</span>;
+</span></span><span style="display:flex;"><span>	ThreadData<span style="color:#ec0000">-&gt;</span>HandleMarked <span style="color:#ec0000">=</span> FALSE;
+</span></span><span style="display:flex;"><span>	ThreadData<span style="color:#ec0000">-&gt;</span>Next <span style="color:#ec0000">=</span> DbgSsGetThreadData();
+</span></span><span style="display:flex;"><span>	DbgSsSetThreadData(ThreadData);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>VOID WINAPI <span style="color:#5f5fff">MarkProcessHandle</span>(DWORD dwProcessId)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	PDBGSS_THREAD_DATA ThreadData;
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">for</span> (ThreadData <span style="color:#ec0000">=</span> DbgSsGetThreadData(); ThreadData; ThreadData <span style="color:#ec0000">=</span> ThreadData<span style="color:#ec0000">-&gt;</span>Next)
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> ((ThreadData<span style="color:#ec0000">-&gt;</span>ProcessId <span style="color:#ec0000">==</span> dwProcessId) <span style="color:#ec0000">&amp;&amp;</span> <span style="color:#ec0000">!</span>(ThreadData<span style="color:#ec0000">-&gt;</span>ThreadId))
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			ThreadData<span style="color:#ec0000">-&gt;</span>HandleMarked <span style="color:#ec0000">=</span> TRUE;
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>VOID WINAPI <span style="color:#5f5fff">MarkThreadHandle</span>(DWORD dwThreadId)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	PDBGSS_THREAD_DATA ThreadData;
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">for</span> (ThreadData <span style="color:#ec0000">=</span> DbgSsGetThreadData(); ThreadData; ThreadData <span style="color:#ec0000">=</span> ThreadData<span style="color:#ec0000">-&gt;</span>Next)
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		<span style="color:#ec0000">if</span> (ThreadData<span style="color:#ec0000">-&gt;</span>ThreadId <span style="color:#ec0000">==</span> dwThreadId)
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			ThreadData<span style="color:#ec0000">-&gt;</span>HandleMarked <span style="color:#ec0000">=</span> TRUE;
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>可见作为内核接口的api有：</p>
+<ul>
+<li>ZwDebugContinue</li>
+<li>ZwCreateDebugObject</li>
+<li>NtDebugActiveProcess</li>
+<li>NtRemoveProcessDebug</li>
+<li>NtSetInformationDebugObject</li>
+<li>NtWaitForDebugEvent</li>
+</ul>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150623_dllentry_deadlock/">
+                        Dll入口函数中Wait系函数死锁的解决
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150709_windbg_proto/">
+                        Windbg内核调试协议分析
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Shell on 超哥的博客</title>
+    <link>https://lich4.github.io/tags/shell/</link>
+    <description>Recent content in Shell on 超哥的博客</description>
+    <generator>Hugo</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Sun, 23 Jun 2019 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://lich4.github.io/tags/shell/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Linux Shell参考</title>
+      <link>https://lich4.github.io/linux_posts/20190623_shell/</link>
+      <pubDate>Sun, 23 Jun 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/linux_posts/20190623_shell/</guid>
+      <description>Linux Shell参考</description>
+    </item>
+    <item>
+      <title>编译iOS可用lsof</title>
+      <link>https://lich4.github.io/ios_posts/20181227_fix_lsof/</link>
+      <pubDate>Thu, 27 Dec 2018 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20181227_fix_lsof/</guid>
+      <description>编译iOS可用lsof</description>
+    </item>
+    <item>
+      <title>记脱壳百度钱包app</title>
+      <link>https://lich4.github.io/android_posts/20160705_dump_bdwallet/</link>
+      <pubDate>Tue, 05 Jul 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/android_posts/20160705_dump_bdwallet/</guid>
+      <description>记脱壳百度钱包app</description>
+    </item>
+  </channel>
+</rss>

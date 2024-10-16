@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    Android逆向分析笔记 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/re_posts/20170110_android_re/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/re_posts/">Re_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/re_posts/20170110_android_re/">Android逆向分析笔记</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">Android逆向分析笔记</h1>
+    
+    <p class="single-summary">Android逆向分析笔记</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2017-01-10T00:00:00&#43;00:00">January 10, 2017</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E9%80%86%E5%90%91/">#逆向</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#概述">概述</a>
+      <ul>
+        <li><a href="#分析步骤">分析步骤</a></li>
+        <li><a href="#分析工具">分析工具</a></li>
+        <li><a href="#常见文件格式">常见文件格式</a></li>
+      </ul>
+    </li>
+    <li><a href="#java层">Java层</a>
+      <ul>
+        <li><a href="#常用工具">常用工具</a></li>
+        <li><a href="#有源码调试apk">有源码调试APK</a></li>
+        <li><a href="#无源码调试apk">无源码调试apk</a></li>
+        <li><a href="#无源码调试dex">无源码调试dex</a></li>
+      </ul>
+    </li>
+    <li><a href="#linux层">Linux层</a>
+      <ul>
+        <li><a href="#常用工具-1">常用工具</a></li>
+        <li><a href="#有源码so调试">有源码so调试</a></li>
+        <li><a href="#无源码调试so">无源码调试So</a></li>
+        <li><a href="#调试android上linux程序">调试Android上Linux程序</a></li>
+      </ul>
+    </li>
+    <li><a href="#java层linux层联合调试">Java层/Linux层联合调试</a>
+      <ul>
+        <li><a href="#有源码联合调试">有源码联合调试</a></li>
+        <li><a href="#无源码联合调试">无源码联合调试</a></li>
+        <li><a href="#android-linux内核层调试">Android linux内核层调试</a></li>
+      </ul>
+    </li>
+    <li><a href="#使用hook">使用Hook</a>
+      <ul>
+        <li><a href="#常用hookinject工具简介">常用Hook/Inject工具简介</a></li>
+      </ul>
+    </li>
+    <li><a href="#实例-360手机卫士卸载后弹窗分析过程">实例 360手机卫士卸载后弹窗分析过程</a>
+      <ul>
+        <li><a href="#现象">现象</a></li>
+        <li><a href="#文件注入">文件注入</a></li>
+      </ul>
+    </li>
+    <li><a href="#gdb调试">GDB调试</a>
+      <ul>
+        <li><a href="#反汇编一段地址">反汇编一段地址</a></li>
+        <li><a href="#表达式计算">表达式计算</a></li>
+        <li><a href="#查看寄存器">查看寄存器</a></li>
+        <li><a href="#查看栈参数">查看栈参数</a></li>
+        <li><a href="#查看局部变量">查看局部变量</a></li>
+        <li><a href="#查看内存">查看内存</a></li>
+        <li><a href="#修改内存">修改内存</a></li>
+        <li><a href="#断点">断点</a></li>
+        <li><a href="#查看调用栈">查看调用栈</a></li>
+        <li><a href="#流程控制">流程控制</a></li>
+        <li><a href="#显示当前加载模块">显示当前加载模块</a></li>
+        <li><a href="#强制加载模块">强制加载模块</a></li>
+        <li><a href="#替换当前调试模块">替换当前调试模块</a></li>
+        <li><a href="#进程转储">进程转储</a></li>
+        <li><a href="#进程空间">进程空间</a></li>
+        <li><a href="#由地址获对应的符号">由地址获对应的符号</a></li>
+        <li><a href="#查找符号">查找符号</a></li>
+        <li><a href="#执行外部命令">执行外部命令</a></li>
+        <li><a href="#显示线程">显示线程</a></li>
+        <li><a href="#打印c对象虚表">打印c++对象虚表</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="概述">概述</h2>
+<h3 id="分析步骤">分析步骤</h3>
+<p>通用逆向分析步骤</p>
+<ul>
+<li>1.了解该模块正向编程相关方法</li>
+<li>2.使用apktool解密apk，得到资源、jni模块等文件</li>
+<li>3.从apk提取出dex文件，使用dex2jar转换成jar文件，再用java逆向工具得到java源码 dex-&gt;jar-&gt;java</li>
+<li>4.根据特征(字符串、常量、包名类名方法名、manifest文件、布局文件等方式)或调试手段定位到关键代码</li>
+<li>5.分析变量含义类型、函数逻辑、模块流程</li>
+<li>6.对变量、函数、类进行标注、恢复成高级语言	-&gt;c</li>
+</ul>
+<p>  Android程序的特点相比在于使用混淆方式打包，将包名、类名、函数名改成不易看懂的字母，从而使生成的apk小很多(android studio提供了release编译方式，使用proguard混淆)，因此反编译apk最多的工作在于重构这些名称，这一点和pc上一致，对于android native程序(jni)则和pc上基本一致，不同之处在于常见的是arm汇编。</p>
+<p>安卓上APK调试步骤</p>
+<ul>
+<li>1.Apk(debuggable)或系统(ro.debuggable=1)设置为可调试</li>
+<li>2.在虚拟机中启动服务端(adbd/android_server)</li>
+<li>3.在主机端连接客户端调试器(IDA/jdb/adt)，设置断点</li>
+</ul>
+<p>安卓上linux程序调试步骤：</p>
+<ul>
+<li>1.在虚拟机中启动服务端(gdb_server/linux_server)</li>
+<li>2.在主机端连接客户端调试器(IDA/gdb_for_windows)，设置断点</li>
+</ul>
+<p>  对于apk的反编译，由于资源和xml都进行了编码，因此反编译时必然要解析相应的resource.arsc/AndroidManifest.xml等文件，对于做过保护处理的apk通常会在这里做手脚干扰Apktool、dex2jar等反编译工具因此很有必要掌握编译、调试这些工具源码的方法(见“如何编译、调试apktool和dex2jar”)</p>
+<h3 id="分析工具">分析工具</h3>
+<ul>
+<li>集成IDE：APK改之理、JD-GUI、JEB(1.4破解 2.0)、jadx</li>
+<li>解压(apk, jar)：WinRar</li>
+<li>解析资源：apktool</li>
+<li>反编译引擎(jar, class)：dex2jar工具集、jd-core(JD-GUI,JD-Eclipse反编译核心)、fernflower(Android Studio反编 、procyon</li>
+<li>回编译：aapt、dex2jar工具集</li>
+<li>调试器：IDA、jdb、adt等</li>
+<li>辅助工具：DDMS  如果是虚拟机可以看到所有进程</li>
+</ul>
+<h4 id="apk改之理">APK改之理</h4>
+<ul>
+<li>整合&amp;提供了全套解压、反编译代码和资源、回编译、签名功能，强大的正则搜索，修改smali字节码等功能</li>
+<li>集成ApkTool、Dex2jar、JD-GUI工具</li>
+<li>可视化操作，全自动的反编译、回编译、签名Apk</li>
+<li>正则表达式搜索资源及源码</li>
+</ul>
+<p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/gaizhili.png">
+    </div>
+
+    
+</figure></p>
+<h4 id="jd-gui">JD-GUI</h4>
+<p>轻量级反编译，反编译jar/class等java字节码文件(能力一般)，提供简单的搜索能力</p>
+<p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/jdgui.png">
+    </div>
+
+    
+</figure></p>
+<h4 id="jeb">JEB</h4>
+<ul>
+<li>反编译apk/jar工具(能力较强)</li>
+<li>强大的正向、反向索引，一定程度重命名能力，一定搜索能力</li>
+<li>支持注释、插件</li>
+<li>交互式可视化操作，全自动的反编译</li>
+<li>支持重命名</li>
+</ul>
+<p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/jeb.png">
+    </div>
+
+    
+</figure></p>
+<h4 id="dex2jar工具集">Dex2jar工具集</h4>
+<p>  dex2jar是一个工具包，反编译dex和jar，还提供了一些其它的功能，每个功能使用一个bat批处理或 sh 脚本来包装，只需在Windows 系统中调用 bat文件、在Linux 系统中调用 sh 脚本即可。在bat中调用相应的jar主类完成特定功能，例如d2j-dex2jar.bat中的内容是：<code>@&quot;%~dp0d2j_invoke.bat&quot; com.googlecode.dex2jar.tools.Dex2jarCmd %*</code>。常用的有<code>dex2jar jar2dex dex2smali smali2dex</code></p>
+<ul>
+<li>d2j-apk-sign用来为apk 文件签名。命令格式：d2j-apk-sign xxx.apk 。</li>
+<li>d2j-asm-verify 用来验证jar 文件。命令格式：d2j-asm-verify -d xxx.jar。</li>
+<li>d2j-dex2jar 用来将dex 文件转换成jar 文件。命令格式：d2j-dex2jar xxx.apk</li>
+<li>d2j-dex-asmifier 用来验证dex 文件。命令格式：d2j-dex-asmifier xxx.dex。</li>
+<li>d2j-dex-dump 用来转存dex 文件的信息。命令格式：d2j-dex-dump xxx.apk out.jar 。</li>
+<li>d2j-init-deobf 用来生成反混淆jar 文件时的初始化配置文件。</li>
+<li>d2j-jar2dex 用来将jar 文件转换成 dex 文件。命令格式：d2j-jar2dex xxx.apk。</li>
+<li>d2j-jar2jasmin 用来将jar 文件转换成jasmin 格式的文件。命令格式：d2j-jar2jasmin xxx.jar</li>
+<li>d2j-jar-access 用来修改jar 文件中的类、方法以及字段的访问权限。</li>
+<li>d2j-jar-remap 用来重命名jar 文件中的包、类、方法以及字段的名称。</li>
+<li>d2j-jasmin2jar 用来将jasmin 格式的文件转换成 jar 文件。命令格式：d2j-jasmin2jar dir dex2jar为d2j-dex2jar 的副本。</li>
+<li>dex-dump为d2j-dex-dump 的副本</li>
+</ul>
+<h4 id="apktool反编译打包工具">Apktool反编译&amp;打包工具</h4>
+<ul>
+<li>反编译apk：apktool d file.apk –o path</li>
+<li>回编译apk：apktool b path –o file.apk</li>
+</ul>
+<h3 id="常见文件格式">常见文件格式</h3>
+<h4 id="apk">Apk</h4>
+<p>  Android package，android安装程序文件，本质上是压缩包，解压得到classes.dex、resources.arsc、AndroidManifest.xml、so文件以及资源文件</p>
+<ul>
+<li>Resources.arsc资源描述文件</li>
+<li>Classes.dex所有代码编译过得darvik字节码文件，可能会有多个</li>
+<li>AndroidManifest.xml 编译过的AndroidManifest.xml文件</li>
+</ul>
+<h5 id="使用aapt解析xml">使用aapt解析xml</h5>
+<pre tabindex="0"><code>aapt d xmltree 1.apk AndroidManifest.xml
+N: android=http://schemas.android.com/apk/res/android
+  E: manifest (line=2)
+    A: android:versionCode(0x0101021b)=(type 0x10)0x1
+    A: android:versionName(0x0101021c)=&#34;1.0&#34; (Raw: &#34;1.0&#34;)
+    A: package=&#34;com.ibotpeaches.issue767&#34; (Raw: &#34;com.ibotpeaches.issue767&#34;)
+    A: platformBuildVersionCode=(type 0x10)0x17 (Raw: &#34;23&#34;)
+    A: platformBuildVersionName=&#34;6.0-2438415&#34; (Raw: &#34;6.0-2438415&#34;)
+    E: uses-sdk (line=0)
+      A: android:minSdkVersion(0x0101020c)=(type 0x10)0x16
+      A: android:targetSdkVersion(0x01010270)=(type 0x10)0x17
+    E: application (line=3)
+      A: android:theme(0x01010000)=@0x7f090083
+      A: android:label(0x01010001)=@0x7f060015
+      A: android:icon(0x01010002)=@0x7f030000
+      A: android:debuggable(0x0101000f)=(type 0x12)0xffffffff
+      A: android:allowBackup(0x01010280)=(type 0x12)0xffffffff
+      A: android:supportsRtl(0x010103af)=(type 0x12)0xffffffff
+      E: activity (line=4)
+        A: android:theme(0x01010000)=@0x7f090030
+        A: android:label(0x01010001)=@0x7f060015
+        A: android:name(0x01010003)=&#34;com.ibotpeaches.issue767.MainActivity&#34; (Raw
+: &#34;com.ibotpeaches.issue767.MainActivity&#34;)
+        E: intent-filter (line=5)
+          E: action (line=6)
+            A: android:name(0x01010003)=&#34;android.intent.action.MAIN&#34; (Raw: &#34;andr
+oid.intent.action.MAIN&#34;)
+          E: category (line=7)
+            A: android:name(0x01010003)=&#34;android.intent.category.LAUNCHER&#34; (Raw:
+ &#34;android.intent.category.LAUNCHER&#34;)
+      E: meta-data (line=10)
+        A: android:name(0x01010003)=&#34;large.int.value&#34; (Raw: &#34;large.int.value&#34;)
+        A: android:value(0x01010024)=&#34;9999999999999999999999&#34; (Raw: &#34;99999999999
+99999999999&#34;)
+</code></pre><p>查看xml  =&gt;  aapt d xmltree 1.apk AndroidManifest.xml<br>
+查看resource  =&gt;  aapt d resources 1.apk     (resource.arsc)</p>
+<h4 id="dex">Dex</h4>
+<p>  Dalvik Executable，Dalvik可执行文件，从java class文件转换而来的字节码，Classes.Dex通过dex2jar转换成java字节码(有损)，或者dex2smali转换成darvik汇编(无损)——smali字节码</p>
+<p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/dex.png">
+    </div>
+
+    
+</figure></p>
+<h4 id="jar">Jar</h4>
+<p>  Java Archive，java归档文件，可以直接解压得到class文件</p>
+<p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/jar.png">
+    </div>
+
+    
+</figure></p>
+<h4 id="odex">Odex</h4>
+<p>dex转odex：/system/bin/dexopt<br>
+dexopt-wrapper 1.apk 1.odex</p>
+<h4 id="aar">Aar</h4>
+<p>  Android归档文件，压缩包格式，包含</p>
+<ul>
+<li>/AndroidManifest.xml (强制)		未编译的</li>
+<li>/classes.jar (强制)</li>
+<li>/res/ (强制)</li>
+<li>/R.txt (强制)</li>
+<li>/assets/ (可选)</li>
+<li>/libs/*.jar (可选)</li>
+<li>/jni/<abi>/*.so (可选)</li>
+<li>/proguard.txt (可选)</li>
+<li>/lint.jar (可选)</li>
+</ul>
+<h4 id="so">So</h4>
+<p>  Linux动态链接库文件，包含arm64 arm mips mips64 x86 x86-64几个平台</p>
+<h4 id="android设备上重要目录">Android设备上重要目录</h4>
+<ul>
+<li>/system/app/1.apk  系统应用</li>
+<li>/data/app/1.apk    用户应用</li>
+<li>/data/data/[pkgname]  应用数据(so,database,…)</li>
+<li>/data/dalvik-cache 存放dex</li>
+</ul>
+<h2 id="java层">Java层</h2>
+<h3 id="常用工具">常用工具</h3>
+<h4 id="adb">adb</h4>
+<p>  设备通信、调试工具，常用法：</p>
+<pre tabindex="0"><code>adb devices 列出当前设备
+adb –s d24eb3ab [命令]      指定设备执行命令
+adb push 源 目标			 非root机器可以设置路径为/data/local/tmp
+adb pull 源 目标
+adb shell 				    执行终端
+adb logcat 				    查看日志(/system/logcat为服务器)
+adb jdwp 				    查看远程jdwp进程
+adb forward tcp:主机端口     tcp:远程端口 		把主机端口消息转发手机端口(端口对应进程)	用于ida调试
+adb forward tcp:主机端口     jdwp:远程进程ID 	把主机端口消息转发手机jdwp进程	用于jdb调试 
+adb install [apkpath]		安装apk
+adb uninstall [packagename]	卸载apk 注意会彻底清理，删除/data/app下的备份apk
+adb remount 				将/system重新映射为读写，以便进行系统区文件操作
+adb root                    使adb以root方式启动，便于push/pull/remount
+</code></pre><h4 id="aapt">aapt</h4>
+<p>  APK资源管理工具，用于增删查改APK中的文件、资源等，对于分析编译后的Resource.arsc, AndroidManifest.xml格式较有价值，通常也可以用winrar对apk/jar进行解压</p>
+<pre tabindex="0"><code>打印xml树 aapt d xmltree 1.apk AndroidManifest.xml
+打印资源	aapt d resources 1.apk
+添加文件	aapt a 1.apk AndroidManifest.xml
+删除文件	aapt r 1.apk AndroidManifest.xml
+</code></pre><h4 id="am--pm">am &amp; pm</h4>
+<p>  Android远程命令，am执行调试、运行功能，pm执行安装、卸载功能</p>
+<ul>
+<li>启动应用：<code>am start -D -n &quot;baidu.myapp/baidu.myapp.MainActivity&quot; -a android.intent.action.MAIN -c  android.intent.category.LAUNCHER</code></li>
+<li>启动服务：<code>am startservice -n com.android.music/com.android.music.MediaPlaybackService</code></li>
+<li>强制停止包：<code>am force-stop com.example.administrator.myapplication</code></li>
+<li>强制结束包进程：<code>am kill com.example.administrator.myapplication</code>      <code>am kill all</code></li>
+<li>发送广播：<code>adb shell am broadcast -a com.android.test</code></li>
+<li>安装应用：<code>pm install –r 1.apk</code></li>
+<li>卸载应用：<code>pm uninstall packagename</code></li>
+<li>列出所有安装包：<code>pm list package</code></li>
+<li>查看是否以指定名为前缀的包存在：<code>pm list package com.qihoo</code></li>
+<li>禁用应用：<code>pm disable packagename</code>  (禁用后，图标消失，对该应用的操作都无效)</li>
+</ul>
+<h3 id="有源码调试apk">有源码调试APK</h3>
+<h4 id="android-studio">Android studio</h4>
+<p>  在android studio中可以采用运行调试或进程附加方式调试，支持条件断点、一次断点、对单线程下断，有6种断点：</p>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">TypeCh</th>
+          <th style="text-align: left">TypEn</th>
+          <th style="text-align: left">Description</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: left">行断点</td>
+          <td style="text-align: left">Java Line Breakpoints</td>
+          <td style="text-align: left">在(java/c)源码某行下断</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Java类成员变量访问断点</td>
+          <td style="text-align: left">Java Field Watchpoints</td>
+          <td style="text-align: left">类似于内存访问断点，在读和写java类成员变量时断下</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Java类方法断点</td>
+          <td style="text-align: left">Java Method Breakpoints</td>
+          <td style="text-align: left">在进入java层函数或退出函数时断下</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Java异常断点</td>
+          <td style="text-align: left">Java Exception Breakpoints</td>
+          <td style="text-align: left">发生java层捕获或未捕获异常时断下</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">异常断点</td>
+          <td style="text-align: left">Exception Breakpoints</td>
+          <td style="text-align: left">抛异常或捕获异常时断下</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">符号断点</td>
+          <td style="text-align: left">Symbolic Breakpoints</td>
+          <td style="text-align: left">(c/java)符号断点</td>
+      </tr>
+  </tbody>
+</table>
+<p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/android_studio.png">
+    </div>
+
+    
+</figure></p>
+<h4 id="adb-wifi">Adb wifi</h4>
+<p>  应用市场有很多这种软件，需要Root权限。解决没有USB数据线的情况下的调试</p>
+<pre tabindex="0"><code>C:\Users\Administrator&gt;adb connect 192.168.0.103:5555
+connected to 192.168.0.103:5555
+此时可以用adt调试
+</code></pre><h3 id="无源码调试apk">无源码调试apk</h3>
+<p>  不需要调试的一般过程 ：使用反编译工具得到源代码，修改调试标识，修改机器码，最后回编译签名：</p>
+<pre tabindex="0"><code>反编译apk：apktool d file.apk –o path  
+回编译apk：apktool b path –o file.apk  
+</code></pre><h4 id="使用androidstudio和apktool工具调试">使用AndroidStudio和Apktool工具调试</h4>
+<ul>
+<li>第一步，反编译得到(占行)伪源码：<code>java -jar apktool.jar d -d input.apk -o out</code>，加上-d选项之后反编译出的文件后缀为.java，而不是.smali，每个.java文件立马都伪造成了一个类，语句全都是“a=0;”这一句，smali语句成为注释，做这些都是为了后面欺骗idea、eclipse、android studio这些ide的</li>
+<li>第二步，修改资源或者源码(smali)，修改AndroidManifest.xml调试标识，反编译以后可以在dex中插入waitfordebugger或者Log.i的smali代码来进行相应的控制</li>
+<li>第三步，回编译(-d选项)+签名</li>
+<li>
+<ul>
+<li>回编译：<code>apktool b –d path –o input.apk</code></li>
+</ul>
+</li>
+<li>
+<ul>
+<li>签名：	<code>java –jar signapk.jar testkey.x509.pem testkey.pk8  input.apk output.apk</code></li>
+</ul>
+</li>
+<li>第四步，新建android studio工程 ，将反编译得到的smali文件夹中的源文件拷贝到源码目录（欺骗），回编译的apk覆盖目标apk位置 ，删除Edit configuration的Before launch，下断点调试</li>
+</ul>
+<p><em><strong>点评：这种方式只可以用来分析加密很弱的App，前提是apktool可以成功反编译</strong></em></p>
+<h4 id="使用jdb调试">使用jdb调试</h4>
+<p>  jdb是一个支持java代码级调试的工具，它是由java jdk提供的，可以设置断点、查看堆栈、计算表达式、动态修改类字节码、调试&amp;跟踪、修改变量值、线程操作，断点包括：(源码)行断点、符号断点、成员变量访问断点。每个java程序(windows/ios/android)都可以用jdwp协议进行调试，Android Studio/Eclipse的调试也是建立在该协议基础之上，下面以实例说明：</p>
+<ul>
+<li>第一步，开发demo</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Java" data-lang="Java"><span style="display:flex;"><span><span style="color:#ec0000">public</span> <span style="color:#ec0000">class</span> <span style="color:#5f5fff">MainActivity</span> <span style="color:#ec0000">extends</span> Activity {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#008900">@Override</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">protected</span> <span style="color:#5f5fff">void</span> <span style="color:#5f5fff">onCreate</span>(Bundle savedInstanceState) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">super</span>.<span style="color:#5f5fff">onCreate</span>(savedInstanceState);
+</span></span><span style="display:flex;"><span>        setContentView(R.<span style="color:#5f5fff">layout</span>.<span style="color:#5f5fff">activity_main</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        findViewById(R.<span style="color:#5f5fff">id</span>.<span style="color:#5f5fff">ok</span>).<span style="color:#5f5fff">setOnClickListener</span>(<span style="color:#ec0000">new</span> View.<span style="color:#5f5fff">OnClickListener</span>() {
+</span></span><span style="display:flex;"><span>            <span style="color:#008900">@Override</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">public</span> <span style="color:#5f5fff">void</span> <span style="color:#5f5fff">onClick</span>(View v) {
+</span></span><span style="display:flex;"><span>                Intent intent <span style="color:#ec0000">=</span> <span style="color:#ec0000">new</span> Intent(Intent.<span style="color:#5f5fff">ACTION_VIEW</span>, Uri.<span style="color:#5f5fff">parse</span>(<span style="color:#008900">&#34;http://www.baidu.com&#34;</span>));
+</span></span><span style="display:flex;"><span>                intent.<span style="color:#5f5fff">setClassName</span>(<span style="color:#008900">&#34;com.android.browser&#34;</span>,<span style="color:#008900">&#34;com.android.browser.BrowserActivity&#34;</span>);
+</span></span><span style="display:flex;"><span>                startActivity(intent);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        });
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><ul>
+<li>第二步，启动jdb调试</li>
+</ul>
+<pre tabindex="0"><code>adb shell am start -D -n &#34;baidu.myapp/baidu.myapp.MainActivity&#34; -a android.intent.action.MAIN -c android.intent.category.LAUNCHER
+</code></pre><p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/ddms.png">
+    </div>
+
+    
+</figure></p>
+<ul>
+<li>第三步，开始调试</li>
+<li>
+<ul>
+<li>查看ddms中该进程端口号 8600</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>使用jdb调试：jdb -connect com.sun.jdi.SocketAttach:hostname=127.0.0.1,port=8600</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>下断点：函数断点stop in android.app.Activity.startActivity(android.content.Intent)<br>
+行断点 stop at android.app.Activity:123，触发断点后显示堆栈：</li>
+</ul>
+</li>
+</ul>
+<pre tabindex="0"><code>&lt;1&gt; main[1] where
+  [1] android.app.Activity.startActivity (Activity.java:3,490)
+  [2] baidu.myapp.MainActivity$1.onClick (MainActivity.java:21)
+  [3] android.view.View.performClick (View.java:4,084)
+  [4] android.view.View$PerformClick.run (View.java:16,966)
+  [5] android.os.Handler.handleCallback (Handler.java:615)
+  [6] android.os.Handler.dispatchMessage (Handler.java:92)
+  [7] android.os.Looper.loop (Looper.java:137)
+  [8] android.app.ActivityThread.main (ActivityThread.java:4,745)
+  [9] java.lang.reflect.Method.invokeNative (本机方法)
+</code></pre><h5 id="查看参数">查看参数</h5>
+<pre tabindex="0"><code>&lt;1&gt; main[1] print intent
+ intent = &#34;Intent { act=android.intent.action.VIEW dat=http://www.baidu.com cmp=
+com.android.browser/.BrowserActivity }&#34;
+</code></pre><h5 id="设置源码从而进行逐行调试">设置源码从而进行逐行调试</h5>
+<pre tabindex="0"><code>&lt;1&gt; main[1] use D:\Android\sdk\sources\android-18		//参考设备android版本
+&lt;1&gt; main[1] use D:\test\MyApplication\app\src\main\java
+&lt;1&gt; main[1] list
+3,421         * @hide Implement to provide correct calling token.
+3,422         */
+3,423        public void startActivityAsUser(Intent intent, UserHandle user) {
+3,424            startActivityAsUser(intent, null, user);
+3,425 =&gt;     }
+3,426
+3,427        /**
+3,428         * @hide Implement to provide correct calling token.
+3,429         */
+3,430        public void startActivityAsUser(Intent intent, Bundle options, User
+Handle user) {
+</code></pre><h5 id="行断点">行断点：</h5>
+<pre tabindex="0"><code>&gt; use D:\test\MyApplication\app\src\main\java
+stop at baidu.myapp.MainActivity:18
+正在延迟断点baidu.myapp.MainActivity:18。
+将在加载类后设置。
+&gt; resume
+已恢复所有线程。
+&gt; 设置延迟的断点baidu.myapp.MainActivity:18
+断点命中: &#34;线程=&lt;1&gt; main&#34;, baidu.myapp.MainActivity.onCreate(), 行=18 bci=12
+18            int j = 0;
+</code></pre><h5 id="初始断点">初始断点</h5>
+<p>  只要连接到jdb就会导致app运行起来，此时如果想断在初始化这部分就没有办法了，不过jdb提供初始命令脚本</p>
+<ul>
+<li>暂停所有线程： <code>echo suspend &gt; jdb.ini</code></li>
+<li>执行调试：<code>jdb -connect com.sun.jdi.SocketAttach:hostname=127.0.0.1,port=8601</code></li>
+</ul>
+<p>  此时，app仍然处于等调试器状态，而虫子已经变绿，此时可以下断点，然后resume恢复所有线程
+附加后会变绿色虫子</p>
+<pre tabindex="0"><code>&gt; &gt; stop in baidu.myapp.MainActivity.onCreate(android.os.Bundle)
+正在延迟断点baidu.myapp.MainActivity.onCreate(android.os.Bundle)。
+将在加载类后设置。
+&gt;resume
+已恢复所有线程。
+断点命中: &#34;线程=&lt;1&gt; main&#34;, baidu.myapp.MainActivity.onCreate(), 行=13 bci=0
+
+&lt;1&gt; main[1] where
+  [1] baidu.myapp.MainActivity.onCreate (MainActivity.java:13)
+  [2] android.app.Activity.performCreate (Activity.java:5,372)
+  [3] android.app.Instrumentation.callActivityOnCreate (Instrumentation.java:1,1
+04)
+  [4] android.app.ActivityThread.performLaunchActivity (ActivityThread.java:2,25
+8)
+  [5] android.app.ActivityThread.handleLaunchActivity (ActivityThread.java:2,350
+)
+  [6] android.app.ActivityThread.access$700 (ActivityThread.java:160)
+  [7] android.app.ActivityThread$H.handleMessage (ActivityThread.java:1,317)
+  [8] android.os.Handler.dispatchMessage (Handler.java:99)
+  [9] android.os.Looper.loop (Looper.java:137)
+  [10] android.app.ActivityThread.main (ActivityThread.java:5,454)
+</code></pre><h5 id="调试命令">调试命令</h5>
+<pre tabindex="0"><code>	stop in:断点
+	step:步入(源码行)
+	stepi:单入(指令)
+	step up:执行到返回
+	cont:恢复运行
+	next:步过
+	输出表达式:print/eval
+</code></pre><p><em><strong>jdb最大缺点在于难用，所以有人用python封装了一次，工具名AndBug</strong></em></p>
+<h3 id="无源码调试dex">无源码调试dex</h3>
+<ul>
+<li>
+<ol>
+<li>使用ida分析apk或者从apk中提取出的dex</li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li>设置调试选项，包括包名和主类名，参考反编译的AndroidManifest</li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li>启动调试即可</li>
+</ol>
+</li>
+</ul>
+<p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/ida1.png">
+    </div>
+
+    
+</figure>
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/ida2.png">
+    </div>
+
+    
+</figure></p>
+<h2 id="linux层">Linux层</h2>
+<h3 id="常用工具-1">常用工具</h3>
+<h4 id="gdbserver">Gdbserver</h4>
+<pre tabindex="0"><code>Usage:  gdbserver [OPTIONS] COMM PROG [ARGS ...]
+        gdbserver [OPTIONS] --attach COMM PID
+        gdbserver [OPTIONS] --multi COMM
+		隐藏用法：gdbserver [OPTIONS] +SOCKETFILE --attach PID			会在本地建立socket文件通信
+Options:
+  --debug               Enable general debugging output.
+  --remote-debug        Enable remote protocol debugging output.
+  --version             Display version information and exit.
+  --wrapper WRAPPER --  Run WRAPPER to start new programs.
+  --once                Exit after the first connection has closed.
+使用方式：
+启动模式远程调试：gdbserver --debug --remote-debug  :23946 /system/test.out [参数]		
+附加模式远程：gdbserver –debug –remote-debug –attach  :23946 1234
+	Adb forward tcp:23946 tcp:23946 转发端口
+IDA中选择Remote GDB Debugger附加即可
+</code></pre><h4 id="strace">Strace</h4>
+<pre tabindex="0"><code>usage: strace [-CdDffhiqrtttTvVxx] [-a column] [-e expr] ... [-o file]
+              [-p pid] ... [-s strsize] [-u username] [-E var=val] ...
+              [command [arg ...]]
+or: strace -c [-D] [-e expr] ... [-O overhead] [-S sortby] [-E var=val] ...
+              [command [arg ...]]
+-c --统计每一系统调用的所执行的时间,次数和出错的次数等.
+-C -- like -c but also print regular output while processes are running
+-f --跟踪由fork调用所产生的子进程.
+-F --尝试跟踪vfork调用.在-f时,vfork不被跟踪.
+-i --输出系统调用的入口指针
+-q --禁止输出关于脱离的消息
+-r --打印出相对时间关于,,每一个系统调用
+-T --显示每一调用所耗的时间
+-v --输出所有的系统调用.一些调用关于环境变量,状态,输入输出等调用由于使用频繁,默认不输出
+-x --以十六进制形式输出非标准字符串
+-a设置返回值的输出位置.默认 为40.
+-e expr -指定一个表达式,用来控制如何跟踪.: option=[!]all or option=[!]val1[,val2]...
+   options: trace, abbrev, verbose, raw, signal, read, or write
+-o file --将strace的输出写入文件filename
+-O overhead -- set overhead for tracing syscalls to OVERHEAD usecs
+-p pid --跟踪指定的进程pid.
+-D -- run tracer process as a detached grandchild, not as parent
+-s strsize --指定输出的字符串的最大长度.默认为32.文件名一直全部输出
+-S sortby -- sort syscall counts by: time, calls, name, nothing (default time)
+-u username --以username 的UID和GID执行被跟踪的命令
+-E var=val -- put var=val in the environment for command
+-E var -- remove var from the environment for command
+
+使用方式：
+Strace –f ProcessA		启动跟踪
+Strace –f –p 234		附加跟踪
+	-e trace=file       -e trace=process    -e trace=network
+</code></pre><h3 id="有源码so调试">有源码so调试</h3>
+<h4 id="ndk-gdb">Ndk-gdb</h4>
+<p>  该程序是一个shell脚本，执行过程如下：</p>
+<pre tabindex="0"><code>adb shell am start -D -n com.example.hellojni/.HelloJni		启动app并等待调试器
+	ps | grep hellojni									得到PID 3569
+adb shell run-as com.example.hellojni /data/data/com.example.hellojni/lib/gdbserver +debug-socket --attach (3569)PID
+	将PID与文件映射建立调试链接(c层)
+adb forward tcp:5039 localfilesystem:/data/data/com.example.hellojni/debug-socket将调试链接和本地端口建立链接(c层)
+adb forward tcp:65534 jdwp:(3569)PID										 将本地端口和进程建立连接(java层)
+jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=65534			 使用jdb调试java层
+arm-linux-androideabi-gdb.exe											
+	target remote :5039												 使用gdb调试c层
+	set breakpoint pending on
+</code></pre><p>  (使用前关掉腾讯的AndroidServer.exe，否则连不上!!!)，在工程目录下(有AndroidManifest.xml)，命令行运行<code>%NDK_ROOT%\ndk-gdb-py.cmd --start --verbose</code>，输出下面字符即为成功：</p>
+<pre tabindex="0"><code>Android NDK installation path: D:/Android/AndroidNDK/android-ndk-r10e
+ADB version found: Android Debug Bridge version 1.0.32
+Using ADB flags:
+Using auto-detected project path: .
+Found package name: com.example.hellojni
+ABIs targetted by application: arm64-v8a armeabi armeabi-v7a armeabi-v7a-hard mips mips64 x86 x86_64
+Device API Level: 19
+Device CPU ABIs: armeabi-v7a armeabi
+Compatible device ABI: armeabi-v7a
+Using gdb setup init: ./libs/armeabi-v7a/gdb.setup
+Using toolchain prefix: D:/Android/AndroidNDK/android-ndk-r10e/toolchains/arm-linux-androideabi-4.8/prebuilt/windows/bin/arm-linux-androideabi
+Using app out directory: ./obj/local/armeabi-v7a
+Found debuggable flag: true
+Found device gdbserver: /data/data/com.example.hellojni/lib/gdbserver
+Found data directory: &#39;/data/data/com.example.hellojni&#39;
+Found first launchable activity: .HelloJni
+Launching activity: com.example.hellojni/.HelloJni
+### COMMAND: adb_cmd shell am start -D -n com.example.hellojni/.HelloJni
+### COMMAND: adb_cmd shell sleep 2.000000
+Found running PID: 9139
+### COMMAND: adb_cmd shell run-as com.example.hellojni /data/data/com.example.hellojni/lib/gdbserver --attach +debug-socket 9139 [BACKGROUND]
+Launched gdbserver succesfully.
+Setup network redirection
+### COMMAND: adb_cmd forward tcp:5039 localfilesystem:/data/data/com.example.hellojni/debug-socket
+Attached; pid = 9139
+Listening on Unix socket debug-socket
+### COMMAND: adb_cmd pull /system/bin/app_process ./obj/local/armeabi-v7a/app_process
+79 KB/s (9488 bytes in 0.117s)
+Pulled app_process from device/emulator.
+### COMMAND: adb_cmd pull /system/bin/linker ./obj/local/armeabi-v7a/linker
+585 KB/s (63596 bytes in 0.106s)
+Pulled linker from device/emulator.
+### COMMAND: adb_cmd pull /system/lib/libc.so ./obj/local/armeabi-v7a/libc.so
+1184 KB/s (310584 bytes in 0.256s)
+Pulled /system/lib/libc.so from device/emulator.
+Set up JDB connection, using jdb command: C:\Program Files\Java\jdk1.8.0_66\bin\jdb.exe
+### COMMAND: adb_cmd forward tcp:65534 jdwp:9139
+--------------------./obj/local/armeabi-v7a/gdb.setup---------------
+GNU gdb (GDB) 7.7
+Copyright (C) 2014 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later &lt;http://gnu.org/licenses/gpl.html&gt;
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type &#34;show copying&#34;
+and &#34;show warranty&#34; for details.
+This GDB was configured as &#34;--host=i586-pc-mingw32msvc --target=arm-linux-android&#34;.
+Type &#34;show configuration&#34; for configuration details.
+For bug reporting instructions, please see:
+&lt;http://source.android.com/source/report-bugs.html&gt;.
+Find the GDB manual and other documentation resources online at:
+&lt;http://www.gnu.org/software/gdb/documentation/&gt;.
+For help, type &#34;help&#34;.
+Type &#34;apropos word&#34; to search for commands related to &#34;word&#34;.
+Remote debugging from host 9.11.5.0
+warning: Could not load shared library symbols for 112 libraries, e.g. libstdc++.so.
+Use the &#34;info sharedlibrary&#34; command to see the complete listing.
+Do you need &#34;set solib-search-path&#34; or &#34;set sysroot&#34;?
+0x400daa80 in __futex_syscall3 () from D:\Android\AndroidNDK\android-ndk-r10e\samples\hello-jni\obj\local\armeabi-v7a\libc.so
+(gdb)
+</code></pre><p><em><strong>点评：该工具要求环境极为苛刻且不稳定，不建议使用</strong></em></p>
+<h4 id="gdb-gdbserver">Gdb-Gdbserver</h4>
+<p>  操作步骤：</p>
+<ul>
+<li>Android studio导入jni工程,</li>
+<li>拷贝.so到搜索路径，pull /system/lib到搜索路径，pull /system/linker到搜索路径</li>
+<li>启动gdbserver (具体命令根据版本不同而变)<br>
+<code>gdbserver --attach *:111 1234</code></li>
+<li>转发端口<br>
+<code>adb forward tcp:111 tcp:111</code></li>
+<li>连接本地调试器<br>
+<code>target remote 127.0.0.1:111</code></li>
+</ul>
+<pre tabindex="0"><code>(gdb) set solib-search-path C:/Users/lichao26/2/
+Reading symbols from C:\Users\lichao26\2\linker...(no debugging symbols found)...done.
+Loaded symbols for C:\Users\lichao26\2\linker
+Reading symbols from C:\Users\lichao26\2\libc.so...(no debugging symbols found)...done.
+Loaded symbols for C:\Users\lichao26\2\libc.so
+Reading symbols from C:\Users\lichao26\2\libstdc++.so...(no debugging symbols found)...done.
+Loaded symbols for C:\Users\lichao26\2\libstdc++.so
+Reading symbols from C:\Users\lichao26\2\libm.so...(no debugging symbols found)...done.
+Loaded symbols for C:\Users\lichao26\2\libm.so
+Reading symbols from C:\Users\lichao26\2\liblog.so...(no debugging symbols found)...done.
+Loaded symbols for C:\Users\lichao26\2\liblog.so
+Reading symbols from C:\Users\lichao26\2\libcutils.so...(no debugging symbols found)...done.
+Loaded symbols for C:\Users\lichao26\2\libcutils.so
+Reading symbols from C:\Users\lichao26\2\libgccdemangle.so...(no debugging symbols found)...done.
+Loaded symbols for C:\Users\lichao26\2\libgccdemangle.so
+Reading symbols from C:\Users\lichao26\2\libcorkscrew.so...(no debugging symbols found)...done.
+
+(gdb) bt
+##0  0x400e50e0 in fork () from C:\Users\lichao26\2\libc.so
+##1  0x76886ca0 in Java_com_example_hellojni_HelloJni_stringFromJNI () from C:\Users\lichao26\2\libhello-jni.so
+##2  0x416b8350 in dvmPlatformInvoke () from C:\Users\lichao26\2\libdvm.so
+##3  0x416e8fd2 in dvmCallJNIMethod(unsigned int const*, JValue*, Method const*, Thread*) () from C:\Users\lichao26\2\libdvm.so
+##4  0x416ea9ba in dvmResolveNativeMethod(unsigned int const*, JValue*, Method const*, Thread*) () from C:\Users\lichao26\2\libdvm.so
+##5  0x416c1828 in dvmJitToInterpNoChain () from C:\Users\lichao26\2\libdvm.so
+Backtrace stopped: previous frame identical to this frame (corrupt stack?)
+(gdb) list
+</code></pre><h3 id="无源码调试so">无源码调试So</h3>
+<h4 id="使用arm版gdb在移动端直接调试">使用Arm版Gdb在移动端直接调试</h4>
+<ul>
+<li>获取arm版gdb</li>
+<li>把gdb下载到移动端<br>
+<code>adb push gdb /data/bin</code></li>
+<li>执行gdb<br>
+<code>adb shell</code><br>
+<code>./data/bin/gdb</code></li>
+</ul>
+<pre tabindex="0"><code>GNU gdb 6.7
+Copyright (C) 2007 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later &lt;http://gnu.org/licenses/gpl.html&gt;
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type &#34;show copying&#34;
+and &#34;show warranty&#34; for details.
+This GDB was configured as &#34;--host=arm-none-linux-gnueabi --target=&#34;.
+(gdb) 
+</code></pre><p><em><strong>点评：该方法速度快，但不好查看符号</strong></em></p>
+<h4 id="ida调试">IDA调试</h4>
+<ul>
+<li>将android_server拷入/data/local/tmp/   <br>
+<code>adb push  android_server /data/local/tmp/</code></li>
+<li>修改可执行权限，运行<br>
+<code>cd /data/local/tmp/</code><br>
+<code>chmod 755 android_server</code><br>
+<code>./android_server</code></li>
+<li>将模拟器端口转发至pc端口 (另开启命令行)<br>
+<code>adb forward tcp:23946 tcp:23946</code></li>
+<li>IDA中选择<code>Remote ARMLinux/Android debugger</code>，端口23946，调试即可，成功以后显示<br>
+<code>Accepting connection from 127.0.0.1...</code></li>
+</ul>
+<h4 id="gdb-gdbserver-1">Gdb-Gdbserver</h4>
+<ul>
+<li>启动server<br>
+<code>./gdbserver –attach :1234 [pid]</code></li>
+<li>转发端口<br>
+<code>adb forward tcp:1234 tcp:1234</code></li>
+<li>启动client<br>
+<code>arm-linux-androideabi-gdb.exe</code></li>
+<li>连接server<br>
+<code>target remote :1234</code></li>
+<li>设置单步调试<br>
+<code>set step-mode on</code></li>
+<li>设置反汇编模式<br>
+<code>set disassemble-next on</code></li>
+<li>设置加载so断点<br>
+<code>catch load 1.so</code></li>
+</ul>
+<pre tabindex="0"><code>0xb6cdf480 in __epoll_pwait () from E:\aaa\libc.so
+=&gt; 0xb6cdf480 &lt;__epoll_pwait+28&gt;:       1e ff 2f 91     bxls    lr
+(gdb) bt
+##0  0xb6cdf480 in __epoll_pwait () from E:\aaa\libc.so
+##1  0xb6cb70ca in epoll_pwait () from E:\aaa\libc.so
+##2  0xb6cb70d8 in epoll_wait () from E:\aaa\libc.so
+##3  0xb6f06bd6 in android::Looper::pollInner(int) () from E:\aaa\libutils.so
+##4  0xb6f06e52 in android::Looper::pollOnce(int, int*, int*, void**) () from E:\aaa\libutils.so
+##5  0xb6e4d41c in android::NativeMessageQueue::pollOnce(_JNIEnv*, _jobject*, int) () from E:\aaa\libandroid_runtime.so
+##6  0x732e056e in ?? ()
+</code></pre><h4 id="gikdbg">Gikdbg</h4>
+<p>  GikDbg 是一款移动平台的汇编级调试器，它基于 OllyDbg ，GDB 以及 LLVM 实现而来。OllyDbg 现已广泛用于 PC 平台软件安全领域，GikDbg 是 OllyDbg 向移动平台转移的产物，它可以协助您完成诸如应用调试分析，应用安全评估，应用漏洞挖掘等移动安全领域。What features can GikDbg support?  <a href="http://gikir.com/product.php">http://gikir.com/product.php</a></p>
+<ul>
+<li>ELF / Mach-O executable file static analysis;</li>
+<li>Android / iOS App dynamic debugging;</li>
+<li>Android / iOS remote console;</li>
+<li>ARM assembler；</li>
+<li>ARM disassembler；</li>
+<li>Device file uploading and downloading；</li>
+<li>Built-in GDB and LLDB；</li>
+<li>Support for memory breakpoint, software breakpoint, conditional breakpoint;</li>
+<li>Support for multi-threaded debugging;</li>
+<li>Support for assembly code level file patching.</li>
+</ul>
+<p>GikDbg for IOS<br>
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/gikdbg1.png">
+    </div>
+
+    
+</figure></p>
+<p>GikDbg for Android<br>
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/gikdbg2.png">
+    </div>
+
+    
+</figure></p>
+<p>  gikdbg.art-Gikir Debugger for Android RunTime, 是Android平台的32位汇编级调试器。此处的Android RunTime既指DVM RunTime又指ART RunTime，因此不管是运行dalvik虚拟机还是运行本地代码的art均可以使用gikdbg.art进行程序的二进制调试分析。不同之处在于dalvik虚拟机的运行时只能调试so动态库，而art运行时不仅能调试so动态库，还能调试系统镜像oat，可执行程序dex这样的文件。另外，gikdbg-Gikir Debugger for iPhone OS，是调试越狱苹果设备的32位汇编级调试器，同学们莫搞混淆了哈，它需要一些复杂点的服务端和客户端的配置，而gikdbg.art在正常情况下是不需要手工配置的，所以别去找android server了。对于静态分析，可以执行/ART Debug/View/ELF Data…,/ART Debug/View/ELF Code…两个菜单打开本地so，oat，dex文件。</p>
+<h5 id="调试so">调试so</h5>
+<pre tabindex="0"><code>Step 0.前置说明
+手机端：Android模拟器，Android 4.4.2 ART 运行时；（真机与DVM运行时是一样的）
+PC端：ParallelDesktop虚拟机，Windows 8.0，gikdbg.art v1.0.build140601.3；
+PS:非root环境的设备由于权限的原因会有很多问题，不推荐使用！
+</code></pre><pre tabindex="0"><code>Step 1.连接设备
+运行模拟器，打开gikdbg.art.exe，执行/ART Debug/Device菜单，如果模拟器已经运行了，但是设备列表中没有，则等待一段时间后执行右键的Refresh菜单。然后双击或者右键Login就可以登陆选中的设备了。对于第一次Login该设备，会询问你是否上传依赖的文件到/data/local,这一步如果否定了的话将不能使用调试功能。上传文件这个步骤目前已知的问题是对于非root的设备，往往因为权限的原因上传不成功，一般情况下/data/local/tmp目录没有问题，但是有些设备又没有/data/local/tmp目录，因此我们只有设置/data/local为目标路径，这个问题目前还不知道好的解决办法。归纳一下就是：非root的机器无法在其/data/local下创建我们依赖的文件夹以及上传文件，如果我们将其迁移至/data/local/tmp这个目录下，又有部分设备没有这个文件夹，就更没有办法上传了。
+对于这类上传失败的同学，可以想办法手工将$(GIKDBG.ART)/adb/android/gdb传至/data/local/gikir_android-xxxx/gdb这个位置，其中xxxx是GUID。
+如果还没有安装该apk文件的，则可以在ADB Shell中执行$install –r命令选择gikdebugee.apk进行安装.
+Step 2.选择进程
+登陆成功后执行，确保模拟器的gikdebugee.apk运行正常，然后执行/ART Debug/File/Attach就可以得到如下进程列表，选中我们的gikdebugee进程，双击或者执行Attach按钮，之后我们就会看到加载输出，等gdb加载完毕之后我们就可以进入熟悉的CPU主窗口了
+Step 3.选择模块
+我们的目的是调试apk里面的so动态库，因此执行/ART Debug/View/Module切换到模块列表，选中我们要调试的模块，双击它
+Step 4.击中断点
+ 本例中找到要调试的函数getNativeString，我们可以用CTRL+F查找到它，找到之后F2下断点，F9运行它，然后在设备中操作按钮则该方法将被断点击中，F8运行3步
+</code></pre><h3 id="调试android上linux程序">调试Android上Linux程序</h3>
+<pre tabindex="0"><code>adb push %NDK%\prebuilt\android-arm\gdbserver\gdbserver /system/bin
+chmod 777 /system/bin/gdbserver
+adb push test.out /system/bin
+chmod 777 /system/bin/test.out
+gdbserver :2345 /system/bin/test.out(若附加调试则提供进程号)
+adb forward tcp:2345 tcp:2345
+gdb &gt;
+gdb &gt; target remote :2345
+</code></pre><h4 id="技巧如何在so入口下断">技巧：如何在so入口下断?</h4>
+<p>  用ida分析so，并在JNI_OnLoad下断点，动态附加后，ida会自动rebase，使用gdb 的catch load命令捕获</p>
+<h2 id="java层linux层联合调试">Java层/Linux层联合调试</h2>
+<h3 id="有源码联合调试">有源码联合调试</h3>
+<p>参照前几节</p>
+<h3 id="无源码联合调试">无源码联合调试</h3>
+<h4 id="操作步骤">操作步骤</h4>
+<pre tabindex="0"><code>adb shell am start -D -n com.example.hellojni/.HelloJni		启动app并等待调试器
+	ps | grep hellojni									得到PID 3569
+adb shell run-as com.example.hellojni /data/data/com.example.hellojni/lib/gdbserver +debug-socket --attach (3569)PID
+	将PID与文件映射建立调试链接(c层)
+adb forward tcp:5039 localfilesystem:/data/data/com.example.hellojni/debug-socket将调试链接和本地端口建立链接(c层)
+adb forward tcp:65534 jdwp:(3569)PID										 将本地端口和进程建立连接(java层)
+jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=65534			 使用jdb调试java层
+arm-linux-androideabi-gdb.exe											
+	target remote :5039												 使用gdb调试c层
+	set breakpoint pending on
+</code></pre><h4 id="最简单的gdb中断在加载so时刻的方法">最简单的gdb中，断在加载so时刻的方法</h4>
+<ul>
+<li>1.以等待模式启动<br>
+<code>am start -D -n com.example.hellojni/.HelloJni</code></li>
+<li>2.Gdbserver链接该进程(ps | grep hello)<br>
+<code>gdbserver --attach :1234 10863</code></li>
+<li>3.转发端口 <br>
+<code>adb forward tcp:1234 tcp:1234</code></li>
+<li>4.连接gdb <br>
+<code>arm-linux-androideabi-gdb	Target remote :1234</code></li>
+</ul>
+<pre tabindex="0"><code>root@ja3gchnduos:/ # am start -D -n com.example.hellojni/.HelloJni
+Starting: Intent { cmp=com.example.hellojni/.HelloJni }
+root@ja3gchnduos:/ # ps | grep hello
+u0_a165   10863 3593  869292 16088 ffffffff 40077a08 S com.example.hellojni
+root@ja3gchnduos:/ # gdbserver --attach :1234 10863
+Attached; pid = 10863
+Listening on port 1234
+</code></pre><ul>
+<li>5.设置符号路径(提前把/system/lib/*.so  /system/bin/linker  libhello-jni.so拷贝到目录)<br>
+<code>set solib-search-path c:/1</code></li>
+<li>6.设置加载so断点<br>
+<code>catch load libhello-jni.so</code></li>
+<li>7.执行continue，使用android studio的attach使程序继续运行</li>
+<li>8.加载so时自动断下：</li>
+</ul>
+<pre tabindex="0"><code>Catchpoint 1
+  Inferior loaded C:\Users\lichao26\sumsing\libhello-jni.so
+0x40036b8c in rtld_db_dlactivity () from C:\Users\lichao26\sumsing\linker
+</code></pre><ul>
+<li>9.用ida分析出onload要下断点的偏移，b *addr下断</li>
+</ul>
+<h3 id="android-linux内核层调试">Android linux内核层调试</h3>
+<p>  Android底层为linux层，gdb用于调试linux应用层，而kgdb用于调试linux内核层<br>
+  kgdb的android版本下载：<a href="http://github.com/dankex/kgdb-android">http://github.com/dankex/kgdb-android</a></p>
+<h2 id="使用hook">使用Hook</h2>
+<h3 id="常用hookinject工具简介">常用Hook/Inject工具简介</h3>
+<p>  常用Hook框架：</p>
+<ul>
+<li>Cydia Substrate</li>
+<li>
+<ul>
+<li>支持Java层hook</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>支持Jni层hook</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>需要Root，且机型适配</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>支持dalvik，不支持art</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>闭源</li>
+</ul>
+</li>
+<li>Xposed <a href="https://github.com/rovo89/Xposed">https://github.com/rovo89/Xposed</a></li>
+<li>
+<ul>
+<li>支持Java层hook</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>需要Root，且机型适配</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>支持dalvik/art</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>开源</li>
+</ul>
+</li>
+<li>Frida <a href="https://github.com/frida/frida">https://github.com/frida/frida</a></li>
+<li>
+<ul>
+<li>需要Root</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>支持Java层hook</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>支持Jni层hook</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>支持dalvik/art</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>开源</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>任意时刻注入，简单易用，远程代码即时编译并注入运行</li>
+</ul>
+</li>
+<li>Adbi <a href="https://github.com/evilsocket/arminject">https://github.com/evilsocket/arminject</a></li>
+<li>
+<ul>
+<li>需要Root</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>支持Jni层hook</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>任意时刻注入，手工</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>开源</li>
+</ul>
+</li>
+</ul>
+<h2 id="实例-360手机卫士卸载后弹窗分析过程">实例 360手机卫士卸载后弹窗分析过程</h2>
+<h3 id="现象">现象</h3>
+<p>  360手机卫士在非root情况下卸载后弹出浏览器。于是有2种常见可能，一种是intent跳转，一种是执行am命令，后者可以在java层和jni层实现，如果是java层考虑进行hook，jni层考虑修改am.jar</p>
+<h3 id="文件注入">文件注入</h3>
+<p>  将/system/bin/am改名，发现无法弹窗，于是确定是通过第二种方式实现，为了确定调用层级，尝试修改(反编译成smali-&gt;加入logcat输出打印回溯栈和接收参数-&gt;回编译)/system/framework/am.jar，(可以通过自己再另一个app中实现同样的功能，通过反编译得到smali代码)再次反编译后内容如下：</p>
+<pre tabindex="0"><code> public static void main(String[] args) {
+        String v0 = &#34;&#34;;
+        int v3 = args.length;
+        int v2;
+        for(v2 = 0; v2 &lt; v3; ++v2) {
+            v0 = String.valueOf(v0) + &#34; &#34; + args[v2];
+        }
+        Log.d(&#34;my god&#34;, v0);
+        Log.d(&#34;my god&#34;, Log.getStackTraceString(new Throwable()));
+    }
+</code></pre><h4 id="分析日志">分析日志</h4>
+<p>  在卸载瞬间拿到输出：</p>
+<pre tabindex="0"><code>start -n com.android.browser/.BrowserActivity -a android.intent.action.VIEW -d http://shouji.360.cn/web/uninstall/uninstall.html?u=100&amp;id=76bb84de8f53b53f57dd3cedfe966091&amp;v=6.3.1.1048&amp;s=1&amp;model=SE0gTk9URSAxTFRF&amp;sdk=19&amp;ch=200222&amp;wid=9fa298f35aec4232c26048442f36dc59 --user 0
+java.lang.Throwable 
+	at com.android.commands.am.Am.main(Am.java:30)
+	at com.android.internal.os.RuntimeInit.nativeFinishInit(Native Method)
+	at com.android.internal.os.RuntimeInit.main(RuntimeInit.java:245)
+	at dalvik.system.NativeStart.main(Native Method)
+</code></pre><p>发现命令行是 <code>am start –n com.android.browser/.BrowserActivity -a android.intent.action.VIEW</code></p>
+<h4 id="定位关键代码">定位关键代码</h4>
+<p>  通过字符串搜索，定位到java层关键代码，使用android hook框架cydia substrate，挂钩java.lang.Runtime类的exec函数，定位到调用栈：</p>
+<pre tabindex="0"><code>content:/data/user/0/com.qihoo360.mobilesafe/files/so_libs/um.0.2 com.qihoo360.mobilesafe --execute am start -n com.android.browser/.BrowserActivity -a android.intent.action.VIEW -d http://shouji.360.cn/web/uninstall/uninstall.html?u=100\&amp;id=7b55c26b779bd111dfed8b02bb00131c\&amp;v=5.5.0.1041\&amp;s=1\&amp;model=TmV4dXMgUw\&amp;sdk=19\&amp;at=KTvooEkhHMzgJ13AXfMkJINnhrmyyNdu\&amp;ch=200222 --user 0
+java.lang.Throwable 
+	at com.example.emptytest.Main$1$1.invoked(Main.java:68)
+	at com.saurik.substrate.MS$2.invoked(MS.java:68)
+	at java.lang.Runtime.exec(Native Method)
+	at egv.a(360MobileSafe:257)
+	at egv.a(360MobileSafe:66)
+	at com.qihoo360.mobilesafe.ui.index.MobileSafeApplication.p(360MobileSafe:1223)
+	at com.qihoo360.mobilesafe.ui.index.MobileSafeApplication.onCreate(360MobileSafe:799)
+</code></pre><h4 id="结论">结论</h4>
+<p>  启动不久，360启动linux程序<code>/data/data/com.qihoo360.mobilesafe/com.qihoo360.mobilesafe/files/so_libs/um.0.2</code>，并将弹窗任务以参数形式传递给该程序，程序中对/data/data/com.qihoo360.mobilesafe文件夹的删除操作进行挂钩，以实现卸载后弹窗机制</p>
+<p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/ida3.png">
+    </div>
+
+    
+</figure></p>
+<h2 id="gdb调试">GDB调试</h2>
+<h3 id="反汇编一段地址">反汇编一段地址</h3>
+<pre tabindex="0"><code>(gdb) disass /r 0x401148b8,0x40114900
+Dump of assembler code from 0x401148b8 to 0x401148c8:
+=&gt; 0x401148b8:  0c 70 a0 e1     mov     r7, r12
+   0x401148bc:  01 0a 70 e3     cmn     r0, #4096       ; 0x1000
+   0x401148c0:  1e ff 2f 91     bxls    lr
+   0x401148c4:  00 00 60 e2     rsb     r0, r0, #0
+   0x401148c8:  0e 70 00 ea     b       0x40130908
+End of assembler dump.
+</code></pre><h3 id="表达式计算">表达式计算</h3>
+<pre tabindex="0"><code>print expr
+	print ”%d” a
+    
+dprintf 动态插入printf函数
+	dprintf location,format string,arg1,arg2,...
+</code></pre><h3 id="查看寄存器">查看寄存器</h3>
+<p>info registers</p>
+<h3 id="查看栈参数">查看栈参数</h3>
+<p>info args</p>
+<h3 id="查看局部变量">查看局部变量</h3>
+<p>info locals</p>
+<h3 id="查看内存">查看内存</h3>
+<p>x</p>
+<h3 id="修改内存">修改内存</h3>
+<pre tabindex="0"><code>set *(unsigned int*)0x800000000=0x00000000
+</code></pre><h3 id="断点">断点</h3>
+<p>break [PROBE_MODIFIER] [LOCATION] [thread THREADNUM] [if CONDITION]
+clear [LOCATION]</p>
+<pre tabindex="0"><code>break *0x4000000  绝对地址
+break 12          行号
+break func1       函数
+clear *0x40000000
+clear 12
+clear func1
+</code></pre><h4 id="一次断点">一次断点</h4>
+<p>tbreak [PROBE_MODIFIER] [LOCATION] [thread THREADNUM] [if CONDITION]</p>
+<h4 id="条件线程断点">条件/线程断点</h4>
+<p>break func1 thread1 if i==0</p>
+<h4 id="观察断点">观察断点</h4>
+<pre tabindex="0"><code>watch/awatch/ rwatch [-l|-location] EXPRESSION		变化/读写/读断点
+（如果EXPRESSION不是绝对地址，则需要用-l计算表达式）
+watch *0x40000000==0x90909090
+watch –l *$pc
+watch i   (有源码，变量i的值有变化时停止)
+</code></pre><h4 id="范围断点">范围断点</h4>
+<pre tabindex="0"><code>break-range START-LOCATION, END-LOCATION
+break-range 1.c:5, 1.c:10  在1.c的第5行和第10行之间下断
+break-range +5, +10	在当前行+5和当前行+10之间下断
+</code></pre><h4 id="硬件断点">硬件断点</h4>
+<p>普通硬断 hbreak [PROBE_MODIFIER] [LOCATION] [thread THREADNUM] [if CONDITION]<br>
+临时硬断 thbreak [PROBE_MODIFIER] [LOCATION] [thread THREADNUM] [if CONDITION]</p>
+<h4 id="拦截当前函数退出">拦截当前函数退出</h4>
+<p>xbreak</p>
+<h4 id="捕获断点">捕获断点</h4>
+<p>普通补断 catch [assert|catch|exception|exec|fork|load|rethrow|signal|syscall|throw|unload|vfork]<br>
+临时捕断 tcatch [assert|catch|exception|exec|fork|load|rethrow|signal|syscall|throw|unload|vfork]</p>
+<pre tabindex="0"><code>如何使程序在so加载时刻断下??（网上不少人用奇葩方式，还是对gdb不了解）
+catch load 1.so
+</code></pre><h4 id="跟踪断点">跟踪断点</h4>
+<p>strace [LOCATION] [IF CONDITION]</p>
+<h3 id="查看调用栈">查看调用栈</h3>
+<p>bt [N]		显示N层调用栈<br>
+bt full		显示全部调用栈</p>
+<h3 id="流程控制">流程控制</h3>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">行为</th>
+          <th style="text-align: left">命令</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: left">运行时中断</td>
+          <td style="text-align: left">Ctrl+C</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">结束程序</td>
+          <td style="text-align: left">kill</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">单步步过</td>
+          <td style="text-align: left">next</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">单步步入</td>
+          <td style="text-align: left">step</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">单步步过(指令级)</td>
+          <td style="text-align: left">nexti</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">单步步入(指令级)</td>
+          <td style="text-align: left">stepi</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">继续运行</td>
+          <td style="text-align: left">continue</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">执行到当前函数指定位置</td>
+          <td style="text-align: left">advance</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">分离进程</td>
+          <td style="text-align: left">detach</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">强制跳转</td>
+          <td style="text-align: left">jump</td>
+      </tr>
+  </tbody>
+</table>
+<h4 id="反向调试">反向调试</h4>
+<p>reverse-continue  reverse-next  reverse-search  reverse-stepi  reverse-finish  reverse-next  reverse-step</p>
+<h3 id="显示当前加载模块">显示当前加载模块</h3>
+<p>info shared</p>
+<h3 id="强制加载模块">强制加载模块</h3>
+<p>可以用于做二进制对比</p>
+<pre tabindex="0"><code>(gdb) load C:/Users/lichao26/2/libadnative.so 0x50000000
+Loading section .interp, size 0x13 lma 0x50000134
+Loading section .dynsym, size 0x1210 lma 0x50000148
+Loading section .dynstr, size 0x2061 lma 0x50001358
+Loading section .hash, size 0x8a8 lma 0x500033bc
+Loading section .rel.dyn, size 0x10a0 lma 0x50003c64
+Loading section .rel.plt, size 0x1b0 lma 0x50004d04
+Loading section .plt, size 0x29c lma 0x50004eb4
+Loading section .text, size 0xe7a0 lma 0x50005150
+Loading section .ARM.extab, size 0x8e8 lma 0x500138f0
+Loading section .ARM.exidx, size 0xd80 lma 0x500141d8
+Loading section .rodata, size 0x11bc lma 0x50014f58
+Loading section .data.rel.ro.local, size 0x738 lma 0x50018098
+Loading section .fini_array, size 0x8 lma 0x500187d0
+Loading section .init_array, size 0x14 lma 0x500187d8
+Loading section .data.rel.ro, size 0x508 lma 0x500187f0
+Loading section .dynamic, size 0xf8 lma 0x50018cf8
+Loading section .got, size 0x210 lma 0x50018df0
+Loading section .data, size 0x1c lma 0x50019000
+Start address 0x0, load size 94044
+Transfer rate: 188 KB/sec, 2541 bytes/write.
+</code></pre><h3 id="替换当前调试模块">替换当前调试模块</h3>
+<pre tabindex="0"><code>file c:/1.so
+</code></pre><h3 id="进程转储">进程转储</h3>
+<p>gcore</p>
+<h3 id="进程空间">进程空间</h3>
+<p>  进程空间inferior，用于调试多个进程，fork函数会自动添加进程空间</p>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">操作</th>
+          <th style="text-align: left">指令</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: left">添加进程空间</td>
+          <td style="text-align: left">add-inferior</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">复制进程空间</td>
+          <td style="text-align: left">clone-inferior 1</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">删除进程空间</td>
+          <td style="text-align: left">remove-inferior 1</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">切换进程空间</td>
+          <td style="text-align: left">inferior 2</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">分离进程空间</td>
+          <td style="text-align: left">detach inferior 2</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="由地址获对应的符号">由地址获对应的符号</h3>
+<p>maintenance translate-address [address]</p>
+<h3 id="查找符号">查找符号</h3>
+<pre tabindex="0"><code>info functions [regex]   定位地址
+info symbol address      定位文件
+info variables [regex]   全局静态符号
+</code></pre><h3 id="执行外部命令">执行外部命令</h3>
+<p>目标系统：! [command]<br>
+主机系统：shell [command]</p>
+<h3 id="显示线程">显示线程</h3>
+<p>info threads</p>
+<h3 id="打印c对象虚表">打印c++对象虚表</h3>
+<p>info vtbl</p>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/re_posts/20160710_010editor/">
+                        010editor脚本语法深入分析
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/re_posts/20180101_ios_re/">
+                        iOS逆向分析笔记
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    Windbg内核调试协议分析 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/win_posts/20150709_windbg_proto/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/win_posts/">Win_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/win_posts/20150709_windbg_proto/">Windbg内核调试协议分析</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">Windbg内核调试协议分析</h1>
+    
+    <p class="single-summary">Windbg内核调试协议分析</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2015-07-19T00:00:00&#43;00:00">July 19, 2015</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#结果">结果</a></li>
+    <li><a href="#分析">分析</a>
+      <ul>
+        <li><a href="#api与结构体的映射">API与结构体的映射</a></li>
+        <li><a href="#对通信数据的注解">对通信数据的注解</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="结果">结果</h2>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">Offset      0  1  2  3  4  5  6  7   8  9  A  B  C  D  E  F
+
+ 00000000   69 69 69 69 06 00 00 00  00 00 00 00 00 00 00 00   iiii            
+ 00000010   69 69 69 69 06 00 00 00  00 00 00 00 00 00 00 00   iiii            
+ 00000020   69 69 69 69 06 00 00 00  00 00 00 00 00 00 00 00   iiii            
+ 00000030   69 69 69 69 06 00 00 00  00 00 00 00 00 00 00 00   iiii            
+ 00000040   69 69 69 69 06 00 00 00  00 00 00 00 00 00 00 00   iiii            
+ 00000050   30 30 30 07 00 0F 01 00  08 80 80 44 33 00 00 31   000      €€D3  1
+ 00000060   30 00 00 00 00 00 00 01  00 00 00 00 00 00 00 40   0              @
+ 00000070   37 55 80 FF FF FF FF C4  F4 52 80 FF FF FF FF 1F   7U€聂R€ 
+00000080   00 00 00 00 00 00 00 00  80 4D 80 FF FF FF FF FF           €M€
+00000090   FF FF FF 00 00 00 00 D3  50 20 00 80 84 1F 00 00       覲  €?  
+000000A0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+ 000000B0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+ 000000C0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+ 000000D0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+ 000000E0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+ 000000F0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+ 00000100   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+ 00000110   00 00 00 00 00 00 00 10  00 00 00 BC FA 05 00 F0              贱  ?
+00000120   0F FF FF 00 04 00 00 10  00 03 00 CC 5D C2 0C 00            蘛? 
+00000130   CC CC CC CC CC 8B FF 55  8B EC FF 08 00 23 00 23   烫烫虌U嬱  # #
+00000140   00 30 00 82 00 00 00 00  00 00 00 00 00 00 00 5C    0 ?          \
+ 00000150   57 49 4E 44 4F 57 53 5C  73 79 73 74 65 6D 33 32   WINDOWS\system32
+ 00000160   5C 6E 74 6B 72 6E 6C 70  61 2E 65 78 65 00 AA 69   \ntkrnlpa.exe 猧
+00000170   69 69 69 06 00 00 00 63  F8 05 00 00 00 00 00 30   iii    c?     0
+ 00000180   30 30 30 07 00 0F 01 00  00 80 80 44 33 00 00 31   000      €€D3  1
+ 00000190   30 00 00 00 00 00 00 01  00 00 00 00 00 00 00 40   0              @
+ 000001A0   37 55 80 FF FF FF FF C4  F4 52 80 FF FF FF FF 1F   7U€聂R€ 
+000001B0   00 00 00 00 00 00 00 00  80 4D 80 FF FF FF FF FF           €M€
+000001C0   FF FF FF 00 00 00 00 D3  50 20 00 80 84 1F 00 00       覲  €?  
+000001D0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+ 000001E0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+ 000001F0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+ 00000200   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+ 00000210   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+ 00000220   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+ 00000230   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+ 00000240   00 00 00 00 00 00 00 10  00 00 00 BC FA 05 00 F0              贱  ?
+00000250   0F FF FF 00 04 00 00 10  00 03 00 CC 5D C2 0C 00            蘛? 
+00000260   CC CC CC CC CC 8B FF 55  8B EC FF 08 00 23 00 23   烫烫虌U嬱  # #
+00000270   00 30 00 82 00 00 00 00  00 00 00 00 00 00 00 5C    0 ?          \
+ 00000280   57 49 4E 44 4F 57 53 5C  73 79 73 74 65 6D 33 32   WINDOWS\system32
+ 00000290   5C 6E 74 6B 72 6E 6C 70  61 2E 65 78 65 00 AA 69   \ntkrnlpa.exe 猧
+000002A0   69 69 69 04 00 00 00 00  00 80 80 00 00 00 00 30   iii      €€    0
+ 000002B0   30 30 30 02 00 38 00 00  00 80 80 9C 0B 00 00 46   000  8   €€?  F
+ 000002C0   31 00 00 80 F6 7D 07 03  01 00 00 F4 F6 7D 07 02   1  €鰙     赧}  
+000002D0   BE B7 52 01 5E AE 52 07  00 00 00 01 00 00 00 00   痉R ^甊         
+000002E0   00 00 00 02 00 00 00 11  BF B7 52 2C F7 7D 07 00           糠R,鱹  
+000002F0   00 00 00 07 00 00 00 AA  69 69 69 04 00 00 00 00          猧ii     
+ 00000300   00 80 80 00 00 00 00 30  30 30 30 02 00 38 00 01    €€    0000  8  
+ 00000310   00 80 80 3F 17 00 00 46  31 00 00 80 F6 7D 07 00    €€?   F1  €鰙  
+00000320   00 00 00 F4 F6 7D 07 0F  00 28 0A 06 00 02 00 4C      赧}   (     L
+ 00000330   01 0C 03 2D 00 00 00 00  80 4D 80 FF FF FF FF C0      -    €M€?
+00000340   4F 55 80 FF FF FF FF F4  8E 67 80 FF FF FF FF AA   OU€魩g€?
+00000350   69 69 69 69 04 00 00 00  01 00 80 80 00 00 00 00   iiii      €€    
+00000360   30 30 30 30 02 00 38 00  01 00 80 80 B1 13 00 00   0000  8   €€?  
+00000370   30 31 00 00 FE FF FF FF  38 F6 7D 07 34 11 BC 77   01  ?8鰙 4 紈
+00000380   F4 8E 67 80 FF FF FF FF  04 00 00 00 D4 F5 7D 07   魩g€    怎} 
+00000390   18 11 8D 07 38 00 00 00  38 00 00 00 03 00 00 00       8   8       
+ 000003A0   E8 79 E1 00 03 00 00 00  AA 69 69 69 04 00 00 00   鑩?    猧ii    
+ 000003B0   01 00 80 80 00 00 00 00  30 30 30 30 02 00 3C 00     €€    0000  &lt; 
+ 000003C0   00 00 80 80 D4 11 00 00  30 31 00 00 FE FF FF FF     €€?  01  ?
+000003D0   00 00 00 00 34 11 BC 77  F4 8E 67 80 FF FF FF FF       4 紈魩g€
+000003E0   04 00 00 00 04 00 00 00  18 11 8D 07 38 00 00 00               8   
+ 000003F0   38 00 00 00 03 00 00 00  E8 79 E1 00 03 00 00 00   8       鑩?    
+00000400   E0 6A 54 80 AA 69 69 69  69 04 00 00 00 00 00 80   鄇T€猧iii      €
+00000410   80 00 00 00 00 30 30 30  30 02 00 38 00 00 00 80   €    0000  8   €
+00000420   80 E7 10 00 00 30 31 00  00 BA 02 00 00 48 F7 7D   €?  01  ?  H鱹
+00000430   07 A0 74 C1 77 E0 6A 54  80 FF FF FF FF 18 00 00    爐羨鄇T€   
+00000440   00 34 11 BC 77 20 00 00  00 28 00 00 00 A8 02 E1    4 紈    (   ??
+00000450   00 5C EE 7D 07 50 00 00  00 20 00 00 00 AA 69 69    \題 P       猧i
+ 00000460   69 04 00 00 00 00 00 80  80 00 00 00 00 30 30 30   i      €€    000
+ 00000470   30 02 00 50 00 01 00 80  80 40 14 00 00 30 31 00   0  P   €€@   01 
+ 00000480   00 BA 02 00 00 00 00 00  00 A0 74 C1 77 E0 6A 54    ?      爐羨鄇T
+ 00000490   80 FF FF FF FF 18 00 00  00 18 00 00 00 20 00 00   €           
+000004A0   00 28 00 00 00 A8 02 E1  00 5C EE 7D 07 50 00 00    (   ??\題 P  
+ 000004B0   00 20 00 00 00 F4 8E 67  80 F4 8E 67 80 00 00 00        魩g€魩g€   
+000004C0   00 00 00 00 00 4B 44 42  47 90 02 00 00 AA 69 69        KDBG    猧i
+</code></pre><h2 id="分析">分析</h2>
+<p>  windbg内核通信协议看起来比较复杂，常见的包为信息包和控制包、中断包。经过观察，有一些点需要注意：<br>
+1.管道读写，端口读写或者其他与内核通信的方式，有时候会缺失数据，比如本来是0x30303030的信息包，下面0x50处少一个0x30，现在的0x30是我后补上去的，编写通信模块需要注意这一部分<br>
+2.读写被调试主机传来的数据，用的是ReadFile/WriteFile，且很多时候是一个/若干个字节read/write一次，不明白为何这么低效！！！这样做就需要我们构建好数据包，再给数据包分析函数处理，主要是处理通信过程</p>
+<h3 id="api与结构体的映射">API与结构体的映射</h3>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">RemoteOperation</th>
+          <th style="text-align: left">CommandId</th>
+          <th style="text-align: left">LocalApi</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: left">DbgKdReadVirtualMemoryApi</td>
+          <td style="text-align: left">0x00003130L</td>
+          <td style="text-align: left">ReadMemory</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdWriteVirtualMemoryApi</td>
+          <td style="text-align: left">0x00003131L</td>
+          <td style="text-align: left">WriteMemory</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdGetContextApi</td>
+          <td style="text-align: left">0x00003132L</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdSetContextApi</td>
+          <td style="text-align: left">0x00003133L</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdWriteBreakPointApi</td>
+          <td style="text-align: left">0x00003134L</td>
+          <td style="text-align: left">WriteBreakPoint</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdRestoreBreakPointApi</td>
+          <td style="text-align: left">0x00003135L</td>
+          <td style="text-align: left">RestoreBreakPoint</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdContinueApi</td>
+          <td style="text-align: left">0x00003136L</td>
+          <td style="text-align: left">Continue</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdReadControlSpaceApi</td>
+          <td style="text-align: left">0x00003137L</td>
+          <td style="text-align: left">ReadMemory</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdWriteControlSpaceApi</td>
+          <td style="text-align: left">0x00003138L</td>
+          <td style="text-align: left">WriteMemory</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdReadIoSpaceApi</td>
+          <td style="text-align: left">0x00003139L</td>
+          <td style="text-align: left">ReadWriteIo</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdWriteIoSpaceApi</td>
+          <td style="text-align: left">0x0000313AL</td>
+          <td style="text-align: left">ReadWriteIo</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdRebootApi</td>
+          <td style="text-align: left">0x0000313BL</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdContinueApi2</td>
+          <td style="text-align: left">0x0000313CL</td>
+          <td style="text-align: left">Continue2</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdReadPhysicalMemoryApi</td>
+          <td style="text-align: left">0x0000313DL</td>
+          <td style="text-align: left">ReadMemory</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdWritePhysicalMemoryApi</td>
+          <td style="text-align: left">0x0000313EL</td>
+          <td style="text-align: left">WriteMemory</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdQuerySpecialCallsApi</td>
+          <td style="text-align: left">0x0000313FL</td>
+          <td style="text-align: left">QuerySpecialCalls</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdSetSpecialCallApi</td>
+          <td style="text-align: left">0x00003140L</td>
+          <td style="text-align: left">SetSpecialCall</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdClearSpecialCallsApi</td>
+          <td style="text-align: left">0x00003141L</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdSetInternalBreakPointApi</td>
+          <td style="text-align: left">0x00003142L</td>
+          <td style="text-align: left">SetInternalBreakpoint</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdGetInternalBreakPointApi</td>
+          <td style="text-align: left">0x00003143L</td>
+          <td style="text-align: left">GetInternalBreakpoint</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdReadIoSpaceExtendedApi</td>
+          <td style="text-align: left">0x00003144L</td>
+          <td style="text-align: left">ReadWriteIoExtended</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdWriteIoSpaceExtendedApi</td>
+          <td style="text-align: left">0x00003145L</td>
+          <td style="text-align: left">ReadWriteIoExtended</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdGetVersionApi</td>
+          <td style="text-align: left">0x00003146L</td>
+          <td style="text-align: left">GetVersion32</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdWriteBreakPointExApi</td>
+          <td style="text-align: left">0x00003147L</td>
+          <td style="text-align: left">BreakPointEx</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdRestoreBreakPointExApi</td>
+          <td style="text-align: left">0x00003148L</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdCauseBugCheckApi</td>
+          <td style="text-align: left">0x00003149L</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdSwitchProcessor</td>
+          <td style="text-align: left">0x00003150L</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdPageInApi</td>
+          <td style="text-align: left">0x00003151L</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdReadMachineSpecificRegister</td>
+          <td style="text-align: left">0x00003152L</td>
+          <td style="text-align: left">ReadWriteMsr</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdWriteMachineSpecificRegister</td>
+          <td style="text-align: left">0x00003153L</td>
+          <td style="text-align: left">ReadWriteMsr</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">OldVlm1</td>
+          <td style="text-align: left">0x00003154L</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">OldVlm2</td>
+          <td style="text-align: left">0x00003155L</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdSearchMemoryApi</td>
+          <td style="text-align: left">0x00003156L</td>
+          <td style="text-align: left">SearchMemory</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdGetBusDataApi</td>
+          <td style="text-align: left">0x00003157L</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdSetBusDataApi</td>
+          <td style="text-align: left">0x00003158L</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdCheckLowMemoryApi</td>
+          <td style="text-align: left">0x00003159L</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdClearAllInternalBreakpointsApi</td>
+          <td style="text-align: left">0x0000315AL</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdFillMemoryApi</td>
+          <td style="text-align: left">0x0000315BL</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdQueryMemoryApi</td>
+          <td style="text-align: left">0x0000315CL</td>
+          <td style="text-align: left">null</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">DbgKdSwitchPartition</td>
+          <td style="text-align: left">0x0000315DL</td>
+          <td style="text-align: left">null</td>
+      </tr>
+  </tbody>
+</table>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#ec0000">struct</span> <span style="color:#5f5fff">_DBGKD_ANY_WAIT_STATE_CHANGE</span>
+</span></span><span style="display:flex;"><span> {
+</span></span><span style="display:flex;"><span>     ULONG NewState;
+</span></span><span style="display:flex;"><span>     USHORT ProcessorLevel;
+</span></span><span style="display:flex;"><span>     USHORT Processor;
+</span></span><span style="display:flex;"><span>     ULONG NumberProcessors;
+</span></span><span style="display:flex;"><span>     ULONG64 Thread;
+</span></span><span style="display:flex;"><span>     ULONG64 ProgramCounter;
+</span></span><span style="display:flex;"><span>     <span style="color:#ec0000">union</span>
+</span></span><span style="display:flex;"><span>         {
+</span></span><span style="display:flex;"><span>         DBGKM_EXCEPTION64 Exception;
+</span></span><span style="display:flex;"><span>         DBGKD_LOAD_SYMBOLS64 LoadSymbols;
+</span></span><span style="display:flex;"><span>         DBGKD_COMMAND_STRING CommandString;
+</span></span><span style="display:flex;"><span>     } u;
+</span></span><span style="display:flex;"><span>     <span style="color:#ec0000">union</span>
+</span></span><span style="display:flex;"><span>         {
+</span></span><span style="display:flex;"><span>         DBGKD_CONTROL_REPORT ControlReport;
+</span></span><span style="display:flex;"><span>         DBGKD_ANY_CONTROL_REPORT AnyControlReport;
+</span></span><span style="display:flex;"><span>     };
+</span></span><span style="display:flex;"><span> } DBGKD_ANY_WAIT_STATE_CHANGE, <span style="color:#ec0000">*</span>PDBGKD_ANY_WAIT_STATE_CHANGE;
+</span></span></code></pre></div><h3 id="对通信数据的注解">对通信数据的注解</h3>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">00000000   69 69 69 69 06 00 00 00  00 00 00 00 00 00 00 00   iiii                    发送复位控制包
+00000010   69 69 69 69 06 00 00 00  00 00 00 00 00 00 00 00   iiii                    发送复位控制包
+00000020   69 69 69 69 06 00 00 00  00 00 00 00 00 00 00 00   iiii                    发送复位控制包
+00000030   69 69 69 69 06 00 00 00  00 00 00 00 00 00 00 00   iiii                    发送复位控制包
+00000040   69 69 69 69 06 00 00 00  00 00 00 00 00 00 00 00   iiii                    发送复位控制包
+00000050   30 30 30 30 07 00 0F 01  00 08 80 80 44 33 00 00   0000      €€D3          接收DBGKD_ANY_WAIT_STATE_CHANGE信息包，长度0x10F
+00000060   31 30 00 00 00 00 00 00  01 00 00 00 00 00 00 00   10                      包开始：NewState=DbgKdLoadSymbolsStateChange
+00000070   40 37 55 80 FF FF FF FF  C4 F4 52 80 FF FF FF FF   @7U€聂R€
+00000080   1F 00 00 00 00 00 00 00  00 80 4D 80 FF FF FF FF            €M€
+00000090   FF FF FF FF 00 00 00 00  D3 50 20 00 80 84 1F 00       覲  €? 
+000000A0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000000B0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000000C0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000000D0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000000E0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000000F0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000100   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000110   00 00 00 00 00 00 00 00  10 00 00 00 BC FA 05 00               贱  
+00000120   F0 0F FF FF 00 04 00 00  10 00 03 00 CC 5D C2 0C   ?        蘛?
+00000130   00 CC CC CC CC CC 8B FF  55 8B EC FF 08 00 23 00    烫烫虌U嬱  # 
+00000140   23 00 30 00 82 00 00 00  00 00 00 00 00 00 00 00   # 0 ?          
+00000150   5C 57 49 4E 44 4F 57 53  5C 73 79 73 74 65 6D 33   \WINDOWS\system3        包以0xAA结束，然而由于0x50处原先少一个0x30
+00000160   32 5C 6E 74 6B 72 6E 6C  70 61 2E 65 78 65 00 AA   2\ntkrnlpa.exe ?        (为了方便查看，我补上了缺少的0x30)
+00000170   69 69 69 69 06 00 00 00  63 F8 05 00 00 00 00 00   iiii    c?             接收请求重新连接信息包
+00000180   30 30 30 30 07 00 0F 01  00 00 80 80 44 33 00 00   0000      €€D3    接收PACKET_TYPE_KD_STATE_CHANGE64信息包，长度0x10F
+00000190   31 30 00 00 00 00 00 00  01 00 00 00 00 00 00 00   10                                包开始：NewState=DbgKdLoadSymbolsStateChange
+000001A0   40 37 55 80 FF FF FF FF  C4 F4 52 80 FF FF FF FF   @7U€聂R€ETHREAD=0xFFFFFFFF80553740 BaseAddr=0xFFFFFFFF8052F4C4
+000001B0   1F 00 00 00 00 00 00 00  00 80 4D 80 FF FF FF FF            €M€映像路径长度0x1F        Dll基址=0xFFFFFFFF804D8000
+000001C0   FF FF FF FF 00 00 00 00  D3 50 20 00 80 84 1F 00       覲  € 进程ID=-1        映像大小=0x1F8480
+000001D0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000001E0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000001F0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00              
+00000200   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000210   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000220   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000230   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000240   00 00 00 00 00 00 00 00  10 00 00 00 BC FA 05 00               贱  
+00000250   F0 0F FF FF 00 04 00 00  10 00 03 00 CC 5D C2 0C   ?        蘛?
+00000260   00 CC CC CC CC CC 8B FF  55 8B EC FF 08 00 23 00    烫烫虌U嬱  # 
+00000270   23 00 30 00 82 00 00 00  00 00 00 00 00 00 00 00   # 0 ?          
+00000280   5C 57 49 4E 44 4F 57 53  5C 73 79 73 74 65 6D 33   \WINDOWS\system3
+00000290   32 5C 6E 74 6B 72 6E 6C  70 61 2E 65 78 65 00 AA   2\ntkrnlpa.exe ?        包结束
+000002A0   69 69 69 69 04 00 00 00  00 00 80 80 00 00 00 00   iiii      €€      发送上次接收信息的确认包
+000002B0   30 30 30 30 02 00 38 00  00 00 80 80 9C 0B 00 00   0000  8   €€?     发送读取版本控制信息包 DbgKdGetVersionApi，长度0x38
+000002C0   46 31 00 00 80 F6 7D 07  03 01 00 00 F4 F6 7D 07   F1  €鰙     赧}   包开始
+000002D0   02 BE B7 52 01 5E AE 52  07 00 00 00 01 00 00 00    痉R ^甊        
+000002E0   00 00 00 00 02 00 00 00  11 BF B7 52 2C F7 7D 07            糠R,鱹 
+000002F0   00 00 00 00 07 00 00 00  AA 00 00 00 00 00 00 00           ?              包结束
+00000300   69 69 69 69 04 00 00 00  00 00 80 80 00 00 00 00   iiii      €€            接收到服务器收到信息的确认包
+00000310   30 30 30 30 02 00 38 00  01 00 80 80 3F 17 00 00   0000  8   €€?           接收读取版本控制信息包 DbgKdGetVersionApi，长度0x38
+00000320   46 31 00 00 80 F6 7D 07  00 00 00 00 F4 F6 7D 07   F1  €鰙     赧}         包开始
+00000330   0F 00 28 0A 06 00 02 00  4C 01 0C 03 2D 00 00 00     (     L   -   
+00000340   00 80 4D 80 FF FF FF FF  C0 4F 55 80 FF FF FF FF    €M€繭U€PsLoadedModuleList=0xFFFFFFFF80554FC0        DebuggerDataList=0xFFFFFFFF80678EF4
+00000350   F4 8E 67 80 FF FF FF FF  AA 00 00 00 00 00 00 00   魩g€?     包结束
+00000360   69 69 69 69 04 00 00 00  01 00 80 80 00 00 00 00   iiii      €€            发送上次接收信息的确认包
+00000370   30 30 30 30 02 00 38 00  01 00 80 80 B1 13 00 00   0000  8   €€?          发送读取内存控制信息包 DbgKdReadVirutalMemoryApi，长度0x38
+00000380   30 31 00 00 FE FF FF FF  38 F6 7D 07 34 11 BC 77   01  ?8鰙 4 紈        包开始
+00000390   F4 8E 67 80 FF FF FF FF  04 00 00 00 D4 F5 7D 07   魩g€      读取0x80678EF4处4字节
+000003A0   18 11 8D 07 38 00 00 00  38 00 00 00 03 00 00 00       8   8               
+000003B0   E8 79 E1 00 03 00 00 00  AA 00 00 00 00 00 00 00   鑩?    ?              包结束
+000003C0   69 69 69 69 04 00 00 00  01 00 80 80 00 00 00 00   iiii      €€            接收到服务器收到信息的确认包
+000003D0   30 30 30 30 02 00 3C 00  00 00 80 80 D4 11 00 00   0000  &lt;   €€?          接收内存控制信息包 DbgKdReadVirutalMemoryApi，长度0x3C
+000003E0   30 31 00 00 FE FF FF FF  00 00 00 00 34 11 BC 77   01  ?    4 紈        包开始
+000003F0   F4 8E 67 80 FF FF FF FF  04 00 00 00 04 00 00 00   魩g€    
+00000400   18 11 8D 07 38 00 00 00  38 00 00 00 03 00 00 00       8   8       
+00000410   E8 79 E1 00 03 00 00 00  E0 6A 54 80 AA 00 00 00   鑩?    鄇T€?          包结束，读取得到E0 6A 54 80
+00000420   69 69 69 69 04 00 00 00  00 00 80 80 00 00 00 00   iiii      €€            发送上次接收信息的确认包
+00000430   30 30 30 30 02 00 38 00  00 00 80 80 E7 10 00 00   0000  8   €€?          发送读取内存控制信息包 DbgKdReadVirutalMemoryApi，长度0x38
+00000440   30 31 00 00 BA 02 00 00  48 F7 7D 07 A0 74 C1 77   01  ?  H鱹 爐羨        包开始
+00000450   E0 6A 54 80 FF FF FF FF  18 00 00 00 34 11 BC 77   鄇T€    4 读取0x80546AE0处0x18字节(DBGKD_DEBUG_DATA_HEADER64)
+00000460   20 00 00 00 28 00 00 00  A8 02 E1 00 5C EE 7D 07       (   ??\題 
+00000470   50 00 00 00 20 00 00 00  AA 00 00 00 00 00 00 00   P       ?              包结束
+00000480   69 69 69 69 04 00 00 00  00 00 80 80 00 00 00 00   iiii      €€            接收到服务器收到信息的确认包
+00000490   30 30 30 30 02 00 50 00  01 00 80 80 40 14 00 00   0000  P   €€@           接收内存控制信息包 DbgKdReadVirutalMemoryApi，长度0x50
+000004A0   30 31 00 00 BA 02 00 00  00 00 00 00 A0 74 C1 77   01  ?      爐羨        包开始
+000004B0   E0 6A 54 80 FF FF FF FF  18 00 00 00 18 00 00 00   鄇T€        
+000004C0   20 00 00 00 28 00 00 00  A8 02 E1 00 5C EE 7D 07       (   ??\題 
+000004D0   50 00 00 00 20 00 00 00  F4 8E 67 80 F4 8E 67 80   P       魩g€魩g€
+000004E0   00 00 00 00 00 00 00 00  4B 44 42 47 90 02 00 00           KDBG            读取得到F4 8E 67 80 F4 8E 67 80 00 00 00 00 00 00 00 00 4B 44 42 47 90 02 00 00
+000004F0   AA 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00   ?                      包结束
+00000500   69 69 69 69 04 00 00 00  01 00 80 80 00 00 00 00   iiii      €€            发送上次接收信息的确认包
+00000510   30 30 30 30 02 00 38 00  01 00 80 80 02 1A 00 00   0000  8   €€            发送读取内存控制信息包 DbgKdReadVirutalMemoryApi，长度0x38
+00000520   30 31 00 00 05 00 00 00  00 EF 7D 07 34 11 BC 77   01       飣 4 紈        包开始
+00000530   F8 6A 54 80 FF FF FF FF  78 02 00 00 FE FF FF FF   鴍T€x   ?        读取0x80546AF8处0x278字节  0x80546AE0整个是KDDEBUGGER_DATA64结构
+00000540   D8 EE 7D 07 AA 1E BC 77  00 00 00 00 E8 DE E1 00   仡} ?紈    柁?
+00000550   B8 DE E1 00 E8 DE E1 00  AA 00 00 00 00 00 00 00   皋?柁??                      包结束
+00000560   69 69 69 69 04 00 00 00  01 00 80 80 00 00 00 00   iiii      €€            接收到服务器收到信息的确认包
+00000570   30 30 30 30 02 00 B0 02  00 00 80 80 80 97 00 00   0000  ?  €€€?         接收内存控制信息包 DbgKdReadVirutalMemoryApi，长度0x2B0
+00000580   30 31 00 00 05 00 00 00  00 00 00 00 34 11 BC 77   01          4 紈        包开始
+00000590   F8 6A 54 80 FF FF FF FF  78 02 00 00 78 02 00 00   鴍T€x   x   
+000005A0   D8 EE 7D 07 AA 1E BC 77  00 00 00 00 E8 DE E1 00   仡} ?紈    柁?
+000005B0   B8 DE E1 00 E8 DE E1 00  00 80 4D 80 00 00 00 00   皋?柁? €M€            有效数据开始 00 80 4D 80 00 00 00 0
+000005C0   DC 8B 52 80 00 00 00 00  00 00 00 00 00 00 00 00   軏R€            
+000005D0   2C 01 08 00 18 00 01 00  8C 06 50 80 00 00 00 00   ,       ?P€    
+000005E0   00 00 00 00 00 00 00 00  C0 4F 55 80 00 00 00 00           繭U€    
+000005F0   58 B1 55 80 00 00 00 00  60 B2 55 80 00 00 00 00   X盪€    `睻€        
+00000600   88 D6 55 80 00 00 00 00  20 C5 55 80 00 00 00 00   堉U€     臮€    
+00000610   AC BA 54 80 00 00 00 00  1C 3F 55 80 00 00 00 00   T€     ?U€    
+00000620   F8 3F 55 80 00 00 00 00  40 49 55 80 00 00 00 00   ?U€    @IU€    
+00000630   C0 28 FF FF 00 04 00 00  10 00 03 00 CC 5D C2 0C   ?        蘛?
+00000640   00 CC CC CC CC CC 8B FF  55 8B EC FF 08 00 23 00    烫烫虌U嬱  # 
+00000650   23 00 30 00 82 00 00 00  00 00 00 00 00 00 00 00   # 0 ?          
+00000660   5C 57 49 4E 44 4F 57 53  5C 73 79 73 74 65 6D 33   \WINDOWS\system3
+00000670   32 5C 6E 74 6B 72 6E 6C  70 61 2E 65 78 65 00 33   2\ntkrnlpa.exe 3
+00000680   32 5C 6E 74 6B 72 6E 6C  70 61 2E 65 78 65 00 00   2\ntkrnlpa.exe          
+00000690   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000006A0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000006B0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000006C0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000006D0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000006E0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000006F0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000700   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000710   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000720   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000730   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000740   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000750   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000760   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000770   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000780   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000790   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000007A0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000007B0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000007C0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000007D0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000007E0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+000007F0   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00       
+00000800   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000810   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00000820   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                           有效数据结束，然而没有遇到0xAA，所以一直等待
+ 。。。。。。。。。。。。。。。。。。。。。。。。。。。。。  
+00002E60   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 AA                  ?        结束符0xAA
+00002E70   69 69 69 69 04 00 00 00  00 00 80 80 00 00 00 00   iiii      €€            发送上次接收信息的确认包
+00002E80   30 30 30 30 02 00 38 00  00 00 80 80 74 0E 00 00   0000  8   €€t           发送读取内存控制信息包 DbgKdReadVirutalMemoryApi，长度0x38
+00002E90   30 31 00 00 00 00 00 00  48 F7 7D 07 A0 74 C1 77   01      H鱹 爐羨        包开始
+00002EA0   5C 8C 4D 80 FF FF FF FF  05 01 00 00 34 11 BC 77   \孧€    4        读取0x804D8C5C处0x105大小的数据
+00002EB0   0D 01 00 00 18 01 00 00  20 03 E1 00 24 EB 7D 07             ?$雧 
+00002EC0   05 04 00 00 0D 01 00 00  AA 00 00 00 00 00 00 00           ?      
+00002ED0   69 69 69 69 04 00 00 00  00 00 80 80 00 00 00 00   iiii      €€            接收到服务器收到信息的确认包
+00002EE0   30 30 30 30 02 00 3D 01  01 00 80 80 A9 75 00 00   0000  =   €€﹗          接收内存控制信息包 DbgKdReadVirutalMemoryApi，长度0x13D
+00002EF0   30 31 00 00 00 00 00 00  00 00 00 00 A0 74 C1 77   01          爐羨        包开始
+00002F00   5C 8C 4D 80 FF FF FF FF  05 01 00 00 05 01 00 00   \孧€        
+00002F10   0D 01 00 00 18 01 00 00  20 03 E1 00 24 EB 7D 07             ?$雧 
+00002F20   05 04 00 00 0D 01 00 00  32 36 30 30 2E 78 70 73           2600.xps
+00002F30   70 2E 30 38 30 34 31 33  2D 32 31 31 31 00 00 00   p.080413-2111   
+00002F40   00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00                   
+00002F50   28 73 2A C1 1F F8 D2 11  BA 4B 00 A0 C9 3E C9 3B   (s*? 篕 犐&gt;?
+00002F60   16 E3 C9 E3 5C 0B B8 4D  81 7D F9 2D F0 02 15 AE    闵鉢 窶 }?? ?
+00002F70   A2 A0 D0 EB E5 B9 33 44  87 C0 68 B6 B7 26 99 C7   须骞3D嚴h斗&amp;櫱
+00002F80   AA C8 08 58 8F 7E E0 42  85 D2 E1 E9 04 34 CF B3    X ~郆呉衢 4铣
+00002F90   A0 60 9B AF 31 14 62 00  78 A7 55 80 00 00 00 00   燻洴1 b x€    
+00002FA0   70 A7 55 80 00 00 00 00  90 B1 54 80 00 00 00 00   p€     盩€    
+00002FB0   68 97 55 80 00 00 00 00  80 97 55 80 00 00 00 00   h桿€    €桿€    
+00002FC0   68 99 55 80 00 00 00 00  E8 4B 55 80 00 00 00 00   h橴€    鐺U€    
+00002FD0   E0 4B 55 80 00 00 00 00  78 4F 55 80 00 00 00 00   郖U€    xOU€    
+00002FE0   00 95 55 80 00 00 00 00  BC B0 54 80 00 00 00 00    昒€    及T€    
+00002FF0   C4 99 55 80 00 00 00 00  C8 99 55 80 00 00 00 00   臋U€    葯U€     
+00003000   EC 97 55 80 00 00 00 00  20 99 55 80 00 00 00 00   鞐U€     橴€    
+00003010   38 4C 55 80 00 00 00 00  78 B5 54 80 00 00 00 00   8LU€    x礣€    
+00003020   7C B5 54 80 00 00 00 00  34 4C 55 80 00 4F BC 68   |礣€    4LU€ O糷
+00003030   33 11 71 4A 69 AD C1 1F  DD 6B 00 00 00            3 qJi 輐                   包结束，然而等待0xAA标志
+ 。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。
+000034C0   00 2B AA 00 00 00 00 00  00 00 00 00 00 00 00 00    +?                    0xAA标志
+000034D0   69 69 69 69 04 00 00 00  01 00 80 80 00 00 00 00   iiii      €€    
+000034E0   30 30 30 30 02 00 38 00  01 00 80 80 67 11 00 00   0000  8   €€g   
+000034F0   30 31 00 00 58 A9 B1 52  44 F4 7D 07 A0 74 C1 77   01  X┍RD魙 爐羨
+</code></pre>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150706_usermod_debug/">
+                        Windows用户态调试
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150726_wow/">
+                        探究为何32位程序无法远程注入64位程序
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

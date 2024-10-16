@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Cpp_posts on 超哥的博客</title>
+    <link>https://lich4.github.io/cpp_posts/</link>
+    <description>Recent content in Cpp_posts on 超哥的博客</description>
+    <generator>Hugo</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Mon, 26 Aug 2024 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://lich4.github.io/cpp_posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>OLLVM学习</title>
+      <link>https://lich4.github.io/cpp_posts/20240826_ollvm/</link>
+      <pubDate>Mon, 26 Aug 2024 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20240826_ollvm/</guid>
+      <description>OLLVM学习</description>
+    </item>
+    <item>
+      <title>C&#43;&#43;调用Rust</title>
+      <link>https://lich4.github.io/cpp_posts/20230924_cpp_call_rust/</link>
+      <pubDate>Sun, 24 Sep 2023 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20230924_cpp_call_rust/</guid>
+      <description>C++调用Rust</description>
+    </item>
+    <item>
+      <title>C&#43;&#43;调用Golang</title>
+      <link>https://lich4.github.io/cpp_posts/20230322_cpp_call_go/</link>
+      <pubDate>Wed, 22 Mar 2023 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20230322_cpp_call_go/</guid>
+      <description>C++调用Golang</description>
+    </item>
+    <item>
+      <title>Python调用C&#43;&#43;</title>
+      <link>https://lich4.github.io/cpp_posts/20210919_py_call_cpp/</link>
+      <pubDate>Sun, 19 Sep 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20210919_py_call_cpp/</guid>
+      <description>Python调用C++</description>
+    </item>
+    <item>
+      <title>使用C&#43;&#43;模板元实现字符串编译期加密</title>
+      <link>https://lich4.github.io/cpp_posts/20160715_string_enc/</link>
+      <pubDate>Fri, 15 Jul 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20160715_string_enc/</guid>
+      <description>使用C++模板元实现字符串编译期加密</description>
+    </item>
+    <item>
+      <title>重识new</title>
+      <link>https://lich4.github.io/cpp_posts/20141012_relearn_new/</link>
+      <pubDate>Sun, 12 Oct 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20141012_relearn_new/</guid>
+      <description>重识new</description>
+    </item>
+    <item>
+      <title>实现大整数运算</title>
+      <link>https://lich4.github.io/cpp_posts/20140419_bignum/</link>
+      <pubDate>Sat, 19 Apr 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20140419_bignum/</guid>
+      <description>实现大整数运算</description>
+    </item>
+    <item>
+      <title>凸轮曲线计算工具</title>
+      <link>https://lich4.github.io/cpp_posts/20140311_tulun/</link>
+      <pubDate>Tue, 11 Mar 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20140311_tulun/</guid>
+      <description>凸轮曲线计算工具</description>
+    </item>
+    <item>
+      <title>卷积码的viterbi译码</title>
+      <link>https://lich4.github.io/cpp_posts/20110101_viterbi/</link>
+      <pubDate>Sat, 01 Jan 2011 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20110101_viterbi/</guid>
+      <description>卷积码的viterbi译码</description>
+    </item>
+  </channel>
+</rss>

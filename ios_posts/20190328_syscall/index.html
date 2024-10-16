@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    系统调用号 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/ios_posts/20190328_syscall/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/ios_posts/">Ios_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/ios_posts/20190328_syscall/">系统调用号</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">系统调用号</h1>
+    
+    <p class="single-summary">系统调用号</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2019-03-28T00:00:00&#43;00:00">March 28, 2019</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#linux-32位">Linux 32位</a></li>
+    <li><a href="#linux-64位">Linux 64位</a></li>
+    <li><a href="#macos">MacOS</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="linux-32位">Linux 32位</h2>
+<pre tabindex="0"><code>exit 1
+fork 2
+read 3
+write 4
+open 5
+close 6
+waitpid 7
+creat 8
+link 9
+unlink 10
+execve 11
+chdir 12
+time 13
+mknod 14
+chmod 15
+lchown 16
+break 17
+oldstat 18
+lseek 19
+getpid 20
+mount 21
+umount 22
+setuid 23
+getuid 24
+stime 25
+ptrace 26
+alarm 27
+oldfstat 28
+pause 29
+utime 30
+stty 31
+gtty 32
+access 33
+nice 34
+ftime 35
+sync 36
+kill 37
+rename 38
+mkdir 39
+rmdir 40
+dup 41
+pipe 42
+times 43
+prof 44
+brk 45
+setgid 46
+getgid 47
+signal 48
+geteuid 49
+getegid 50
+acct 51
+umount2 52
+lock 53
+ioctl 54
+fcntl 55
+mpx 56
+setpgid 57
+ulimit 58
+oldolduname 59
+umask 60
+chroot 61
+ustat 62
+dup2 63
+getppid 64
+getpgrp 65
+setsid 66
+sigaction 67
+sgetmask 68
+ssetmask 69
+setreuid 70
+setregid 71
+sigsuspend 72
+sigpending 73
+sethostname 74
+setrlimit 75
+getrlimit 76
+getrusage 77
+gettimeofday 78
+settimeofday 79
+getgroups 80
+setgroups 81
+select 82
+symlink 83
+oldlstat 84
+readlink 85
+uselib 86
+swapon 87
+reboot 88
+readdir 89
+mmap 90
+munmap 91
+truncate 92
+ftruncate 93
+fchmod 94
+fchown 95
+getpriority 96
+setpriority 97
+profil 98
+statfs 99
+fstatfs 100
+ioperm 101
+socketcall 102
+syslog 103
+setitimer 104
+getitimer 105
+stat 106
+lstat 107
+fstat 108
+olduname 109
+iopl 110
+vhangup 111
+idle 112
+vm86old 113
+wait4 114
+swapoff 115
+sysinfo 116
+ipc 117
+fsync 118
+sigreturn 119
+clone 120
+setdomainname 121
+uname 122
+modify_ldt 123
+adjtimex 124
+mprotect 125
+sigprocmask 126
+create_module 127
+init_module 128
+delete_module 129
+get_kernel_syms 130
+quotactl 131
+getpgid 132
+fchdir 133
+bdflush 134
+sysfs 135
+personality 136
+afs_syscall 137
+setfsuid 138
+setfsgid 139
+_llseek 140
+getdents 141
+_newselect 142
+flock 143
+msync 144
+readv 145
+writev 146
+getsid 147
+fdatasync 148
+_sysctl 149
+mlock 150
+munlock 151
+mlockall 152
+munlockall 153
+sched_setparam 154
+sched_getparam 155
+sched_setscheduler 156
+sched_getscheduler 157
+sched_yield 158
+sched_get_priority_max 159
+sched_get_priority_min 160
+sched_rr_get_interval 161
+nanosleep 162
+mremap 163
+setresuid 164
+getresuid 165
+vm86 166
+query_module 167
+poll 168
+nfsservctl 169
+setresgid 170
+getresgid 171
+prctl 172
+rt_sigreturn 173
+rt_sigaction 174
+rt_sigprocmask 175
+rt_sigpending 176
+rt_sigtimedwait 177
+rt_sigqueueinfo 178
+rt_sigsuspend 179
+pread64 180
+pwrite64 181
+chown 182
+getcwd 183
+capget 184
+capset 185
+sigaltstack 186
+sendfile 187
+getpmsg 188
+putpmsg 189
+vfork 190
+ugetrlimit 191
+mmap2 192
+truncate64 193
+ftruncate64 194
+stat64 195
+lstat64 196
+fstat64 197
+lchown32 198
+getuid32 199
+getgid32 200
+geteuid32 201
+getegid32 202
+setreuid32 203
+setregid32 204
+getgroups32 205
+setgroups32 206
+fchown32 207
+setresuid32 208
+getresuid32 209
+setresgid32 210
+getresgid32 211
+chown32 212
+setuid32 213
+setgid32 214
+setfsuid32 215
+setfsgid32 216
+pivot_root 217
+mincore 218
+madvise 219
+madvise1 219
+getdents64 220
+fcntl64 221
+gettid 224
+readahead 225
+setxattr 226
+lsetxattr 227
+fsetxattr 228
+getxattr 229
+lgetxattr 230
+fgetxattr 231
+listxattr 232
+llistxattr 233
+flistxattr 234
+removexattr 235
+lremovexattr 236
+fremovexattr 237
+tkill 238
+sendfile64 239
+futex 240
+sched_setaffinity 241
+sched_getaffinity 242
+set_thread_area 243
+get_thread_area 244
+io_setup 245
+io_destroy 246
+io_getevents 247
+io_submit 248
+io_cancel 249
+fadvise64 250
+exit_group 252
+lookup_dcookie 253
+epoll_create 254
+epoll_ctl 255
+epoll_wait 256
+remap_file_pages 257
+set_tid_address 258
+timer_create 259
+timer_settime 260
+timer_gettime 261
+timer_getoverrun 262
+timer_delete 263
+clock_settime 264
+clock_gettime 265
+clock_getres 266
+clock_nanosleep 267
+statfs64 268
+fstatfs64 269
+tgkill 270
+utimes 271
+fadvise64_64 272
+vserver 273
+mbind 274
+get_mempolicy 275
+set_mempolicy 276
+mq_open 277
+mq_unlink 278
+mq_timedsend 279
+mq_timedreceive 280
+mq_notify 281
+mq_getsetattr 282
+kexec_load 283
+waitid 284
+sys_setaltroot 285
+add_key 286
+request_key 287
+keyctl 288
+ioprio_set 289
+ioprio_get 290
+inotify_init 291
+inotify_add_watch 292
+inotify_rm_watch 293
+migrate_pages 294
+openat 295
+mkdirat 296
+mknodat 297
+fchownat 298
+futimesat 299
+fstatat64 300
+unlinkat 301
+renameat 302
+linkat 303
+symlinkat 304
+readlinkat 305
+fchmodat 306
+faccessat 307
+pselect6 308
+ppoll 309
+unshare 310
+set_robust_list 311
+get_robust_list 312
+splice 313
+sync_file_range 314
+tee 315
+vmsplice 316
+move_pages 317
+getcpu 318
+epoll_pwait 319
+utimensat 320
+signalfd 321
+timerfd_create 322
+eventfd 323
+fallocate 324
+timerfd_settime 325
+timerfd_gettime 326
+signalfd4 327
+eventfd2 328
+epoll_create1 329
+dup3 330
+pipe2 331
+inotify_init1 332
+preadv 333
+pwritev 334
+rt_tgsigqueueinfo 335
+perf_event_open 336
+recvmmsg 337
+fanotify_init 338 
+fanotify_mark 339 
+prlimit64 340 
+name_to_handle_at 341 
+open_by_handle_at 342 
+clock_adjtime 343 
+syncfs 344
+sendmmsg 345
+set_ns 346 
+process_vm_readv 347
+process_vm_writev 348
+</code></pre><h2 id="linux-64位">Linux 64位</h2>
+<pre tabindex="0"><code>read 0
+write 1
+open 2
+close 3
+stat 4
+fstat 5
+lstat 6
+poll 7
+lseek 8
+mmap 9
+mprotect 10
+munmap 11
+brk 12
+rt_sigaction 13
+rt_sigprocmask 14
+rt_sigreturn 15
+ioctl 16
+pread64 17
+pwrite64 18
+readv 19
+writev 20
+access 21
+pipe 22
+select 23
+sched_yield 24
+mremap 25
+msync 26
+mincore 27
+madvise 28
+shmget 29
+shmat 30
+shmctl 31
+dup 32
+dup2 33
+pause 34
+nanosleep 35
+getitimer 36
+alarm 37
+setitimer 38
+getpid 39
+sendfile 40
+socket 41
+connect 42
+accept 43
+sendto 44
+recvfrom 45
+sendmsg 46
+recvmsg 47
+shutdown 48
+bind 49
+listen 50
+getsockname 51
+getpeername 52
+socketpair 53
+setsockopt 54
+getsockopt 55
+clone 56
+fork 57
+vfork 58
+execve 59
+exit 60
+wait4 61
+kill 62
+uname 63
+semget 64
+semop 65
+semctl 66
+shmdt 67
+msgget 68
+msgsnd 69
+msgrcv 70
+msgctl 71
+fcntl 72
+flock 73
+fsync 74
+fdatasync 75
+truncate 76
+ftruncate 77
+getdents 78
+getcwd 79
+chdir 80
+fchdir 81
+rename 82
+mkdir 83
+rmdir 84
+creat 85
+link 86
+unlink 87
+symlink 88
+readlink 89
+chmod 90
+fchmod 91
+chown 92
+fchown 93
+lchown 94
+umask 95
+gettimeofday 96
+getrlimit 97
+getrusage 98
+sysinfo 99
+times 100
+ptrace 101
+getuid 102
+syslog 103
+y end the stuff that never runs during the benchmarks */
+getgid 104
+setuid 105
+setgid 106
+geteuid 107
+getegid 108
+setpgid 109
+getppid 110
+getpgrp 111
+setsid 112
+setreuid 113
+setregid 114
+getgroups 115
+setgroups 116
+setresuid 117
+getresuid 118
+setresgid 119
+getresgid 120
+getpgid 121
+setfsuid 122
+setfsgid 123
+getsid 124
+capget 125
+capset 126
+rt_sigpending 127
+rt_sigtimedwait 128
+rt_sigqueueinfo 129
+rt_sigsuspend 130
+sigaltstack 131
+utime 132
+mknod 133
+d for a.out */
+uselib 134
+personality 135
+ustat 136
+statfs 137
+fstatfs 138
+sysfs 139
+getpriority 140
+setpriority 141
+sched_setparam 142
+sched_getparam 143
+sched_setscheduler 144
+sched_getscheduler 145
+sched_get_priority_max 146
+sched_get_priority_min 147
+sched_rr_get_interval 148
+mlock 149
+munlock 150
+mlockall 151
+munlockall 152
+vhangup 153
+modify_ldt 154
+pivot_root 155
+_sysctl 156
+prctl 157
+arch_prctl 158
+adjtimex 159
+setrlimit 160
+chroot 161
+sync 162
+acct 163
+settimeofday 164
+mount 165
+umount2 166
+swapon 167
+swapoff 168
+reboot 169
+sethostname 170
+setdomainname 171
+iopl 172
+ioperm 173
+create_module 174
+init_module 175
+delete_module 176
+get_kernel_syms 177
+query_module 178
+quotactl 179
+nfsservctl 180
+or LiS/STREAMS */
+getpmsg 181
+putpmsg 182
+or AFS */
+afs_syscall 183
+or tux */
+tuxcall 184
+security 185
+gettid 186
+readahead 187
+setxattr 188
+lsetxattr 189
+fsetxattr 190
+getxattr 191
+lgetxattr 192
+fgetxattr 193
+listxattr 194
+llistxattr 195
+flistxattr 196
+removexattr 197
+lremovexattr 198
+fremovexattr 199
+tkill 200
+time 201
+futex 202
+sched_setaffinity 203
+sched_getaffinity 204
+set_thread_area 205
+io_setup 206
+io_destroy 207
+io_getevents 208
+io_submit 209
+io_cancel 210
+get_thread_area 211
+lookup_dcookie 212
+epoll_create 213
+epoll_ctl_old 214
+epoll_wait_old 215
+remap_file_pages 216
+getdents64 217
+set_tid_address 218
+restart_syscall 219
+semtimedop 220
+fadvise64 221
+timer_create 222
+timer_settime 223
+timer_gettime 224
+timer_getoverrun 225
+timer_delete 226
+clock_settime 227
+clock_gettime 228
+clock_getres 229
+clock_nanosleep 230
+exit_group 231
+epoll_wait 232
+epoll_ctl 233
+tgkill 234
+utimes 235
+vserver 236
+mbind 237
+set_mempolicy 238
+get_mempolicy 239
+mq_open 240
+mq_unlink 241
+mq_timedsend 242
+mq_timedreceive 243
+mq_notify 244
+mq_getsetattr 245
+kexec_load 246
+waitid 247
+add_key 248
+request_key 249
+keyctl 250
+ioprio_set 251
+ioprio_get 252
+inotify_init 253
+inotify_add_watch 254
+inotify_rm_watch 255
+migrate_pages 256
+openat 257
+mkdirat 258
+mknodat 259
+fchownat 260
+futimesat 261
+newfstatat 262
+unlinkat 263
+renameat 264
+linkat 265
+symlinkat 266
+readlinkat 267
+fchmodat 268
+faccessat 269
+pselect6 270
+ppoll 271
+unshare 272
+set_robust_list 273
+get_robust_list 274
+splice 275
+tee 276
+sync_file_range 277
+vmsplice 278
+move_pages 279
+utimensat 280
+ORE_getcpu /* implemented as a vsyscall */
+epoll_pwait 281
+signalfd 282
+timerfd_create 283
+eventfd 284
+fallocate 285
+timerfd_settime 286
+timerfd_gettime 287
+accept4 288
+signalfd4 289
+eventfd2 290
+epoll_create1 291
+dup3 292
+pipe2 293
+inotify_init1 294
+preadv 295
+pwritev 296
+rt_tgsigqueueinfo 297
+perf_event_open 298
+recvmmsg 299
+fanotify_init 300
+fanotify_mark 301
+prlimit64 302
+name_to_handle_at 303
+open_by_handle_at 304
+clock_adjtime 305
+syncfs 306
+sendmmsg 307
+set_ns 308
+get_cpu 309
+process_vm_readv 310
+process_vm_writev 311
+</code></pre><h2 id="macos">MacOS</h2>
+<pre tabindex="0"><code>syscall 0
+exit 1
+fork 2
+read 3
+write 4
+open 5
+close 6
+wait4 7
+link 9
+unlink 10
+chdir 12
+fchdir 13
+mknod 14
+chmod 15
+chown 16
+getfsstat 18
+getpid 20
+setuid 23
+getuid 24
+geteuid 25
+ptrace 26
+recvmsg 27
+sendmsg 28
+recvfrom 29
+accept 30
+getpeername 31
+getsockname 32
+access 33
+chflags 34
+fchflags 35
+sync 36
+kill 37
+getppid 39
+dup 41
+pipe 42
+getegid 43
+sigaction 46
+getgid 47
+sigprocmask 48
+getlogin 49
+setlogin 50
+acct 51
+sigpending 52
+sigaltstack 53
+ioctl 54
+reboot 55
+revoke 56
+symlink 57
+readlink 58
+execve 59
+umask 60
+chroot 61
+msync 65
+vfork 66
+munmap 73
+mprotect 74
+madvise 75
+mincore 78
+getgroups 79
+setgroups 80
+getpgrp 81
+setpgid 82
+setitimer 83
+swapon 85
+getitimer 86
+getdtablesize 89
+dup2 90
+fcntl 92
+select 93
+fsync 95
+setpriority 96
+socket 97
+connect 98
+getpriority 100
+bind 104
+setsockopt 105
+listen 106
+sigsuspend 111
+gettimeofday 116
+getrusage 117
+getsockopt 118
+readv 120
+writev 121
+settimeofday 122
+fchown 123
+fchmod 124
+recvfrom 125
+setreuid 126
+setregid 127
+rename 128
+flock 131
+mkfifo 132
+sendto 133
+shutdown 134
+socketpair 135
+mkdir 136
+rmdir 137
+utimes 138
+futimes 139
+adjtime 140
+gethostuuid 142
+setsid 147
+getpgid 151
+setprivexec 152
+pread 153
+pwrite 154
+nfssvc 155
+statfs 157
+fstatfs 158
+unmount 159
+getfh 161
+quotactl 165
+mount 167
+csops 169
+csops_audittoken 170
+waitid 173
+kdebug_typefilter 177
+kdebug_trace_string 178
+kdebug_trace64 179
+kdebug_trace 180
+setgid 181
+setegid 182
+seteuid 183
+sigreturn 184
+panic_with_data 185
+thread_selfcounts 186
+fdatasync 187
+stat 188
+fstat 189
+lstat 190
+pathconf 191
+fpathconf 192
+getrlimit 194
+setrlimit 195
+getdirentries 196
+mmap 197
+lseek 199
+truncate 200
+ftruncate 201
+sysctl 202
+mlock 203
+munlock 204
+undelete 205
+appletalk 213
+open_dprotected_np 216
+fsgetpath_ext 217
+openat_dprotected_np 218
+getattrlist 220
+setattrlist 221
+getdirentriesattr 222
+exchangedata 223
+searchfs 225
+delete 226
+copyfile 227
+fgetattrlist 228
+fsetattrlist 229
+poll 230
+getxattr 234
+fgetxattr 235
+setxattr 236
+fsetxattr 237
+removexattr 238
+fremovexattr 239
+listxattr 240
+flistxattr 241
+fsctl 242
+initgroups 243
+posix_spawn 244
+ffsctl 245
+fhopen 248
+minherit 250
+semsys 251
+msgsys 252
+shmsys 253
+semctl 254
+semget 255
+semop 256
+msgctl 258
+msgget 259
+msgsnd 260
+msgrcv 261
+shmat 262
+shmctl 263
+shmdt 264
+shmget 265
+shm_open 266
+shm_unlink 267
+sem_open 268
+sem_close 269
+sem_unlink 270
+sem_wait 271
+sem_trywait 272
+sem_post 273
+sysctlbyname 274
+open_extended 277
+umask_extended 278
+stat_extended 279
+lstat_extended 280
+fstat_extended 281
+chmod_extended 282
+fchmod_extended 283
+access_extended 284
+settid 285
+gettid 286
+setsgroups 287
+getsgroups 288
+setwgroups 289
+getwgroups 290
+mkfifo_extended 291
+mkdir_extended 292
+identitysvc 293
+shared_region_check_np 294
+vm_pressure_monitor 296
+psynch_rw_longrdlock 297
+psynch_rw_yieldwrlock 298
+psynch_rw_downgrade 299
+psynch_rw_upgrade 300
+psynch_mutexwait 301
+psynch_mutexdrop 302
+psynch_cvbroad 303
+psynch_cvsignal 304
+psynch_cvwait 305
+psynch_rw_rdlock 306
+psynch_rw_wrlock 307
+psynch_rw_unlock 308
+psynch_rw_unlock2 309
+getsid 310
+settid_with_pid 311
+psynch_cvclrprepost 312
+aio_fsync 313
+aio_return 314
+aio_suspend 315
+aio_cancel 316
+aio_error 317
+aio_read 318
+aio_write 319
+lio_listio 320
+iopolicysys 322
+process_policy 323
+mlockall 324
+munlockall 325
+issetugid 327
+__pthread_kill 328
+__pthread_sigmask 329
+__sigwait 330
+__disable_threadsignal 331
+__pthread_markcancel 332
+__pthread_canceled 333
+__semwait_signal 334
+proc_info 336
+sendfile 337
+stat64 338
+fstat64 339
+lstat64 340
+stat64_extended 341
+lstat64_extended 342
+fstat64_extended 343
+getdirentries64 344
+statfs64 345
+fstatfs64 346
+getfsstat64 347
+__pthread_chdir 348
+__pthread_fchdir 349
+audit 350
+auditon 351
+auditsvc 352
+getauid 353
+setauid 354
+new_getaudit 356
+getaudit_addr 357
+setaudit_addr 358
+auditctl 359
+bsdthread_create 360
+bsdthread_terminate 361
+kqueue 362
+kevent 363
+lchown 364
+bsdthread_register 366
+workq_open 367
+workq_kernreturn 368
+kevent64 369
+__old_semwait_signal 370
+__old_semwait_signal_nocancel 371
+thread_selfid 372
+ledger 373
+kevent_qos 374
+__mac_execve 380
+__mac_syscall 381
+__mac_get_file 382
+__mac_set_file 383
+__mac_get_link 384
+__mac_set_link 385
+__mac_get_proc 386
+__mac_set_proc 387
+__mac_get_fd 388
+__mac_set_fd 389
+__mac_get_pid 390
+pselect 394
+pselect_nocancel 395
+read_nocancel 396
+write_nocancel 397
+open_nocancel 398
+close_nocancel 399
+wait4_nocancel 400
+recvmsg_nocancel 401
+sendmsg_nocancel 402
+recvfrom_nocancel 403
+accept_nocancel 404
+msync_nocancel 405
+fcntl_nocancel 406
+select_nocancel 407
+fsync_nocancel 408
+connect_nocancel 409
+sigsuspend_nocancel 410
+readv_nocancel 411
+writev_nocancel 412
+sendto_nocancel 413
+pread_nocancel 414
+pwrite_nocancel 415
+waitid_nocancel 416
+poll_nocancel 417
+msgsnd_nocancel 418
+msgrcv_nocancel 419
+sem_wait_nocancel 420
+aio_suspend_nocancel 421
+__sigwait_nocancel 422
+__semwait_signal_nocancel 423
+__mac_mount 424
+__mac_get_mount 425
+__mac_getfsstat 426
+fsgetpath 427
+audit_session_self 428
+audit_session_join 429
+fileport_makeport 430
+fileport_makefd 431
+audit_session_port 432
+pid_suspend 433
+pid_resume 434
+pid_hibernate 435
+pid_shutdown_sockets 436
+kas_info 439
+memorystatus_control 440
+guarded_open_np 441
+guarded_close_np 442
+guarded_kqueue_np 443
+change_fdguard_np 444
+usrctl 445
+proc_rlimit_control 446
+connectx 447
+disconnectx 448
+peeloff 449
+socket_delegate 450
+telemetry 451
+proc_uuid_policy 452
+memorystatus_get_level 453
+system_override 454
+vfs_purge 455
+sfi_ctl 456
+sfi_pidctl 457
+coalition 458
+coalition_info 459
+necp_match_policy 460
+getattrlistbulk 461
+clonefileat 462
+openat 463
+openat_nocancel 464
+renameat 465
+faccessat 466
+fchmodat 467
+fchownat 468
+fstatat 469
+fstatat64 470
+linkat 471
+unlinkat 472
+readlinkat 473
+symlinkat 474
+mkdirat 475
+getattrlistat 476
+proc_trace_log 477
+bsdthread_ctl 478
+openbyid_np 479
+recvmsg_x 480
+sendmsg_x 481
+thread_selfusage 482
+csrctl 483
+guarded_open_dprotected_np 484
+guarded_write_np 485
+guarded_pwrite_np 486
+guarded_writev_np 487
+renameatx_np 488
+mremap_encrypted 489
+netagent_trigger 490
+stack_snapshot_with_config 491
+microstackshot 492
+grab_pgo_data 493
+persona 494
+mach_eventlink_signal 496
+mach_eventlink_wait_until 497
+mach_eventlink_signal_wait_until 498
+work_interval_ctl 499
+getentropy 500
+necp_open 501
+necp_client_action 502
+__nexus_open 503
+__nexus_register 504
+__nexus_deregister 505
+__nexus_create 506
+__nexus_destroy 507
+__nexus_get_opt 508
+__nexus_set_opt 509
+__channel_open 510
+__channel_get_info 511
+__channel_sync 512
+__channel_get_opt 513
+__channel_set_opt 514
+ulock_wait 515
+ulock_wake 516
+fclonefileat 517
+fs_snapshot 518
+register_uexc_handler 519
+terminate_with_payload 520
+abort_with_payload 521
+necp_session_open 522
+necp_session_action 523
+setattrlistat 524
+net_qos_guideline 525
+fmount 526
+ntp_adjtime 527
+ntp_gettime 528
+os_fault_with_payload 529
+kqueue_workloop_ctl 530
+__mach_bridge_remote_time 531
+coalition_ledger 532
+log_data 533
+memorystatus_available_memory 534
+objc_bp_assist_cfg_np 535
+shared_region_map_and_slide_2_np 536
+pivot_root 537
+task_inspect_for_pid 538
+task_read_for_pid 539
+preadv 540
+pwritev 541
+preadv_nocancel 542
+pwritev_nocancel 543
+ulock_wait2 544
+proc_info_extended_id 545
+tracker_action 546
+debug_syscall_reject 547
+debug_syscall_reject_config 548
+graftdmg 549
+map_with_linking_np 550
+freadlink 551
+record_system_event 552
+mkfifoat 553
+mknodat 554
+ungraftdmg 555
+coalition_policy_set 556
+coalition_policy_get 557
+</code></pre>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20181227_fix_lsof/">
+                        编译iOS可用lsof
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20190511_jb_detect/">
+                        常见反越狱检测插件实现原理
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

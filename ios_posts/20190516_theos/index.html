@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    Theos环境搭建 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/ios_posts/20190516_theos/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/ios_posts/">Ios_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/ios_posts/20190516_theos/">Theos环境搭建</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">Theos环境搭建</h1>
+    
+    <p class="single-summary">Theos环境搭建</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2019-05-16T00:00:00&#43;00:00">May 16, 2019</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#概述">概述</a></li>
+    <li><a href="#准备工作">准备工作</a></li>
+    <li><a href="#简单实例">简单实例</a>
+      <ul>
+        <li><a href="#创建工程">创建工程</a></li>
+        <li><a href="#配置手机环境">配置手机环境</a></li>
+        <li><a href="#部署日志查看工具">部署日志查看工具</a></li>
+        <li><a href="#开发hellowolrd">开发hellowolrd</a></li>
+      </ul>
+    </li>
+    <li><a href="#daemon开发">Daemon开发</a>
+      <ul>
+        <li><a href="#简单daemon">简单Daemon</a></li>
+        <li><a href="#ios-daemon">iOS Daemon</a></li>
+        <li><a href="#deb部署动作">Deb部署动作</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="概述">概述</h2>
+<p>基本常识</p>
+<ul>
+<li>
+<p>为什么进行越狱开发，以及越狱开发能做什么?
+  实现一些AppStore上的app无法实现的功能，在越狱机器上，可以精细化控制iOS系统和App做批量自动化操作，增删改系统功能等</p>
+</li>
+<li>
+<p>什么是Theos以及Theos用来干什么?
+  是目前最流行的跨平台iOS越狱开发工具包，包含越狱开发所有需要的sdk和工具链</p>
+</li>
+<li>
+<p>我该怎样选择开发环境?
+  为了达到最快的开发速度和生产速度，建议PC使用环境<code>MacOS + XCode + Theos + VSCode</code>，手机端使用<code>openssh + debugsever + frida </code>进行相关开发，逆向，调试，跟踪，测试。本系列教程均基于该环境开发。为此你需要准备的编程技能至少包括<code>objective-c + c + python + javascript + logos</code></p>
+</li>
+<li>
+<p>推荐学习资源?
+  论坛: iOSRE, 看雪, 52pojie, &hellip;.</p>
+</li>
+</ul>
+<p>常见的越狱软件/插件都有哪些文件类型?</p>
+<ul>
+<li>资源文件</li>
+<li>Daemon, 可执行程序，为常驻于系统的守护进程，用于执行一些需要系统权限的操作或者实现底层服务</li>
+<li>Tool, 可执行程序，用于实现简单功能，比如lsof，wget</li>
+<li>Tweak, 动态库，随App启动自动注入，用作控制进程</li>
+<li>App, 这里开发的是Root权限执行的App，在桌面存在图标</li>
+</ul>
+<h2 id="准备工作">准备工作</h2>
+<ul>
+<li>确保系统安装homebrew, xcode</li>
+<li>安装Theos依赖</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>brew install ldid xz
+</span></span></code></pre></div><ul>
+<li>下载TheOS</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>mkdir /opt # theos将下载到/opt/theos
+</span></span><span style="display:flex;"><span>git clone --recursive https://github.com/theos/theos.git /opt/theos
+</span></span></code></pre></div><p>*** 小技巧: 如果git下载比较慢又不想用vpn，可以用gitee的&rsquo;导入Github仓库&rsquo;功能，借助gitee下载***</p>
+<ul>
+<li>增加iOS私有函数库</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl -LO https://github.com/theos/sdks/archive/master.zip
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">TMP</span><span style="color:#ec0000">=</span><span style="color:#ec0000">$(</span>mktemp -d<span style="color:#ec0000">)</span>
+</span></span><span style="display:flex;"><span>unzip master.zip -d <span style="color:#ec0000">$TMP</span>
+</span></span><span style="display:flex;"><span>mv <span style="color:#ec0000">$TMP</span>/sdks-master/*.sdk /opt/theos/sdks
+</span></span><span style="display:flex;"><span>rm -r master.zip <span style="color:#ec0000">$TMP</span>
+</span></span></code></pre></div><h2 id="简单实例">简单实例</h2>
+<h3 id="创建工程">创建工程</h3>
+<p>执行<code>/opt/theos/bin/nic.pl</code>得到如下结果</p>
+<pre tabindex="0"><code>NIC 2.0 - New Instance Creator
+------------------------------
+  [1.] iphone/activator_event
+  [2.] iphone/activator_listener
+  [3.] iphone/application_modern
+  [4.] iphone/application_swift
+  [5.] iphone/control_center_module-11up
+  [6.] iphone/cydget
+  [7.] iphone/flipswitch_switch
+  [8.] iphone/framework
+  [9.] iphone/library
+  [10.] iphone/notification_center_widget
+  [11.] iphone/notification_center_widget-7up
+  [12.] iphone/preference_bundle_modern
+  [13.] iphone/theme
+  [14.] iphone/tool
+  [15.] iphone/tool_swift
+  [16.] iphone/tweak
+  [17.] iphone/tweak_with_simple_preferences
+  [18.] iphone/xpc_service
+  [19.] iphone/xpc_service_modern
+Choose a Template (required):
+</code></pre><p>  这里每行都是一种工程类型，其中[14]用于生成iOS无界面的可执行程序，[16]用于生成注入App的动态库。这两个是最常用的项目。如果打算开发完整越狱App，仍然要借助XCode。这里按如下操作，会产生helloworld目录:</p>
+<pre tabindex="0"><code>Choose a Template (required): 16
+Project Name (required): helloworld
+Package Name [com.yourcompany.helloworld]: helloworld
+Author/Maintainer Name [apple]: helloworld
+[iphone/tweak] MobileSubstrate Bundle filter [com.apple.springboard]: com.apple.springboard
+[iphone/tweak] List of applications to terminate upon installation (space-separated, &#39;-&#39; for none) [SpringBoard]: SpringBoard
+</code></pre><h3 id="配置手机环境">配置手机环境</h3>
+<h4 id="安装tcprelay">安装tcprelay</h4>
+<p>  tcprelay将usb连接的手机端口映射到本地端口，这样登录手机将非常方便，同时传文件速度非常快。远程ssh登陆到手机，将会面临网络不稳定的问题，操作比较痛苦</p>
+<ul>
+<li>iPhone Cydia商店中安装openssh</li>
+<li><code>brew install libusbmuxd</code></li>
+<li>从<code>https://gitee.com/lich0/jailbroken_programming_lesson/tree/master/tools</code>获取tcprelay.py和usbmux.py</li>
+<li>执行<code>sudo python3 tcprelay.py -t 22:22</code> (注意因为端口号小于1024所以必须root权限执行)</li>
+<li></li>
+</ul>
+<p>期间可能遇到的问题:</p>
+<ul>
+<li>如果首次连接手机，会如下提示，按yes即可</li>
+</ul>
+<pre tabindex="0"><code>The authenticity of host &#39;127.0.0.1 (127.0.0.1)&#39; can&#39;t be established.
+RSA key fingerprint is SHA256:z5N37rPCpeTKcIcm1tx3x3DnkTfeaESagZWuTYnmD3E.
+Are you sure you want to continue connecting (yes/no/[fingerprint])?
+</code></pre><ul>
+<li>如果对多台iPhone采用上述操作，那么会产生knownhost冲突，如下所示</li>
+</ul>
+<pre tabindex="0"><code>@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+Someone could be eavesdropping on you right now (man-in-the-middle attack)!
+It is also possible that a host key has just been changed.
+The fingerprint for the RSA key sent by the remote host is
+SHA256:z5N37rPCpeTKcIcm1tx3x3DnkTfeaESagZWuTYnmD3E.
+Please contact your system administrator.
+Add correct host key in /Users/apple/.ssh/known_hosts to get rid of this message.
+Offending RSA key in /Users/apple/.ssh/known_hosts:2
+RSA host key for 127.0.0.1 has changed and you have requested strict checking.
+Host key verification failed.
+</code></pre><p>此时需要将设备公钥加入到本机，按如下方式操作:</p>
+<pre tabindex="0"><code>ssh-keyscan 127.0.0.1 &gt;&gt; ~/.ssh/known_hosts
+</code></pre><ul>
+<li>为避免每次登陆手机输入密码，按如下操作</li>
+</ul>
+<pre tabindex="0"><code>ssh-copy-id [email]root@127.0.0.1[/email] # 密码默认为alpine
+</code></pre><h3 id="部署日志查看工具">部署日志查看工具</h3>
+<pre tabindex="0"><code>git clone https://github.com/rpetrich/deviceconsole.git
+</code></pre><p>使用XCode编译出deviceconsole并放到$PATH下，这样每次USB连接iPhone后执行deviceconsole就能看到日志(支持iOS12及以下系统)</p>
+<h3 id="开发hellowolrd">开发hellowolrd</h3>
+<p>  我们的helloworld是在SpringBoard启动时做个弹窗。SpringBoard可以理解为桌面进程。效果为每次杀死SpringBoard进程时会在桌面弹窗。使用VSCode打开helloworld目录，可以看到存在4个文件:</p>
+<ul>
+<li>control 指定生成的deb的基本信息，包括包名，版本，安装依赖及作者信息</li>
+<li>helloworld.plist 用于指定自动注入的进程，这里可以看到指定为springboard</li>
+<li>Makefile</li>
+<li>Tweak.x 代码</li>
+</ul>
+<p>工程在<code>https://gitee.com/lich0/jailbroken_programming_lesson/tree/master/junior1_helloworld</code></p>
+<p>执行<code>make package install</code>到手机后，得到最终效果如图</p>
+<p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/jbdev1.png">
+    </div>
+
+    
+</figure></p>
+<h2 id="daemon开发">Daemon开发</h2>
+<p>  Daemon是由系统管理的后台服务，如果服务进程崩溃或退出，系统会及时拉起实现常驻</p>
+<h3 id="简单daemon">简单Daemon</h3>
+<p>以下代码借鉴自frida源码，实现了自举Daemon，适用于Android/Linux/Mac/iOS越狱开发</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ec0000">static</span> <span style="color:#5f5fff">int</span> fds[<span style="color:#008900">2</span>];
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> flag;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">pipe</span>(fds);
+</span></span><span style="display:flex;"><span>flag <span style="color:#ec0000">=</span> <span style="color:#5f5fff">fcntl</span>(fds[<span style="color:#008900">0</span>], F_GETFL, <span style="color:#008900">0</span>);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">fcntl</span>(fds[<span style="color:#008900">0</span>], F_SETFL, flag <span style="color:#ec0000">|</span> O_NONBLOCK);
+</span></span><span style="display:flex;"><span>flag <span style="color:#ec0000">=</span> <span style="color:#5f5fff">fcntl</span>(fds[<span style="color:#008900">1</span>], F_GETFL, <span style="color:#008900">0</span>);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">fcntl</span>(fds[<span style="color:#008900">1</span>], F_SETFL, flag <span style="color:#ec0000">|</span> O_NONBLOCK);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> forkpid <span style="color:#ec0000">=</span> <span style="color:#5f5fff">fork</span>();
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">if</span> (forkpid <span style="color:#ec0000">&lt;</span> <span style="color:#008900">0</span>) {
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>} <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (forkpid <span style="color:#ec0000">&gt;</span> <span style="color:#008900">0</span>) { // father
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">sleep</span>(<span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">setsid</span>();
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">chdir</span>(<span style="color:#008900">&#34;/&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">umask</span>(<span style="color:#008900">0</span>);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> null_in <span style="color:#ec0000">=</span> <span style="color:#5f5fff">open</span>(<span style="color:#008900">&#34;/dev/null&#34;</span>, O_RDONLY);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> null_out <span style="color:#ec0000">=</span> <span style="color:#5f5fff">open</span>(<span style="color:#008900">&#34;/dev/null&#34;</span>, O_WRONLY);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">dup2</span>(null_in, STDIN_FILENO);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">dup2</span>(null_out, STDOUT_FILENO);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">dup2</span>(null_out, STDERR_FILENO);
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">for</span>(<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> <span style="color:#008900">1024</span>; i<span style="color:#ec0000">++</span>) {
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">close</span>(i);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="ios-daemon">iOS Daemon</h3>
+<p>参考：<a href="https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html">https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html</a></p>
+<p>简单测试脚本<code>/layout/tmp/test.sh</code></p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>#!/bin/sh
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">echo</span> <span style="color:#ec0000">$2</span> &gt;&gt; /tmp/testlog &gt;&gt; /tmp/testlog
+</span></span><span style="display:flex;"><span>sleep <span style="color:#008900">5</span>
+</span></span></code></pre></div><p>/Library/LaunchDaemons/test.plist</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span>&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;
+</span></span><span style="display:flex;"><span>&lt;!DOCTYPE plist PUBLIC &#34;-//Apple//DTD PLIST 1.0//EN&#34; &#34;http://www.apple.com/DTDs/PropertyList-1.0.dtd&#34;&gt;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">&lt;plist</span> <span style="color:#5f5fff">version=</span><span style="color:#008900">&#34;1.0&#34;</span><span style="color:#ec0000">&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&lt;key&gt;</span>KeepAlive<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&lt;key&gt;</span>Label<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&lt;string&gt;</span>test<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&lt;key&gt;</span>ProgramArguments<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&lt;array&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>/bin/bash<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>/tmp/test.sh<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&lt;/array&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&lt;key&gt;</span>RunAtLoad<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">&lt;/plist&gt;</span>
+</span></span></code></pre></div><p>/layout/DEBIAN/prerm</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>#!/bin/sh
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">if</span> <span style="color:#ec0000">[[</span> <span style="color:#ec0000">$1</span> <span style="color:#ec0000">==</span> remove <span style="color:#ec0000">||</span> <span style="color:#ec0000">$1</span> <span style="color:#ec0000">==</span> purge <span style="color:#ec0000">]]</span>; <span style="color:#ec0000">then</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> <span style="color:#ec0000">[</span> -f <span style="color:#008900">&#34;/Library/LaunchDaemons/test.plist&#34;</span> <span style="color:#ec0000">]</span>; <span style="color:#ec0000">then</span>
+</span></span><span style="display:flex;"><span>      /bin/launchctl unload /Library/LaunchDaemons/test.plist
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">fi</span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">fi</span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">exit</span> <span style="color:#008900">0</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>/layout/DEBIAN/extrainst_内容
+</span></span><span style="display:flex;"><span><span style="color:#008900">```</span>sh
+</span></span><span style="display:flex;"><span>#!/bin/sh
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">if</span> <span style="color:#ec0000">[[</span> <span style="color:#ec0000">$1</span> <span style="color:#ec0000">==</span> upgrade <span style="color:#ec0000">]]</span>; <span style="color:#ec0000">then</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> <span style="color:#ec0000">[</span> -f <span style="color:#008900">&#34;/Library/LaunchDaemons/test.plist&#34;</span> <span style="color:#ec0000">]</span>; <span style="color:#ec0000">then</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> <span style="color:#ec0000">[</span> ! -d <span style="color:#008900">&#34;/usr/lib/TweakInject&#34;</span> <span style="color:#ec0000">]</span>; <span style="color:#ec0000">then</span>
+</span></span><span style="display:flex;"><span>        /bin/launchctl unload /Library/LaunchDaemons/test.plist
+</span></span><span style="display:flex;"><span>        /bin/launchctl load /Library/LaunchDaemons/test.plist
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>        /bin/launchctl kickstart -k system/test
+</span></span><span style="display:flex;"><span>        /bin/launchctl load /Library/LaunchDaemons/test.plist
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">fi</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">fi</span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">elif</span> <span style="color:#ec0000">[[</span> <span style="color:#ec0000">$1</span> <span style="color:#ec0000">==</span> install <span style="color:#ec0000">]]</span>; <span style="color:#ec0000">then</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> <span style="color:#ec0000">[</span> -f <span style="color:#008900">&#34;/Library/LaunchDaemons/test.plist&#34;</span> <span style="color:#ec0000">]</span>; <span style="color:#ec0000">then</span>
+</span></span><span style="display:flex;"><span>      /bin/launchctl load /Library/LaunchDaemons/test.plist
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">fi</span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">fi</span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">exit</span> <span style="color:#008900">0</span>
+</span></span></code></pre></div><h3 id="deb部署动作">Deb部署动作</h3>
+<p>  有时为了实现编译或安装阶段的自定义，需要在这些阶段执行脚本，而Cydia越狱环境和TheOS开发环境提供了以下功能。</p>
+<h4 id="makefile命令">Makefile命令</h4>
+<p>在Makefile中使用命令，不会打包到deb文件中，所以只在开发时执行</p>
+<pre tabindex="0"><code>before-install::  
+    install.exec &#34;echo before-install&#34;
+before-uninstall::
+    install.exec &#34;echo before-uninstall&#34;
+after-install::
+    install.exec &#34;echo after-install&#34;
+after-uninstall::
+    install.exec &#34;echo after-uninstall&#34;
+
+# 子命令：
+install.exec 执行命令
+install.copyFile 拷贝文件
+</code></pre><h4 id="debian控制命令">Debian控制命令</h4>
+<p>在项目layout中创建DEBIAN目录，根目录control须移动到该目录下，该目录还支持如下脚本文件</p>
+<ul>
+<li>preinst 在Deb包文件解包之前，将会运行该脚本。许多“preinst”脚本的任务是停止作用于待升级软件包的服务，直到软件包安装或升级完成。</li>
+<li>postinst 该脚本的主要任务是完成安装包时的配置工作。许多“postinst”脚本负责执行有关命令为新安装或升级的软件重启服务。</li>
+<li>prerm 该脚本负责停止与软件包相关联的daemon服务。它在删除软件包关联文件之前执行。</li>
+<li>postrm 该脚本负责修改软件包链接或文件关联，或删除由它创建的文件。</li>
+<li>extrainst_ 安装是执行，升级时不执行</li>
+</ul>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20190511_jb_detect/">
+                        常见反越狱检测插件实现原理
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20170903_net_conf/">
+                        动态修改iOS网络配置
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

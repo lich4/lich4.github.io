@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    iOS越狱 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/ios_posts/20210731_howto_jb/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/ios_posts/">Ios_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/ios_posts/20210731_howto_jb/">iOS越狱</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">iOS越狱</h1>
+    
+    <p class="single-summary">iOS越狱</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2021-07-31T00:00:00&#43;00:00">July 31, 2021</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#越狱基础知识">越狱基础知识</a></li>
+    <li><a href="#常见越狱工具一览">常见越狱工具一览</a>
+      <ul>
+        <li><a href="#提供企业签越狱工具的网站">提供企业签越狱工具的网站</a></li>
+        <li><a href="#网页越狱ios9-10">网页越狱(iOS9-10)</a></li>
+      </ul>
+    </li>
+    <li><a href="#越狱工具的安装">越狱工具的安装</a>
+      <ul>
+        <li><a href="#cydiaimpactor使用">CydiaImpactor使用</a></li>
+      </ul>
+    </li>
+    <li><a href="#altstore使用">AltStore使用</a>
+      <ul>
+        <li><a href="#altdeploy使用">AltDeploy使用</a></li>
+        <li><a href="#重签续签">重签&amp;续签</a></li>
+      </ul>
+    </li>
+    <li><a href="#第三方udid签">第三方UDID签</a></li>
+    <li><a href="#sideloadly">SideLoadly</a></li>
+    <li><a href="#trollstore">TrollStore</a></li>
+    <li><a href="#轻松签全能签等">轻松签/全能签等</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="越狱基础知识">越狱基础知识</h2>
+<p>  越狱工具，是利用漏洞获取iOS设备的root权限，从而控制系统。越狱工具安装后会释放必备命令(如dpkg,rm,kill,bash,&hellip;)和越狱应用商店(Cydia,Sileo)，同时安装Hook框架(Substrate/Substitute)。 iOS10及以下的越狱均是完美越狱，而11及以上均为不完美越狱，每次重启后反越狱状态会掉。目前出现的越狱工具主要有3种安装方式:IPA签名安装,网页安装,USB安装，其中网页安装是利用iOS10的Safari漏洞，将越狱工具(如h3lix)安装到系统中。笔者目前使用的是Checkra1n，直接USB连接手机即可安装，无需考虑签名等问题。下表为iOS8以后的越狱工具统计，更详细的越狱工具可在这里查到<a href="https://www.reddit.com/r/jailbreak">https://www.reddit.com/r/jailbreak</a><a href="https://www.theiphonewiki.com">https://www.theiphonewiki.com</a> <br>
+  Hook框架(Substrate/Substitute)，实现了C函数的内联Hook以及ObjC消息的Hook。Substitute本为Substrate的一个替代品，然而目前不太稳定，有很多函数会Hook失败，所以很多基于Substrate的软件，在Substitute下会崩溃。笔者用过Unc0ver和Checkra1n，Unc0ver默认安装Substitute，而Checkra1n默认安装Substrate。Substrate/Subtitute是打包在越狱工具中的，而除了这2个Hook框架以外，Frida内自带一套Hook框架，另外Dobby(前身Hookzz)是一款稳定性不错的的开源Hook框架(优于Substitute)(注1)。另外某些越狱工具内置了作者自己开发的hook框架。</p>
+<ul>
+<li>越狱工具之间对Hook框架的争夺也是白热化，Unc0ver越狱后，会强制屏蔽掉dlsym获取MSHookFunction函数，即便用户手动加载了Substrate或者Hookzz，也会获取不到函数!!!，这波操作太骚</li>
+</ul>
+<h2 id="常见越狱工具一览">常见越狱工具一览</h2>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">越狱工具</th>
+          <th style="text-align: left">安装方式</th>
+          <th style="text-align: left">适配系统</th>
+          <th style="text-align: left">网址</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: left">Pangu</td>
+          <td style="text-align: left">IPA</td>
+          <td style="text-align: left">8/9</td>
+          <td style="text-align: left"><a href="http://www.pangu.io">http://www.pangu.io</a></td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Yalu</td>
+          <td style="text-align: left">IPA</td>
+          <td style="text-align: left">8/10</td>
+          <td style="text-align: left"><a href="http://yalu.qwertyoruiop.com">http://yalu.qwertyoruiop.com</a></td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Meridan</td>
+          <td style="text-align: left">IPA</td>
+          <td style="text-align: left">10 ARM64</td>
+          <td style="text-align: left"><a href="http://meridian.sparkes.zone">http://meridian.sparkes.zone</a></td>
+      </tr>
+      <tr>
+          <td style="text-align: left">TotallyNotSpyware</td>
+          <td style="text-align: left">网页</td>
+          <td style="text-align: left">10 ARM64</td>
+          <td style="text-align: left"><a href="http://totally-not.spyware.lol">http://totally-not.spyware.lol</a></td>
+      </tr>
+      <tr>
+          <td style="text-align: left">H3lix</td>
+          <td style="text-align: left">IPA</td>
+          <td style="text-align: left">10 ARM</td>
+          <td style="text-align: left"><a href="http://h3lix.tihmstar.net">http://h3lix.tihmstar.net</a></td>
+      </tr>
+      <tr>
+          <td style="text-align: left">doubleH3lix</td>
+          <td style="text-align: left">IPA</td>
+          <td style="text-align: left">10 ARM64</td>
+          <td style="text-align: left"><a href="http://doubleh3lix.tihmstar.net">http://doubleh3lix.tihmstar.net</a></td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Electra</td>
+          <td style="text-align: left">IPA</td>
+          <td style="text-align: left">11</td>
+          <td style="text-align: left"><a href="http://coolstar.org/electra">http://coolstar.org/electra</a></td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Chimera</td>
+          <td style="text-align: left">IPA</td>
+          <td style="text-align: left">12/13</td>
+          <td style="text-align: left"><a href="http://chimera.coolstar.org">http://chimera.coolstar.org</a></td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Odyssey</td>
+          <td style="text-align: left">IPA</td>
+          <td style="text-align: left">13</td>
+          <td style="text-align: left"><a href="http://theodyssey.dev">http://theodyssey.dev</a></td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Taurine</td>
+          <td style="text-align: left">IPA</td>
+          <td style="text-align: left">14</td>
+          <td style="text-align: left"><a href="http://taurine.app">http://taurine.app</a></td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Unc0ver</td>
+          <td style="text-align: left">IPA</td>
+          <td style="text-align: left">11-14</td>
+          <td style="text-align: left"><a href="http://www.unc0ver.dev">http://www.unc0ver.dev</a></td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Checkra1n</td>
+          <td style="text-align: left">USB</td>
+          <td style="text-align: left">12-14 ARM64</td>
+          <td style="text-align: left"><a href="http://checkra.in">http://checkra.in</a></td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Palera1n</td>
+          <td style="text-align: left">USB</td>
+          <td style="text-align: left">15-16 ARM64</td>
+          <td style="text-align: left"><a href="https://palera.in/">https://palera.in/</a></td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Dopamine</td>
+          <td style="text-align: left">TIPA</td>
+          <td style="text-align: left">15-16 ARM64e</td>
+          <td style="text-align: left"><a href="https://ellekit.space/dopamine/">https://ellekit.space/dopamine/</a></td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Fugu</td>
+          <td style="text-align: left">IPA</td>
+          <td style="text-align: left">13/14/15 ARM64e</td>
+          <td style="text-align: left"><a href="https://github.com/pinauten/Fugu15">https://github.com/pinauten/Fugu15</a></td>
+      </tr>
+      <tr>
+          <td style="text-align: left">Xina</td>
+          <td style="text-align: left">IPA</td>
+          <td style="text-align: left">15 ARM64e</td>
+          <td style="text-align: left"><a href="https://github.com/NotDarkn/XinaA15">https://github.com/NotDarkn/XinaA15</a></td>
+      </tr>
+  </tbody>
+</table>
+<p>注意: Palera1n支持有根和无根越狱,支持A12以下(6S-X)的设备;Dopamine只支持无根越狱,支持A12及以上(XR-?)的设备</p>
+<h3 id="提供企业签越狱工具的网站">提供企业签越狱工具的网站</h3>
+<pre tabindex="0"><code>https://app.ignition.fun
+https://next.tweakboxapp.com
+https://geekben.org/apps
+https://www.niqiuge.com/pc/yy/index.php?id=1
+https://app.initnil.com/
+http://jabizb.cn/
+https://erjihui.vip/
+https://yueyu.cydiavip.com/
+https://app.ambier.cn/#/ios
+https://www.cydialmg.vip/yueyu/
+https://www.niqiuge.com
+http://jb.aptso.cn/
+https://app.nk8686.com/
+https://yueyu.cydiami.com/
+https://www.limufang.com/post/509.html#i-5
+http://kzddck.cn/cer/
+</code></pre><h3 id="网页越狱ios9-10">网页越狱(iOS9-10)</h3>
+<pre tabindex="0"><code>http://ai.id64.com/jian/ios10/index.html (10 64bit)
+http://ai.id64.com/jian/xia/doubleH3lix/index.html (10 64bit)
+http://ai.id64.com/jian/tiao1/H3lix/index.html (10 32bit)
+http://ai.id64.com/yyu/index.html (9.2-9.3)
+http://jb92.i4.cn (9.2-9.3)
+</code></pre><h2 id="越狱工具的安装">越狱工具的安装</h2>
+<p>  以上谈到了如何获取越狱工具，下面来谈如何安装IPA。苹果系统在非越狱状态下，安装的任何App都要对IPA做签名才可以安装。苹果的签名有以下几种</p>
+<ul>
+<li>个人签，年费99美元，设备数限制为100，有效期1年</li>
+<li>企业签，年费299美元，无设备数限制，只能公司内部使用不能发布到AppStore，安装后需手动信任证书</li>
+</ul>
+<p>  由此，IPA的安装也有以下方式</p>
+<ul>
+<li>下载企业签版App，直接安装即可(Safari下载IPA——信任企业签——安装成功)。这种方式无需考虑签名问题，但是由于经常被举报导致企业签掉签，从而无法下载安装。</li>
+<li>若越狱工具提供源码，那么可以用XCode编译出IPA，使用自己的appid签名安装即可</li>
+<li>若越狱工具不提供源码，那么下载其包含的IPA，然后用CydiaImpactor/AltDeploy/AltStore进行签名。此类工具需要用到苹果账号</li>
+<li>如果使用Checkra1n，那么只需要将手机使用USB连电脑进行安装即可，整个过程较为简单且失败率接近0</li>
+</ul>
+<h3 id="cydiaimpactor使用">CydiaImpactor使用</h3>
+<p>  支持Windows/Linux/Mac。下载安装<a href="http://www.cydiaimpactor.com">http://www.cydiaimpactor.com</a>，将手机通过USB连接电脑，CydiaImpactor菜单——设备——安装App，输入苹果账号密码即可自动安装。注意如果苹果账号开启了两步验证那么需要输入的不是密码而是16位App专用密码，App专用密码在这里生成:<a href="https://appleid.apple.com/account/manage">https://appleid.apple.com/account/manage</a>。笔者一直使用该工具安装IPA。</p>
+<h2 id="altstore使用">AltStore使用</h2>
+<p>  支持Windows/Mac。下载安装<a href="https://altstore.io">https://altstore.io</a>，将手机通过USB连接电脑，在AltServer中安装AltStore，在手机中输入苹果账号，AltStore便安装于手机中，在AltStore中安装IPA即可。</p>
+<h3 id="altdeploy使用">AltDeploy使用</h3>
+<p>  支持Mac。下载安装<a href="https://github.com/pixelomer/AltDeploy/releases">https://github.com/pixelomer/AltDeploy/releases</a>，将手机通过USB连接电脑，打开Mac自带邮箱App，然后输入苹果账号安装IPA。AltDeploy是基于AltStore开发的，与AltStore不同的是AltStore运行在手机端，更方便一些。</p>
+<h3 id="重签续签">重签&amp;续签</h3>
+<p>  签名快到期时需要进行重签，避免过期了无法运行App。AltStore可以进行手动重签。而Reprovision(Cydia里安装)可以自动续签。</p>
+<h2 id="第三方udid签">第三方UDID签</h2>
+<p>  此类在线服务不需要电脑只需要iPhone就可以签名，此类工具是整合了多个开发者账号做成的，按月按设备收费，通常一个月几十块钱比较贵，在2020年前后比较火，github上有项目可以自动搭建这种呢udid签平台</p>
+<h2 id="sideloadly">SideLoadly</h2>
+<p>  用侧载技术签名IPA，支持USB&amp;Wifi连接手机进行签名，支持iOS7以上的系统，只需要一个AppID账号即可。方便且免费</p>
+<h2 id="trollstore">TrollStore</h2>
+<p>  利用系统签名漏洞进行永久签，是个IPA，需要先用AppID将自身IPA安装到iOS系统(需要电脑)，然后就可无限制签名任意App。支持iOS14-17.0系统</p>
+<h2 id="轻松签全能签等">轻松签/全能签等</h2>
+<p>  利用TrollStore做成的第三方服务，无需电脑，支持iOS14-17.0系统</p>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20200517_idfa_re/">
+                        IDFA生成过程分析
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20210804_uuid/">
+                        UUID简介
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

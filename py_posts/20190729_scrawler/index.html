@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    Python爬虫笔记 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/py_posts/20190729_scrawler/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/py_posts/">Py_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/py_posts/20190729_scrawler/">Python爬虫笔记</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">Python爬虫笔记</h1>
+    
+    <p class="single-summary">Python爬虫笔记</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2019-07-29T00:00:00&#43;00:00">July 29, 2019</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#分类">分类</a>
+      <ul>
+        <li><a href="#网页爬虫">网页爬虫</a></li>
+        <li><a href="#移动端爬虫">移动端爬虫</a></li>
+        <li><a href="#说明">说明</a></li>
+      </ul>
+    </li>
+    <li><a href="#学习">学习</a>
+      <ul>
+        <li><a href="#python爬虫常用库">python爬虫常用库</a></li>
+        <li><a href="#xpath语法">xpath语法</a></li>
+        <li><a href="#python发送http请求">python发送http请求</a></li>
+        <li><a href="#设置代理">设置代理</a></li>
+        <li><a href="#设置header">设置header</a></li>
+        <li><a href="#get请求">GET请求</a></li>
+        <li><a href="#post请求">POST请求</a></li>
+        <li><a href="#selenium">selenium</a></li>
+        <li><a href="#最简单的爬虫的核心代码">最简单的爬虫的核心代码</a></li>
+      </ul>
+    </li>
+    <li><a href="#selenium使用">selenium使用</a>
+      <ul>
+        <li><a href="#安装pythonselenium">安装python+selenium</a></li>
+        <li><a href="#选择浏览器并安装driver">选择浏览器并安装driver</a></li>
+        <li><a href="#headless">headless</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="分类">分类</h2>
+<h3 id="网页爬虫">网页爬虫</h3>
+<p>从PC端访问网站从而爬取内容，大部分是html格式(所以耗费流量和时延较多，同时由于html结构经常变化，维护成本高)，可能需要以下技能点</p>
+<ul>
+<li>正则表达式 用于简单的定位元素</li>
+<li>XPATH来定位dom元素 用于定位复杂的元素</li>
+<li>selenium 通过自动化浏览器交互来定位元素</li>
+<li>js语法 搭配selenium使用，一般在处理动态生成的dom或模拟动态事件使用，一些情况下需要使用selenium执行js语句才能获取需要的数据</li>
+<li>抓包 浏览器请求网页时可能同一个网站请求了多个网页和资源，而所需要的数据在这些资源中，不是在当前浏览的html页面里，需要抓包定位数据</li>
+</ul>
+<h3 id="移动端爬虫">移动端爬虫</h3>
+<p>从移动端访问网站特殊接口从而爬取内容，一般是json格式(耗费流量较少，易于处理，但是分析复杂，技术难度高)，可能需要以下技能点</p>
+<ul>
+<li>抓包工具 如fiddler/burpsuite 用于捕获http/https请求</li>
+<li>二进制逆向分析 有时候抓包的数据中会有比较复杂的加解密操作，需要从二进制进行分析</li>
+</ul>
+<h3 id="说明">说明</h3>
+<ul>
+<li>企业一般使用网页爬虫，技术难度稍微简单一些，爬取的都是公开数据，也就是用户操作浏览器时可以看到的数据。大型网站也会有反爬虫机制，因此做爬虫也是对抗过程，比如滑动验证/图形验证码/图形化数据/代理检测/header检测/访问频率检测等手段</li>
+<li>抓包工具可以用来检验爬虫发的数据包的request和response是否正确，用于调试爬虫脚本</li>
+</ul>
+<h2 id="学习">学习</h2>
+<h3 id="python爬虫常用库">python爬虫常用库</h3>
+<ul>
+<li>requests/urllib/urllib2 执行http请求，url/base64编码解码等操作</li>
+<li>selenium 自动化浏览器交互，xpath定位元素，动态执行js</li>
+<li>lxml 用于解析html，xpath定位元素</li>
+<li>BeautifulSoup 封装和简化了xpath定位元素</li>
+</ul>
+<h3 id="xpath语法">xpath语法</h3>
+<p><a href="http://www.w3school.com.cn/xpath/xpath_syntax.asp">http://www.w3school.com.cn/xpath/xpath_syntax.asp</a><br>
+以https://www.baidu.com为例</p>
+<pre tabindex="0"><code>基本语法
+/                   子节点
+//                  根节点
+nodename            节点                   //input
+@attrib             属性                   //input[@type]
+.                   当前节点                //input/.         //input[@type=&#39;submit&#39;]/.
+..                  父节点                 //input/..        //input[@type=&#39;submit&#39;]/..
+[]                  匹配元素下标            //input[1]        //input[@type=&#39;submit&#39;][1]
+last()              最后一个下标            //input[last()]   //input[last()-1]  
+position()          当前下标               //input[position()&lt;3]
+*                   任何元素               //form[@id=&#39;form&#39;]/*
+@*                  任何有属性的元素        //form[@*] 
+
+运算符
+||                  多个xpath路径          //form | //input              
++ - * div mod       数学计算
+&gt; = &lt; != &gt;= &lt;=      条件表达式             //input[@type=&#39;hidden&#39;][@value=8]
+or and              逻辑表达式             //input[@name=&#39;ie&#39; or @name=&#39;f&#39;]
+</code></pre><h3 id="python发送http请求">python发送http请求</h3>
+<p>以urllib为例<br>
+python2 <code>import urllib as urllib_</code><br>
+python3 <code>import urllib.request as urllib_</code></p>
+<h3 id="设置代理">设置代理</h3>
+<pre tabindex="0"><code>opener = urllib_.build_opener(urllib_.ProxyHandler({
+    &#34;http&#34;: proxy,
+    &#34;https&#34;: proxy,
+}))
+response = opener.open(urllib_.Request(url)).read()
+</code></pre><h3 id="设置header">设置header</h3>
+<pre tabindex="0"><code>headers = {
+    &#39;User-Agent&#39;: &#39;Mozilla/5.0&#39;
+}
+opener = urllib_.build_opener()
+response = opener.open(urllib_.Request(url, headers=headers)).read()
+</code></pre><h3 id="get请求">GET请求</h3>
+<pre tabindex="0"><code>opener = urllib_.build_opener()
+response = opener.open(urllib_.Request(url)).read()
+</code></pre><h3 id="post请求">POST请求</h3>
+<pre tabindex="0"><code>postata = &#39;abc&#39;
+opener = urllib_.build_opener()
+response = opener.open(urllib_.Request(url, data=postdata)).read()
+</code></pre><h3 id="selenium">selenium</h3>
+<p>selenium支持IE／Firefox／Chrome，在配置python+selenium环境时首先pip安装selenium，同时下载合适的内核，如chrome为<a href="http://chromedriver.storage.googleapis.com/index.html">http://chromedriver.storage.googleapis.com/index.html</a>。不知道下载哪个内核可以看运行时报错信息</p>
+<h3 id="最简单的爬虫的核心代码">最简单的爬虫的核心代码</h3>
+<pre tabindex="0"><code>#! /usr/bin/env python
+# # -*- coding: utf-8 -*-
+
+import datetime
+import hashlib
+import json
+import logging
+from lxml import etree
+import os
+import random
+import re
+import socket
+import ssl
+import sys
+import threading
+import threadpool
+import time
+
+
+def RequestWithDefProxy(url, headers, postdata, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
+    try:
+        opener = urllib_.build_opener()
+        content = opener.open(urllib_.Request(url, headers=headers, data=postdata), timeout=timeout).read()
+        return content
+    except Exception as e:
+        print(url, e)
+        return None
+    
+response = RequestWithDefProxy(&#39;http://tu.duowan.com/tag/27812.html&#39;, dict(), None)
+html = etree.HTML(response)
+items = html.xpath(&#39;//li[@class=&#34;box&#34;]&#39;)
+for item in items:
+    suburl = item.xpath(&#39;a/img/@src&#39;)[0]
+    filename = os.path.basename(suburl)
+    subresponse = RequestWithDefProxy(suburl, &#34;&#34;, None)
+    if subresponse is not None:
+        with open(filename, &#39;wb&#39;) as img:
+            img.write(subresponse)
+</code></pre><p>要点：</p>
+<ul>
+<li>实现get请求和post请求</li>
+<li>使用xpath在html中定位元素</li>
+<li>将RequestWithDefProxy得到的数据保存为html然后分析xpath</li>
+</ul>
+<h2 id="selenium使用">selenium使用</h2>
+<h3 id="安装pythonselenium">安装python+selenium</h3>
+<p>安装python接口：pip install -i <a href="https://pypi.tuna.tsinghua.edu.cn/simple">https://pypi.tuna.tsinghua.edu.cn/simple</a> selenium</p>
+<h3 id="选择浏览器并安装driver">选择浏览器并安装driver</h3>
+<pre tabindex="0"><code>selenium -&gt; driver -&gt; chrome
+
+Firefox Chrome Ie Edge Opera Safari 
+headless: 
+   Firefox   geckodriver
+   Chrome    chromedriver
+
+http://chromedriver.storage.googleapis.com/index.html
+https://github.com/mozilla/geckodriver/releases
+</code></pre><h3 id="headless">headless</h3>
+<pre tabindex="0"><code># headless chrome
+from selenium import webdriver
+options = webdriver.chrome.options.Options()
+options.add_argument(&#39;--headless&#39;)
+driver = webdriver.Chrome(chrome_options=options)
+driver.get(&#34;http://www.baidu.com&#34;)
+baiduyixia = driver.find_element_by_xpath(&#34;//input[@type=&#39;submit&#39;]&#34;)
+keyword = driver.find_element_by_xpath(&#34;//input[@id=&#39;kw&#39;]&#34;)
+print(baiduyixia, keyword)
+
+# headless firefox
+from selenium import webdriver
+options = webdriver.firefox.options.Options()
+options.add_argument(&#39;--headless&#39;)
+driver = webdriver.Firefox(firefox_options=options)
+driver.get(&#34;http://www.baidu.com&#34;)
+baiduyixia = driver.find_element_by_xpath(&#34;//input[@type=&#39;submit&#39;]&#34;)
+keyword = driver.find_element_by_xpath(&#34;//input[@id=&#39;kw&#39;]&#34;)
+print(baiduyixia, keyword)
+</code></pre><p>4.元素选取</p>
+<pre tabindex="0"><code>find_element_*     find_elements_*
+id定位：find_element_by_id()
+name定位：find_element_by_name()
+class定位：find_element_by_class_name()
+link定位：find_element_by_link_text()
+partial link定位：find_element_by_partial_link_text()
+tag定位：find_element_by_tag_name()
+xpath定位：find_element_by_xpath()
+css定位：find_element_by_css_selector()
+
+browser.get(&#34;http://www.baidu.com&#34;)
+#########百度输入框的定位方式##########
+#通过id方式定位
+browser.find_element_by_id(&#34;kw&#34;).send_keys(&#34;selenium&#34;)
+#通过name方式定位
+browser.find_element_by_name(&#34;wd&#34;).send_keys(&#34;selenium&#34;)
+#通过tag name方式定位
+browser.find_element_by_tag_name(&#34;input&#34;).send_keys(&#34;selenium&#34;)
+#通过class name方式定位
+browser.find_element_by_class_name(&#34;s_ipt&#34;).send_keys(&#34;selenium&#34;)
+#通过CSS方式定位
+browser.find_element_by_css_selector(&#34;#kw&#34;).send_keys(&#34;selenium&#34;)
+#通过xpath方式定位
+browser.find_element_by_xpath(&#34;//input[@id=&#39;kw&#39;]&#34;).send_keys(&#34;selenium&#34;)
+############################################
+browser.find_element_by_id(&#34;su&#34;).click()
+
+
+&lt;a class=&#34;mnav&#34; href=&#34;http://news.baidu.com&#34; name=&#34;tj_trnews&#34;&gt;新闻&lt;/a&gt;
+&lt;a class=&#34;mnav&#34; href=&#34;http://www.hao123.com&#34; name=&#34;tj_trhao123&#34;&gt;hao123&lt;/a&gt;
+通过link text定位:
+dr.find_element_by_link_text(&#34;新闻&#34;)
+dr.find_element_by_link_text(&#34;hao123&#34;)
+通过link text定位:
+dr.find_element_by_partial_link_text(&#34;新&#34;)
+dr.find_element_by_partial_link_text(&#34;hao&#34;)
+dr.find_element_by_partial_link_text(&#34;123&#34;)
+</code></pre><ol start="5">
+<li>操作</li>
+</ol>
+<pre tabindex="0"><code>implicitly_wait：等待
+current_url：获取当前url
+click：点击
+send_keys：模拟按键   
+clear：文本置空  
+text：获取文本
+title：
+page_source：渲染后的html
+id：获取id
+execute_script：执行js
+execute_async_script
+get_attribute：获取属性
+get_screenshot_as_base64  元素也可以截图
+get_screenshot_as_file
+get_screenshot_as_png
+
+search_text = driver.find_element_by_id(&#39;kw&#39;)
+search_text.send_keys(&#39;selenium&#39;)
+search_text.submit()
+
+driver.find_element_by_id(&#34;user_name&#34;).send_keys(Keys.TAB) 
+time.sleep(3) 
+driver.find_element_by_id(&#34;user_pwd&#34;).send_keys(&#34;123456&#34;)
+driver.find_element_by_id(&#34;user_pwd&#34;).send_keys(Keys.ENTER)
+driver.find_element_by_id(&#34;kw&#34;).send_keys(Keys.SPACE)
+driver.find_element_by_id(&#34;kw&#34;).send_keys(Keys.BACK_SPACE)
+driver.find_element_by_id(&#34;login&#34;).send_keys(Keys.ENTER) 
+driver.find_element_by_id(&#34;kw&#34;).send_keys(Keys.CONTROL,&#39;a&#39;)
+driver.find_element_by_id(&#34;kw&#34;).send_keys(Keys.CONTROL,&#39;x&#39;)
+
+click() 单击
+context_click()  右击；
+move_to_element()  鼠标悬停。
+
+driver.get(&#34;https://www.baidu.cn&#34;)
+# 定位到要悬停的元素
+above = driver.find_element_by_link_text(&#34;设置&#34;)
+# 对定位到的元素执行鼠标悬停操作
+ActionChains(driver).move_to_element(above).perform()
+</code></pre><ol start="6">
+<li>frame切换</li>
+</ol>
+<pre tabindex="0"><code>import time
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
+
+browser = webdriver.Chrome()
+url = &#39;http://www.runoob.com/try/try.php?filename=jqueryui-api-droppable&#39;
+browser.get(url)
+browser.switch_to.frame(&#39;iframeResult&#39;)
+source = browser.find_element_by_css_selector(&#39;#draggable&#39;)
+print(source)
+try:
+    logo = browser.find_element_by_class_name(&#39;logo&#39;)
+except NoSuchElementException:
+    print(&#39;NO LOGO&#39;)
+browser.switch_to.parent_frame()
+logo = browser.find_element_by_class_name(&#39;logo&#39;)
+print(logo.text)
+
+driver.get(&#34;http://www.126.com&#34;)
+driver.switch_to.frame(&#39;x-URS-iframe&#39;)
+driver.find_element_by_name(&#34;email&#34;).clear()
+driver.find_element_by_name(&#34;email&#34;).send_keys(&#34;username&#34;)
+driver.find_element_by_name(&#34;password&#34;).clear()
+driver.find_element_by_name(&#34;password&#34;).send_keys(&#34;password&#34;)
+driver.find_element_by_id(&#34;dologin&#34;).click()
+driver.switch_to.default_content()
+</code></pre><ol start="7">
+<li>windows切换</li>
+</ol>
+<pre tabindex="0"><code>driver.get(&#34;http://www.baidu.com&#34;)
+# 获得百度搜索窗口句柄
+sreach_windows = driver.current_window_handle
+driver.find_element_by_link_text(&#39;登录&#39;).click()
+driver.find_element_by_link_text(&#34;立即注册&#34;).click()
+# 获得当前所有打开的窗口的句柄
+all_handles = driver.window_handles
+# 进入注册窗口
+for handle in all_handles:
+    if handle != sreach_windows:
+        driver.switch_to.window(handle)
+        print(&#39;now register window!&#39;)
+        driver.find_element_by_name(&#34;account&#34;).send_keys(&#39;username&#39;)
+        driver.find_element_by_name(&#39;password&#39;).send_keys(&#39;password&#39;)
+        time.sleep(2)
+        # ……
+</code></pre><ol start="8">
+<li>警告框</li>
+</ol>
+<pre tabindex="0"><code>from selenium.webdriver.common.action_chains import ActionChains
+driver.get(&#39;http://www.baidu.com&#39;)
+# 鼠标悬停至“设置”链接
+link = driver.find_element_by_link_text(&#39;设置&#39;)
+ActionChains(driver).move_to_element(link).perform()
+# 打开搜索设置
+driver.find_element_by_link_text(&#34;搜索设置&#34;).click()
+# 保存设置
+driver.find_element_by_class_name(&#34;prefpanelgo&#34;).click()
+time.sleep(2)
+# 接受警告框
+driver.switch_to.alert.accept()
+</code></pre><p>9.下拉框选择</p>
+<pre tabindex="0"><code>from selenium.webdriver.support.select import Select
+driver.get(&#39;http://www.baidu.com&#39;)
+# 鼠标悬停至“设置”链接
+driver.find_element_by_link_text(&#39;设置&#39;).click()
+sleep(1)
+# 打开搜索设置
+driver.find_element_by_link_text(&#34;搜索设置&#34;).click()
+sleep(2)
+# 搜索结果显示条数
+sel = driver.find_element_by_xpath(&#34;//select[@id=&#39;nr&#39;]&#34;)
+Select(sel).select_by_value(&#39;50&#39;)  # 显示50条
+</code></pre><ol start="10">
+<li>cookie操作</li>
+</ol>
+<pre tabindex="0"><code>add_cookie
+get_cookies
+delete_all_cookies
+delete_cookie
+driver.get(&#34;http://www.youdao.com&#34;)
+# 获得cookie信息
+cookie= driver.get_cookies()
+# 将获得cookie的信息打印
+print(cookie)
+
+driver.get(&#34;http://www.youdao.com&#34;)
+# 向cookie的name 和value中添加会话信息
+driver.add_cookie({&#39;name&#39;: &#39;key-aaaaaaa&#39;, &#39;value&#39;: &#39;value-bbbbbb&#39;})
+# 遍历cookies中的name 和value信息并打印，当然还有上面添加的信息
+for cookie in driver.get_cookies():
+    print(&#34;%s -&gt; %s&#34; % (cookie[&#39;name&#39;], cookie[&#39;value&#39;]))
+</code></pre><ol start="11">
+<li>js调用</li>
+</ol>
+<pre tabindex="0"><code>driver.get(&#34;http://www.baidu.com&#34;)
+# 设置浏览器窗口大小
+driver.set_window_size(500, 500)
+# 搜索
+driver.find_element_by_id(&#34;kw&#34;).send_keys(&#34;selenium&#34;)
+driver.find_element_by_id(&#34;su&#34;).click()
+sleep(2)
+# 通过javascript设置浏览器窗口的滚动条位置
+js=&#34;window.scrollTo(100,450);&#34;
+driver.execute_script(js)
+sleep(3)
+
+
+输入文本：
+# 第一种方式：模拟键盘信息
+keyword.send_keys(&#34;测试一下&#34;)
+baiduyixia.click()
+# 第二种方式：执行js
+driver.execute_script(&#39;document.getElementById(&#34;kw&#34;).value=&#34;bbb&#34;&#39;)
+</code></pre>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/py_posts/20210904_http_lib_benchmark/">
+                        Python的几个http库性能测试
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

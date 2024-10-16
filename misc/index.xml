@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Miscs on 超哥的博客</title>
+    <link>https://lich4.github.io/misc/</link>
+    <description>Recent content in Miscs on 超哥的博客</description>
+    <generator>Hugo</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Mon, 21 Aug 2023 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://lich4.github.io/misc/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Cloudflare之Workers初试使用</title>
+      <link>https://lich4.github.io/misc/20230821_cloudflare_workers/</link>
+      <pubDate>Mon, 21 Aug 2023 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/misc/20230821_cloudflare_workers/</guid>
+      <description>Cloudflare之Workers初试使用</description>
+    </item>
+    <item>
+      <title>使用Letsencrypt免费证书搭建tornado的https服务</title>
+      <link>https://lich4.github.io/misc/20210731_letsencrypt/</link>
+      <pubDate>Sat, 31 Jul 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/misc/20210731_letsencrypt/</guid>
+      <description>使用Letsencrypt免费证书搭建tornado的https服务</description>
+    </item>
+    <item>
+      <title>使用burpsuite验证https证书是否安全</title>
+      <link>https://lich4.github.io/misc/20161215_verify_https_cert/</link>
+      <pubDate>Thu, 15 Dec 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/misc/20161215_verify_https_cert/</guid>
+      <description>使用burpsuite验证https证书是否安全</description>
+    </item>
+  </channel>
+</rss>

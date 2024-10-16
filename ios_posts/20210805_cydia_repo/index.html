@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    搭建简单Cydia源 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/ios_posts/20210805_cydia_repo/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/ios_posts/">Ios_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/ios_posts/20210805_cydia_repo/">搭建简单Cydia源</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">搭建简单Cydia源</h1>
+    
+    <p class="single-summary">搭建简单Cydia源</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2021-08-05T00:00:00&#43;00:00">August 5, 2021</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#为什么要搭建cydia源">为什么要搭建Cydia源</a></li>
+    <li><a href="#搭建cydia源">搭建Cydia源</a>
+      <ul>
+        <li><a href="#nopdeb结构">nopdeb结构</a></li>
+      </ul>
+    </li>
+    <li><a href="#扩展cydia源">扩展Cydia源</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="为什么要搭建cydia源">为什么要搭建Cydia源</h2>
+<p>  如果你是越狱软件开发者开发了若干软件，并打算推广给人试用，那么最好有自己的源，这样对于客户比较方便。本节教程源码位于<a href="https://gitee.com/lich0/jailbroken_programming_lesson/tree/master/frontend2_cydia">https://gitee.com/lich0/jailbroken_programming_lesson/tree/master/frontend2_cydia</a></p>
+<h2 id="搭建cydia源">搭建Cydia源</h2>
+<p>  环境和工具依赖: Mac系统，Theos，Python3，dpkg，gzip，bzip2，xz <br>
+  本例中笔者生成了一个最小化Theos工程nopdeb，此工程产生随机deb包，用于测试从源安装deb <br>
+  在目录下执行rebuild_source.sh，脚本自动编译deb包，并打包为源。成功后目录下会产生多个文件(Packages,Packages.bz2,Packages.gz,Packages.xz)，并启动python的http服务器。</p>
+<h3 id="nopdeb结构">nopdeb结构</h3>
+<p>  nopdeb是笔者创建的最小的Theos工程，其目录结构为(是的你没看错，就2个文件):</p>
+<pre tabindex="0"><code>layout/DEBIAN/control		描述待生成deb包的信息，包括作者，文件路径，依赖等
+Makefile			用于打包
+</code></pre><pre tabindex="0"><code>./rebuild_source.sh 
+make: Entering directory &#39;/private/tmp/jailbroken_programming_lesson/frontend2_cydia/nopdeb&#39;
+make: Entering directory &#39;/private/tmp/jailbroken_programming_lesson/frontend2_cydia/nopdeb&#39;
+dd if=/dev/random of=layout/tmp/test bs=1m count=1
+1+0 records in
+1+0 records out
+1048576 bytes transferred in 0.002648 secs (395970695 bytes/sec)
+make: Leaving directory &#39;/private/tmp/jailbroken_programming_lesson/frontend2_cydia/nopdeb&#39;
+make: Entering directory &#39;/private/tmp/jailbroken_programming_lesson/frontend2_cydia/nopdeb&#39;
+dpkg-deb: 正在 &#39;./packages/nop_0.0.1-1+debug_iphoneos-arm.deb&#39; 中构建软件包 &#39;nop&#39;。
+make: Leaving directory &#39;/private/tmp/jailbroken_programming_lesson/frontend2_cydia/nopdeb&#39;
+make: Leaving directory &#39;/private/tmp/jailbroken_programming_lesson/frontend2_cydia/nopdeb&#39;
+dpkg-scanpackages: info: Wrote 1 entries to output Packages file.
+Serving HTTP on 0.0.0.0 port 80 (http://0.0.0.0:80/) ...
+</code></pre><p>  手机打开cydia-&gt;软件源-&gt;编辑-&gt;添加-&gt;http://192.168.0.20(笔者Mac本IP地址)，源很快就添加好了，如图所示</p>
+<p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/jbdev2.png">
+    </div>
+
+    
+</figure></p>
+<p>  测试安装nopdeb，安装成功。如图所示</p>
+<p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/jbdev3.png">
+    </div>
+
+    
+</figure>
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/jbdev4.png">
+    </div>
+
+    
+</figure>
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/jbdev5.png">
+    </div>
+
+    
+</figure>
+
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/jbdev6.png">
+    </div>
+
+    
+</figure></p>
+<p>  Cydia添加源时大致行为如下</p>
+<pre tabindex="0"><code>发送HEAD请求，检测/Packages.xz是否存在 
+发送HEAD请求，检测/Packages.gz是否存在  
+发送HEAD请求，检测/Packages.bz2是否存在  
+发送HEAD请求，检测/Packages.lzma是否存在  
+发送HEAD请求，检测/Packages是否存在  
+如果上述请求成功，则GET请求对应Packages(注1)，从Pacakges获取软件列表并缓存
+如果上述请求均不成功，则显示失败，源内空空如也
+安装软件时，从Pacakges中提取软件的下载地址下载   
+</code></pre><p>  从过程可以看出Cydia优先读取压缩格式的Packages，某些源的软件比较多时，Packages文件本身会达到十几到几十MB，因此支持压缩文件传输是很必要的</p>
+<ul>
+<li>注1 这一步请求的特殊点是Cydia使用了路径前缀<code>/.</code>，而Sileo是正常的无此前缀。如果你的服务器不能正确处理<code>/.</code>前缀，那么添加源将会失败。下面列举一些笔者测试过的服务器</li>
+</ul>
+<pre tabindex="0"><code>nginx 可用Cydia添加源
+Python2+SimpleHTTPServer/Python3+http.server 可用Cydia添加源
+tornado 可用Cydia添加源
+github/github pages 可用Cydia添加源(很多人把github作为免费源了，就是国内访问速度巨卡)
+gitee 不可用Cydia添加源，且文件大小限制为1M(所以你们会看到很多人写教程都是github搭建源，没听说过用gitee搭建源的吧，gitee搭建的只能给Sileo用)
+七牛对象存储 不可用Cydia添加源
+其他的留给读者自己去测了
+</code></pre><p>  Tips 源里找不到某软件有以下几种可能</p>
+<ul>
+<li>手机中已经安装的软件版本高于源中的版本，因此Cydia不显示该软件.</li>
+<li>手机中其他源的软件版本高于当前源中的版本，因此Cydia不显示该软件.</li>
+<li>源服务器故障，所有软件均不显示</li>
+</ul>
+<p>  </p>
+<pre tabindex="0"><code>// 添加源
+192.168.0.221 - - [05/Aug/2021 12:20:04] &#34;HEAD /Packages.xz HTTP/1.1&#34; 200 -
+192.168.0.221 - - [05/Aug/2021 12:20:04] &#34;HEAD /Packages.gz HTTP/1.1&#34; 200 -
+192.168.0.221 - - [05/Aug/2021 12:20:04] &#34;HEAD /Packages.bz2 HTTP/1.1&#34; 200 -
+192.168.0.221 - - [05/Aug/2021 12:20:07] code 404, message File not found
+192.168.0.221 - - [05/Aug/2021 12:20:07] &#34;GET /./InRelease HTTP/1.1&#34; 404 -
+192.168.0.221 - - [05/Aug/2021 12:20:07] code 404, message File not found
+192.168.0.221 - - [05/Aug/2021 12:20:07] &#34;GET /./Release HTTP/1.1&#34; 404 -
+192.168.0.221 - - [05/Aug/2021 12:20:07] &#34;GET /./Packages.xz HTTP/1.1&#34; 304 -
+192.168.0.221 - - [05/Aug/2021 12:20:22] code 404, message File not found
+192.168.0.221 - - [05/Aug/2021 12:20:22] &#34;GET /./CydiaIcon.png HTTP/1.1&#34; 404 -
+// 安装deb
+192.168.0.221 - - [05/Aug/2021 12:21:32] code 404, message File not found
+192.168.0.221 - - [05/Aug/2021 12:21:32] &#34;GET /CydiaIcon.png HTTP/1.1&#34; 404 -
+192.168.0.221 - - [05/Aug/2021 12:21:36] &#34;GET /deb/nop_0.0.1-1%2bdebug_iphoneos-arm.deb HTTP/1.1&#34; 200 -
+</code></pre><h2 id="扩展cydia源">扩展Cydia源</h2>
+<p>  如果用户较多，并且服务器的流量带宽有限，那么建议对Cydia源进行扩展。步骤如下</p>
+<ul>
+<li>将deb存放在文件服务器(如网盘)/对象存储(七牛)，关键点是可以直接拿到文件的可下载URL</li>
+<li>服务器配置成对deb/前缀的访问进行301/302跳转到真实下载地址。</li>
+</ul>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20210804_swift_re/">
+                        Swift逆向
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20210806_objc_call_swift/">
+                        C/ObjC调用Swift函数
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    探究为何32位程序无法远程注入64位程序 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/win_posts/20150726_wow/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/win_posts/">Win_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/win_posts/20150726_wow/">探究为何32位程序无法远程注入64位程序</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">探究为何32位程序无法远程注入64位程序</h1>
+    
+    <p class="single-summary">探究为何32位程序无法远程注入64位程序</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2015-07-26T00:00:00&#43;00:00">July 26, 2015</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#分析">分析</a></li>
+    <li><a href="#结论">结论</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="分析">分析</h2>
+<p>  众所周知在Windows中，32位程序中以CreateRemoteThread方式注入到64位程序中，会发生ERROR_ACCESS_DENY错误，下面来一步步跟踪</p>
+<pre tabindex="0"><code>kernel32!CreateRemoteThreadStub:
+00000000`75d6416b 8bff            mov     edi,edi
+00000000`75d6416d 55              push    ebp
+00000000`75d6416e 8bec            mov     ebp,esp
+00000000`75d64170 ff7520          push    dword ptr [ebp+20h]
+00000000`75d64173 6a00            push    0
+00000000`75d64175 ff751c          push    dword ptr [ebp+1Ch]
+00000000`75d64178 ff7518          push    dword ptr [ebp+18h]
+00000000`75d6417b ff7514          push    dword ptr [ebp+14h]
+00000000`75d6417e ff7510          push    dword ptr [ebp+10h]
+00000000`75d64181 ff750c          push    dword ptr [ebp+0Ch]
+00000000`75d64184 ff7508          push    dword ptr [ebp+8]
+00000000`75d64187 e872f3f7ff      call    kernel32!CreateRemoteThreadEx (75ce34fe)
+
+好，跟进去
+kernel32!CreateRemoteThreadEx:
+00000000`75ce34fe ff257408ce75    jmp     dword ptr [kernel32!_imp__CreateRemoteThreadEx (75ce0874)]
+
+KERNELBASE!CreateRemoteThreadEx:
+00000000`75c92ef3 687c010000      push    17Ch
+00000000`75c92ef8 681879cb75      push    offset KERNELBASE!BemFreeContract+0x3de (75cb7918)
+00000000`75c92efd e8e2310200      call    KERNELBASE!_SEH_prolog4_GS (75cb60e4)
+00000000`75c92f02 8b4508          mov     eax,dword ptr [ebp+8]
+00000000`75c92f05 8985a0feffff    mov     dword ptr [ebp-160h],eax
+00000000`75c92f0b 8b4d0c          mov     ecx,dword ptr [ebp+0Ch]
+00000000`75c92f0e 8b4514          mov     eax,dword ptr [ebp+14h]
+00000000`75c92f11 8985b0feffff    mov     dword ptr [ebp-150h],eax
+00000000`75c92f17 8b4518          mov     eax,dword ptr [ebp+18h]
+00000000`75c92f1a 898598feffff    mov     dword ptr [ebp-168h],eax
+00000000`75c92f20 8b7520          mov     esi,dword ptr [ebp+20h]
+00000000`75c92f23 8b4524          mov     eax,dword ptr [ebp+24h]
+00000000`75c92f26 89859cfeffff    mov     dword ptr [ebp-164h],eax
+00000000`75c92f2c 33db            xor     ebx,ebx
+00000000`75c92f2e 899db8feffff    mov     dword ptr [ebp-148h],ebx
+00000000`75c92f34 33c0            xor     eax,eax
+00000000`75c92f36 8dbdbcfeffff    lea     edi,[ebp-144h]
+00000000`75c92f3c ab              stos    dword ptr es:[edi]
+00000000`75c92f3d 889dcffeffff    mov     byte ptr [ebp-131h],bl
+00000000`75c92f43 899dc0feffff    mov     dword ptr [ebp-140h],ebx
+00000000`75c92f49 8d8594feffff    lea     eax,[ebp-16Ch]
+00000000`75c92f4f 50              push    eax
+00000000`75c92f50 53              push    ebx
+00000000`75c92f51 51              push    ecx
+00000000`75c92f52 8d8574feffff    lea     eax,[ebp-18Ch]
+00000000`75c92f58 50              push    eax
+00000000`75c92f59 e85a370200      call    KERNELBASE!BaseFormatObjectAttributes (75cb66b8)
+00000000`75c92f5e 3bc3            cmp     eax,ebx
+00000000`75c92f60 7d0d            jge     KERNELBASE!CreateRemoteThreadEx+0x7c (75c92f6f)
+00000000`75c92f62 50              push    eax
+00000000`75c92f63 e8fa360200      call    KERNELBASE!BaseSetLastNTError (75cb6662)
+00000000`75c92f68 33c0            xor     eax,eax
+00000000`75c92f6a e986020000      jmp     KERNELBASE!CreateRemoteThreadEx+0x302 (75c931f5)
+00000000`75c92f6f c785d4feffff03000100 mov dword ptr [ebp-12Ch],10003h
+00000000`75c92f79 c785d8feffff08000000 mov dword ptr [ebp-128h],8
+00000000`75c92f83 899de0feffff    mov     dword ptr [ebp-120h],ebx
+00000000`75c92f89 8d85a4feffff    lea     eax,[ebp-15Ch]
+00000000`75c92f8f 8985dcfeffff    mov     dword ptr [ebp-124h],eax
+00000000`75c92f95 c785e4feffff04000100 mov dword ptr [ebp-11Ch],10004h
+00000000`75c92f9f 6a04            push    4
+00000000`75c92fa1 5f              pop     edi
+00000000`75c92fa2 89bde8feffff    mov     dword ptr [ebp-118h],edi
+00000000`75c92fa8 899df0feffff    mov     dword ptr [ebp-110h],ebx
+00000000`75c92fae 8d85b4feffff    lea     eax,[ebp-14Ch]
+00000000`75c92fb4 8985ecfeffff    mov     dword ptr [ebp-114h],eax
+00000000`75c92fba 6a02            push    2
+00000000`75c92fbc 58              pop     eax
+00000000`75c92fbd 8985acfeffff    mov     dword ptr [ebp-154h],eax
+00000000`75c92fc3 3bf3            cmp     esi,ebx
+00000000`75c92fc5 742e            je      KERNELBASE!CreateRemoteThreadEx+0x102 (75c92ff5)
+00000000`75c92fc7 6a11            push    11h
+00000000`75c92fc9 8d85acfeffff    lea     eax,[ebp-154h]
+00000000`75c92fcf 50              push    eax
+00000000`75c92fd0 8d85d0feffff    lea     eax,[ebp-130h]
+00000000`75c92fd6 50              push    eax
+00000000`75c92fd7 53              push    ebx
+00000000`75c92fd8 8d858cfeffff    lea     eax,[ebp-174h]
+00000000`75c92fde 50              push    eax
+00000000`75c92fdf 6a01            push    1
+00000000`75c92fe1 56              push    esi
+00000000`75c92fe2 e8837affff      call    KERNELBASE!BasepConvertWin32AttributeList (75c8aa6a)
+00000000`75c92fe7 3bc3            cmp     eax,ebx
+00000000`75c92fe9 0f8c73ffffff    jl      KERNELBASE!CreateRemoteThreadEx+0x6f (75c92f62)
+00000000`75c92fef 8b85acfeffff    mov     eax,dword ptr [ebp-154h]
+00000000`75c92ff5 c1e004          shl     eax,4
+00000000`75c92ff8 03c7            add     eax,edi
+00000000`75c92ffa 8985d0feffff    mov     dword ptr [ebp-130h],eax
+00000000`75c93000 8b451c          mov     eax,dword ptr [ebp+1Ch]
+00000000`75c93003 c1e810          shr     eax,10h
+00000000`75c93006 f7d0            not     eax
+00000000`75c93008 33f6            xor     esi,esi
+00000000`75c9300a 46              inc     esi
+00000000`75c9300b 23c6            and     eax,esi
+00000000`75c9300d 8d8dd0feffff    lea     ecx,[ebp-130h]
+00000000`75c93013 51              push    ecx
+00000000`75c93014 8bc8            mov     ecx,eax
+00000000`75c93016 f7d9            neg     ecx
+00000000`75c93018 1bc9            sbb     ecx,ecx
+00000000`75c9301a f7d1            not     ecx
+00000000`75c9301c 234d10          and     ecx,dword ptr [ebp+10h]
+00000000`75c9301f 51              push    ecx
+00000000`75c93020 f7d8            neg     eax
+00000000`75c93022 1bc0            sbb     eax,eax
+00000000`75c93024 234510          and     eax,dword ptr [ebp+10h]
+00000000`75c93027 50              push    eax
+00000000`75c93028 53              push    ebx
+00000000`75c93029 56              push    esi
+00000000`75c9302a ffb598feffff    push    dword ptr [ebp-168h]
+00000000`75c93030 ffb5b0feffff    push    dword ptr [ebp-150h]
+00000000`75c93036 ffb5a0feffff    push    dword ptr [ebp-160h]
+00000000`75c9303c ffb594feffff    push    dword ptr [ebp-16Ch]
+00000000`75c93042 68ffff1f00      push    1FFFFFh
+00000000`75c93047 8d85c4feffff    lea     eax,[ebp-13Ch]
+00000000`75c9304d 50              push    eax
+00000000`75c9304e ff156c13c875    call    dword ptr [KERNELBASE!_imp__NtCreateThreadEx (75c8136c)]
+
+32.kd:x86&gt; u ntdll_776f0000!NtCreateThreadEx
+ntdll_776f0000!NtCreateThreadEx:
+00000000`77710894 b8a5000000      mov     eax,0A5h
+00000000`77710899 33c9            xor     ecx,ecx
+00000000`7771089b 8d542404        lea     edx,[esp+4]
+00000000`7771089f 64ff15c0000000  call    dword ptr fs:[0C0h] //teb的这个位置存储着32位转64位api的函数
+00000000`777108a6 83c404          add     esp,4
+00000000`777108a9 c22c00          ret     2Ch
+
+32.kd:x86&gt; u wow64cpu!X86SwitchTo64BitMode
+wow64cpu!X86SwitchTo64BitMode:
+00000000`74952320 ea1e2795743300  jmp     0033:7495271E
+
+kd&gt; u 0033:7495271E
+wow64cpu!CpupReturnFromSimulatedCode:
+0033:00000000`7495271e 67448b0424      mov     r8d,dword ptr [esp]
+0033:00000000`74952723 458985bc000000  mov     dword ptr [r13+0BCh],r8d
+0033:00000000`7495272a 4189a5c8000000  mov     dword ptr [r13+0C8h],esp
+0033:00000000`74952731 498ba42480140000 mov     rsp,qword ptr [r12+1480h]
+0033:00000000`74952739 4983a4248014000000 and   qword ptr [r12+1480h],0
+0033:00000000`74952742 448bda          mov     r11d,edx
+wow64cpu!TurboDispatchJumpAddressStart:
+0033:00000000`74952745 41ff24cf        jmp     qword ptr [r15+rcx*8]
+
+kd&gt; u wow64cpu!ServiceNoTurbo l100
+wow64cpu!ServiceNoTurbo:
+00000000`74952749 4189b5a4000000  mov     dword ptr [r13+0A4h],esi
+00000000`74952750 4189bda0000000  mov     dword ptr [r13+0A0h],edi
+00000000`74952757 41899da8000000  mov     dword ptr [r13+0A8h],ebx
+00000000`7495275e 4189adb8000000  mov     dword ptr [r13+0B8h],ebp
+00000000`74952765 9c              pushfq
+00000000`74952766 5b              pop     rbx
+00000000`74952767 41899dc4000000  mov     dword ptr [r13+0C4h],ebx
+00000000`7495276e 8bc8            mov     ecx,eax
+00000000`74952770 ff150ae9ffff    call    qword ptr [wow64cpu!_imp_Wow64SystemServiceEx (00000000`74951080)]
+
+kd&gt; uf wow64!Wow64SystemServiceEx
+wow64!Wow64SystemServiceEx:
+00000000`748eceb0 4c8bdc          mov     r11,rsp
+00000000`748eceb3 49895b18        mov     qword ptr [r11+18h],rbx
+00000000`748eceb7 56              push    rsi
+00000000`748eceb8 57              push    rdi
+00000000`748eceb9 4154            push    r12
+00000000`748ecebb 4881eca0080000  sub     rsp,8A0h
+00000000`748ecec2 488b0537c20200  mov     rax,qword ptr [wow64!_security_cookie (00000000`74919100)]
+00000000`748ecec9 4833c4          xor     rax,rsp
+00000000`748ececc 4889842490080000 mov     qword ptr [rsp+890h],rax
+00000000`748eced4 488bda          mov     rbx,rdx
+00000000`748eced7 448bc1          mov     r8d,ecx
+00000000`748eceda 8bd1            mov     edx,ecx
+00000000`748ecedc c1ea0c          shr     edx,0Ch
+00000000`748ecedf 83e203          and     edx,3
+00000000`748ecee2 4181e0ff0f0000  and     r8d,0FFFh
+00000000`748ecee9 4c8d0c52        lea     r9,[rdx+rdx*2]
+00000000`748eceed 4d03c9          add     r9,r9
+00000000`748ecef0 4c8d1509db0200  lea     r10,[wow64!ServiceTables (00000000`7491aa00)]
+00000000`748ecef7 473b44ca10      cmp     r8d,dword ptr [r10+r9*8+10h]
+00000000`748ecefc 0f873f010000    ja      wow64!Wow64SystemServiceEx+0x191 (00000000`748ed041)
+
+wow64!Wow64SystemServiceEx+0x52:
+00000000`748ecf02 65488b342530000000 mov   rsi,qword ptr gs:[30h]
+00000000`748ecf0b 4889742438      mov     qword ptr [rsp+38h],rsi
+00000000`748ecf10 65488b3c2530000000 mov   rdi,qword ptr gs:[30h]
+00000000`748ecf19 4881c700200000  add     rdi,2000h
+00000000`748ecf20 48897c2430      mov     qword ptr [rsp+30h],rdi
+00000000`748ecf25 488b8698140000  mov     rax,qword ptr [rsi+1498h]
+00000000`748ecf2c 4889442470      mov     qword ptr [rsp+70h],rax
+00000000`748ecf31 488d442478      lea     rax,[rsp+78h]
+00000000`748ecf36 498983c8f7ffff  mov     qword ptr [r11-838h],rax
+00000000`748ecf3d 488d442478      lea     rax,[rsp+78h]
+00000000`748ecf42 4889442478      mov     qword ptr [rsp+78h],rax
+00000000`748ecf47 498d43d8        lea     rax,[r11-28h]
+00000000`748ecf4b 498983d0f7ffff  mov     qword ptr [r11-830h],rax
+00000000`748ecf52 488d442470      lea     rax,[rsp+70h]
+00000000`748ecf57 48898698140000  mov     qword ptr [rsi+1498h],rax
+00000000`748ecf5e 4b8b04ca        mov     rax,qword ptr [r10+r9*8]
+00000000`748ecf62 4e8b24c0        mov     r12,qword ptr [rax+r8*8]
+00000000`748ecf66 89542450        mov     dword ptr [rsp+50h],edx
+00000000`748ecf6a 4489442454      mov     dword ptr [rsp+54h],r8d
+00000000`748ecf6f 8b4734          mov     eax,dword ptr [rdi+34h]
+00000000`748ecf72 894668          mov     dword ptr [rsi+68h],eax
+00000000`748ecf75 488b051ce00200  mov     rax,qword ptr [wow64!pfnWow64LogSystemService (00000000`7491af98)]
+00000000`748ecf7c 4885c0          test    rax,rax
+00000000`748ecf7f 750e            jne     wow64!Wow64SystemServiceEx+0xdf (00000000`748ecf8f)
+
+wow64!Wow64SystemServiceEx+0xd1:
+00000000`748ecf81 488bcb          mov     rcx,rbx
+00000000`748ecf84 41ffd4          call    r12
+00000000`748ecf87 8bd8            mov     ebx,eax
+00000000`748ecf89 89442420        mov     dword ptr [rsp+20h],eax
+00000000`748ecf8d eb31            jmp     wow64!Wow64SystemServiceEx+0x110 (00000000`748ecfc0)
+
+wow64!Wow64SystemServiceEx+0xdf:
+00000000`748ecf8f 48895c2448      mov     qword ptr [rsp+48h],rbx
+00000000`748ecf94 c644245c00      mov     byte ptr [rsp+5Ch],0
+00000000`748ecf99 488d4c2440      lea     rcx,[rsp+40h]
+00000000`748ecf9e ffd0            call    rax
+00000000`748ecfa0 488bcb          mov     rcx,rbx
+00000000`748ecfa3 41ffd4          call    r12
+</code></pre><p>可见wow64!ServiceTables是个转换表，来看看内容</p>
+<pre tabindex="0"><code>kd&gt; dqs wow64!ServiceTables
+00000000`7491aa00  00000000`749192a0 wow64!sdwhnt32JumpTable
+00000000`7491aa08  00000000`00000000
+00000000`7491aa10  00000000`000003e8
+00000000`7491aa18  00000000`74919fc0 wow64!sdwhnt32Number
+00000000`7491aa20  00000000`00000000
+00000000`7491aa28  00000000`00000000
+00000000`7491aa30  00000000`748cfae0 wow64win!sdwhwin32JumpTable
+00000000`7491aa38  00000000`00000000
+00000000`7491aa40  00000000`000003e8
+00000000`7491aa48  00000000`748d14b0 wow64win!sdwhwin32Number
+00000000`7491aa50  00000000`00000000
+00000000`7491aa58  00000000`748ce110 wow64win!sdwhwin32ErrorCase
+00000000`7491aa60  00000000`748d1b40 wow64win!sdwhconJumpTable
+00000000`7491aa68  00000000`00000000
+00000000`7491aa70  00000000`000003e8
+00000000`7491aa78  00000000`748d1e60 wow64win!sdwhconNumber
+00000000`7491aa80  00000000`00000000
+00000000`7491aa88  00000000`748d1820 wow64win!sdwhconErrorCase
+00000000`7491aa90  00000000`749191e0 wow64!sdwhbaseJumpTable
+00000000`7491aa98  00000000`00000000
+00000000`7491aaa0  00000000`000003e8
+00000000`7491aaa8  00000000`74919258 wow64!sdwhbaseNumber
+00000000`7491aab0  00000000`00000000
+00000000`7491aab8  00000000`74919160 wow64!sdwhbaseErrorCase
+00000000`7491aac0  00000000`0000008a
+00000000`7491aac8  00000000`00000089
+00000000`7491aad0  00000000`0210003e
+00000000`7491aad8  00000000`7491aae0 wow64!WindirFullObjectNameBuffer
+
+kd&gt; dqs wow64!sdwhnt32JumpTable l200
+00000000`749192a0  00000000`748ee5e8 wow64!whNtMapUserPhysicalPagesScatter
+00000000`749192a8  00000000`748ee60c wow64!whNtWaitForSingleObject
+00000000`749192b0  00000000`748ee630 wow64!whNtCallbackReturn
+00000000`749192b8  00000000`748ee758 wow64!whNtReadFile
+00000000`749192c0  00000000`748ee7fc wow64!whNtDeviceIoControlFile
+00000000`749192c8  00000000`748ee8ac wow64!whNtWriteFile
+00000000`749192d0  00000000`748ee950 wow64!whNtRemoveIoCompletion
+00000000`749192d8  00000000`748eea84 wow64!whNtReleaseSemaphore
+00000000`749192e0  00000000`748eeaa8 wow64!whNtReplyWaitReceivePort
+00000000`749192e8  00000000`748eec3c wow64!whNtReplyPort
+00000000`749192f0  00000000`748eeee8 wow64!whNtSetInformationThread
+00000000`749192f8  00000000`748ef29c wow64!whNtSetEvent
+00000000`74919300  00000000`748ef2bc wow64!whNtClose
+00000000`74919308  00000000`748ef7d4 wow64!whNtQueryObject
+00000000`74919310  00000000`748ef9cc wow64!whNtQueryInformationFile
+00000000`74919318  00000000`748f0024 wow64!whNtOpenKey
+00000000`74919320  00000000`748f00ac wow64!whNtEnumerateValueKey
+00000000`74919328  00000000`748f0120 wow64!whNtFindAtom
+00000000`74919330  00000000`748f0144 wow64!whNtQueryDefaultLocale
+00000000`74919338  00000000`748f0160 wow64!whNtQueryKey
+00000000`74919340  00000000`748f01cc wow64!whNtQueryValueKey
+00000000`74919348  00000000`748f0304 wow64!whNtAllocateVirtualMemory
+00000000`74919350  00000000`748f1514 wow64!whNtQueryInformationProcess
+00000000`74919358  00000000`748fc41c wow64!whNtWaitForMultipleObjects
+00000000`74919360  00000000`748f1a34 wow64!whNtWriteFileGather
+00000000`74919368  00000000`748f1fc0 wow64!whNtSetInformationProcess
+00000000`74919370  00000000`748f2444 wow64!whNtCreateKey
+00000000`74919378  00000000`748f2554 wow64!whNtFreeVirtualMemory
+00000000`74919380  00000000`748f261c wow64!whNtImpersonateClientOfPort
+00000000`74919388  00000000`748f263c wow64!whNtReleaseMutant
+00000000`74919390  00000000`748f32c0 wow64!whNtQueryInformationToken
+00000000`74919398  00000000`748f369c wow64!whNtRequestWaitReplyPort
+00000000`749193a0  00000000`748f4080 wow64!whNtQueryVirtualMemory
+00000000`749193a8  00000000`748f420c wow64!whNtOpenThreadToken
+00000000`749193b0  00000000`748f48d4 wow64!whNtQueryInformationThread
+00000000`749193b8  00000000`748f4bf4 wow64!whNtOpenProcess
+00000000`749193c0  00000000`748f524c wow64!whNtSetInformationFile
+00000000`749193c8  00000000`748f5a24 wow64!whNtMapViewOfSection
+00000000`749193d0  00000000`748f5ca8 wow64!whNtAccessCheckAndAuditAlarm
+00000000`749193d8  00000000`748f5e18 wow64!whNtUnmapViewOfSection
+00000000`749193e0  00000000`748f5e38 wow64!whNtReplyWaitReceivePortEx
+00000000`749193e8  00000000`748f5fd4 wow64!whNtTerminateProcess
+00000000`749193f0  00000000`748f602c wow64!whNtSetEventBoostPriority
+00000000`749193f8  00000000`748f6048 wow64!whNtReadFileScatter
+00000000`74919400  00000000`748f60ec wow64!whNtOpenThreadTokenEx
+00000000`74919408  00000000`748f6148 wow64!whNtOpenProcessTokenEx
+00000000`74919410  00000000`748f619c wow64!whNtQueryPerformanceCounter
+00000000`74919418  00000000`748f61bc wow64!whNtEnumerateKey
+00000000`74919420  00000000`748f6230 wow64!whNtOpenFile
+00000000`74919428  00000000`748f631c wow64!whNtDelayExecution
+00000000`74919430  00000000`748f6338 wow64!whNtQueryDirectoryFile
+00000000`74919438  00000000`748f9ff8 wow64!whNtQuerySystemInformation
+00000000`74919440  00000000`748fa8c0 wow64!whNtOpenSection
+00000000`74919448  00000000`748fa940 wow64!whNtQueryTimer
+00000000`74919450  00000000`748fa970 wow64!whNtFsControlFile
+00000000`74919458  00000000`748faa20 wow64!whNtWriteVirtualMemory
+00000000`74919460  00000000`748faaa8 wow64!whNtCloseObjectAuditAlarm
+00000000`74919468  00000000`748fab0c wow64!whNtDuplicateObject
+00000000`74919470  00000000`748fab80 wow64!whNtQueryAttributesFile
+00000000`74919478  00000000`748fac5c wow64!whNtClearEvent
+00000000`74919480  00000000`748fac78 wow64!whNtReadVirtualMemory
+00000000`74919488  00000000`748fad00 wow64!whNtOpenEvent
+00000000`74919490  00000000`748fad80 wow64!whNtAdjustPrivilegesToken
+00000000`74919498  00000000`748fadb8 wow64!whNtDuplicateToken
+00000000`749194a0  00000000`748fae6c wow64!whNtContinue
+00000000`749194a8  00000000`748faf64 wow64!whNtQueryDefaultUILanguage
+00000000`749194b0  00000000`748faf7c wow64!whNtQueueApcThread
+00000000`749194b8  00000000`748fafb4 wow64!whNtYieldExecution
+00000000`749194c0  00000000`748fafcc wow64!whNtAddAtom
+00000000`749194c8  00000000`748faff0 wow64!whNtCreateEvent
+00000000`749194d0  00000000`748fb08c wow64!whNtQueryVolumeInformationFile
+00000000`749194d8  00000000`748fb134 wow64!whNtCreateSection
+00000000`749194e0  00000000`748fb1f0 wow64!whNtFlushBuffersFile
+00000000`749194e8  00000000`748fb248 wow64!whNtApphelpCacheControl
+00000000`749194f0  00000000`748fb584 wow64!whNtCreateProcessEx
+00000000`749194f8  00000000`748fb66c wow64!whNtCreateThread
+00000000`74919500  00000000`748fb7e8 wow64!whNtIsProcessInJob
+00000000`74919508  00000000`748fb808 wow64!whNtProtectVirtualMemory
+00000000`74919510  00000000`748fbcb4 wow64!whNtQuerySection
+00000000`74919518  00000000`748fbdec wow64!whNtResumeThread
+00000000`74919520  00000000`748fbe0c wow64!whNtTerminateThread
+00000000`74919528  00000000`748fbe44 wow64!whNtReadRequestData
+00000000`74919530  00000000`748fbee8 wow64!whNtCreateFile
+00000000`74919538  00000000`748fc03c wow64!whNtQueryEvent
+00000000`74919540  00000000`748fc0a8 wow64!whNtWriteRequestData
+00000000`74919548  00000000`748fc14c wow64!whNtOpenDirectoryObject
+00000000`74919550  00000000`748fc1cc wow64!whNtAccessCheckByTypeAndAuditAlarm
+00000000`74919558  00000000`748fc404 wow64!whNtQuerySystemTime
+00000000`74919560  00000000`748fc41c wow64!whNtWaitForMultipleObjects
+00000000`74919568  00000000`748fc448 wow64!whNtSetInformationObject
+00000000`74919570  00000000`748fc4b0 wow64!whNtCancelIoFile
+00000000`74919578  00000000`748fc508 wow64!whNtTraceEvent
+00000000`74919580  00000000`748fc534 wow64!whNtPowerInformation
+00000000`74919588  00000000`748fc7bc wow64!whNtSetValueKey
+00000000`74919590  00000000`748fc838 wow64!whNtCancelTimer
+00000000`74919598  00000000`748fc858 wow64!whNtSetTimer
+00000000`749195a0  00000000`748fc8a4 wow64!whNtAcceptConnectPort
+00000000`749195a8  00000000`748fcadc wow64!whNtAccessCheck
+00000000`749195b0  00000000`748fcb64 wow64!whNtAccessCheckByType
+00000000`749195b8  00000000`748fcc48 wow64!whNtAccessCheckByTypeResultList
+00000000`749195c0  00000000`748fcd2c wow64!whNtAccessCheckByTypeResultListAndAuditAlarm
+00000000`749195c8  00000000`748fcf64 wow64!whNtAccessCheckByTypeResultListAndAuditAlarmByHandle
+00000000`749195d0  00000000`748fd1c0 wow64!whNtAddBootEntry
+00000000`749195d8  00000000`748fd1e0 wow64!whNtAddDriverEntry
+00000000`749195e0  00000000`748fd200 wow64!whNtAdjustGroupsToken
+00000000`749195e8  00000000`748fd354 wow64!whNtAlertResumeThread
+00000000`749195f0  00000000`748fd374 wow64!whNtAlertThread
+00000000`749195f8  00000000`748fd390 wow64!whNtAllocateLocallyUniqueId
+00000000`74919600  00000000`748fd3a8 wow64!whNtAllocateReserveObject
+00000000`74919608  00000000`748fd428 wow64!whNtAllocateUserPhysicalPages
+00000000`74919610  00000000`748fd574 wow64!whNtAllocateUuids
+00000000`74919618  00000000`748fd5a0 wow64!whNtAlpcAcceptConnectPort
+00000000`74919620  00000000`748fd70c wow64!whNtAlpcCancelMessage
+00000000`74919628  00000000`748fd734 wow64!whNtAlpcConnectPort
+00000000`74919630  00000000`748fd990 wow64!whNtAlpcCreatePort
+00000000`74919638  00000000`748fdab8 wow64!whNtAlpcCreatePortSection
+00000000`74919640  00000000`748fdb74 wow64!whNtAlpcCreateResourceReserve
+00000000`74919648  00000000`748fdb9c wow64!whNtAlpcCreateSectionView
+00000000`74919650  00000000`748fdc40 wow64!whNtAlpcCreateSecurityContext
+00000000`74919658  00000000`748fdcc4 wow64!whNtAlpcDeletePortSection
+00000000`74919660  00000000`748fdce8 wow64!whNtAlpcDeleteResourceReserve
+00000000`74919668  00000000`748fdd08 wow64!whNtAlpcDeleteSectionView
+00000000`74919670  00000000`748fdd2c wow64!whNtAlpcDeleteSecurityContext
+00000000`74919678  00000000`748fdd50 wow64!whNtAlpcDisconnectPort
+00000000`74919680  00000000`748fdd6c wow64!whNtAlpcImpersonateClientOfPort
+00000000`74919688  00000000`748fdd90 wow64!whNtAlpcOpenSenderProcess
+00000000`74919690  00000000`748fde48 wow64!whNtAlpcOpenSenderThread
+00000000`74919698  00000000`748fe19c wow64!whNtAlpcQueryInformation
+00000000`749196a0  00000000`748fe240 wow64!whNtAlpcQueryInformationMessage
+00000000`749196a8  00000000`748fe27c wow64!whNtAlpcRevokeSecurityContext
+00000000`749196b0  00000000`748fe2a0 wow64!whNtAlpcSendWaitReceivePort
+00000000`749196b8  00000000`748fe404 wow64!whNtAlpcSetInformation
+00000000`749196c0  00000000`748fe61c wow64!whNtAreMappedFilesTheSame
+00000000`749196c8  00000000`748fe63c wow64!whNtAssignProcessToJobObject
+00000000`749196d0  00000000`748fe65c wow64!whNtCancelIoFileEx
+00000000`749196d8  00000000`748fe6b8 wow64!whNtCancelSynchronousIoFile
+00000000`749196e0  00000000`748fe758 wow64!whNtCommitComplete
+00000000`749196e8  00000000`748fe778 wow64!whNtCommitEnlistment
+00000000`749196f0  00000000`748fe798 wow64!whNtCommitTransaction
+00000000`749196f8  00000000`748fe7b4 wow64!whNtCompactKeys
+00000000`74919700  00000000`748fe87c wow64!whNtCompareTokens
+00000000`74919708  00000000`748fe8a0 wow64!whNtCompleteConnectPort
+00000000`74919710  00000000`748fe8c0 wow64!whNtCompressKey
+00000000`74919718  00000000`748fe8dc wow64!whNtConnectPort
+00000000`74919720  00000000`748feb70 wow64!whNtCreateDebugObject
+00000000`74919728  00000000`748fec00 wow64!whNtCreateDirectoryObject
+00000000`74919730  00000000`748fec80 wow64!whNtCreateEnlistment
+00000000`74919738  00000000`748fed58 wow64!whNtCreateEventPair
+00000000`74919740  00000000`748fedd8 wow64!whNtCreateIoCompletion
+00000000`74919748  00000000`748fee68 wow64!whNtCreateJobObject
+00000000`74919750  00000000`748feee8 wow64!whNtCreateJobSet
+00000000`74919758  00000000`748feff8 wow64!whNtCreateKeyTransacted
+00000000`74919760  00000000`748ff134 wow64!whNtCreateKeyedEvent
+00000000`74919768  00000000`748ff1c4 wow64!whNtCreateMailslotFile
+00000000`74919770  00000000`748ff2d8 wow64!whNtCreateMutant
+00000000`74919778  00000000`748ff368 wow64!whNtCreateNamedPipeFile
+00000000`74919780  00000000`748ff500 wow64!whNtCreatePagingFile
+00000000`74919788  00000000`748ff568 wow64!whNtCreatePort
+00000000`74919790  00000000`748ff66c wow64!whNtCreatePrivateNamespace
+00000000`74919798  00000000`748ff6fc wow64!whNtCreateProcess
+00000000`749197a0  00000000`748ff7d0 wow64!whNtCreateProfile
+00000000`749197a8  00000000`748ff864 wow64!whNtCreateProfileEx
+00000000`749197b0  00000000`748ff974 wow64!whNtCreateResourceManager
+00000000`749197b8  00000000`748ffa80 wow64!whNtCreateSemaphore
+00000000`749197c0  00000000`748ffb1c wow64!whNtCreateSymbolicLinkObject
+00000000`749197c8  00000000`748ffbfc wow64!whNtCreateThreadEx
+00000000`749197d0  00000000`749006dc wow64!whNtCreateTimer
+00000000`749197d8  00000000`7490076c wow64!whNtCreateToken
+00000000`749197e0  00000000`749009b4 wow64!whNtCreateTransaction
+00000000`749197e8  00000000`74900afc wow64!whNtCreateTransactionManager
+00000000`749197f0  00000000`74900bf8 wow64!whNtCreateUserProcess
+00000000`749197f8  00000000`749016cc wow64!whNtCreateWaitablePort
+00000000`74919800  00000000`74901768 wow64!whNtCreateWorkerFactory
+00000000`74919808  00000000`74901860 wow64!whNtDebugActiveProcess
+00000000`74919810  00000000`74901880 wow64!whNtDebugContinue
+00000000`74919818  00000000`749018dc wow64!whNtDeleteAtom
+00000000`74919820  00000000`749018f8 wow64!whNtDeleteBootEntry
+00000000`74919828  00000000`74901910 wow64!whNtDeleteDriverEntry
+00000000`74919830  00000000`74901928 wow64!whNtDeleteFile
+00000000`74919838  00000000`74901974 wow64!whNtDeleteKey
+00000000`74919840  00000000`74901990 wow64!whNtDeleteObjectAuditAlarm
+00000000`74919848  00000000`749019f4 wow64!whNtDeletePrivateNamespace
+00000000`74919850  00000000`74901a10 wow64!whNtDeleteValueKey
+00000000`74919858  00000000`74901a70 wow64!whNtDisableLastKnownGood
+00000000`74919860  00000000`74901a88 wow64!whNtDisplayString
+00000000`74919868  00000000`74901ae4 wow64!whNtDrawText
+00000000`74919870  00000000`74901b40 wow64!whNtEnableLastKnownGood
+00000000`74919878  00000000`74901b58 wow64!whNtEnumerateBootEntries
+00000000`74919880  00000000`74901b78 wow64!whNtEnumerateDriverEntries
+00000000`74919888  00000000`74901b98 wow64!whNtEnumerateSystemEnvironmentValuesEx
+00000000`74919890  00000000`74901bb8 wow64!whNtEnumerateTransactionObject
+00000000`74919898  00000000`74901be8 wow64!whNtExtendSection
+00000000`749198a0  00000000`74901c08 wow64!whNtFilterToken
+00000000`749198a8  00000000`74901ca8 wow64!whNtFlushInstallUILanguage
+00000000`749198b0  00000000`74901cc4 wow64!whNtFlushInstructionCache
+00000000`749198b8  00000000`74901cec wow64!whNtFlushKey
+00000000`749198c0  00000000`74901d08 wow64!whNtFlushProcessWriteBuffers
+00000000`749198c8  00000000`74901d20 wow64!whNtFlushVirtualMemory
+00000000`749198d0  00000000`74901e14 wow64!whNtFlushWriteBuffer
+00000000`749198d8  00000000`74901e2c wow64!whNtFreeUserPhysicalPages
+00000000`749198e0  00000000`74901e98 wow64!whNtFreezeRegistry
+00000000`749198e8  00000000`74901eb0 wow64!whNtFreezeTransactions
+00000000`749198f0  00000000`74901ed0 wow64!whNtGetContextThread
+00000000`749198f8  00000000`74901f00 wow64!whNtGetCurrentProcessorNumber
+00000000`74919900  00000000`74901f18 wow64!whNtGetDevicePowerState
+00000000`74919908  00000000`74901f38 wow64!whNtGetMUIRegistryInfo
+00000000`74919910  00000000`74901f58 wow64!whNtGetNextProcess
+00000000`74919918  00000000`74901fb4 wow64!whNtGetNextThread
+00000000`74919920  00000000`7490201c wow64!whNtGetNlsSectionPtr
+00000000`74919928  00000000`749020ec wow64!whNtGetNotificationResourceManager
+00000000`74919930  00000000`74902240 wow64!whNtGetPlugPlayEvent
+00000000`74919938  00000000`7490227c wow64!whNtGetWriteWatch
+00000000`74919940  00000000`74902494 wow64!whNtImpersonateAnonymousToken
+00000000`74919948  00000000`749024b0 wow64!whNtImpersonateThread
+00000000`74919950  00000000`74902518 wow64!whNtInitializeNlsFiles
+00000000`74919958  00000000`74902580 wow64!whNtInitializeRegistry
+00000000`74919960  00000000`7490259c wow64!whNtInitiatePowerAction
+00000000`74919968  00000000`749025c0 wow64!whNtIsSystemResumeAutomatic
+00000000`74919970  00000000`749025d8 wow64!whNtIsUILanguageComitted
+00000000`74919978  00000000`749025f0 wow64!whNtListenPort
+00000000`74919980  00000000`74902610 wow64!whNtLoadDriver
+00000000`74919988  00000000`7490266c wow64!whNtLoadKey
+00000000`74919990  00000000`749026f0 wow64!whNtLoadKey2
+00000000`74919998  00000000`74902784 wow64!whNtLoadKeyEx
+00000000`749199a0  00000000`749028d0 wow64!whNtLockFile
+00000000`749199a8  00000000`74902980 wow64!whNtLockProductActivationKeys
+00000000`749199b0  00000000`749029a0 wow64!whNtLockRegistryKey
+00000000`749199b8  00000000`749029bc wow64!whNtLockVirtualMemory
+00000000`749199c0  00000000`74902a84 wow64!whNtMakePermanentObject
+00000000`749199c8  00000000`74902aa0 wow64!whNtMakeTemporaryObject
+00000000`749199d0  00000000`74902abc wow64!whNtMapCMFModule
+00000000`749199d8  00000000`74902b3c wow64!whNtMapUserPhysicalPages
+00000000`749199e0  00000000`74902b60 wow64!whNtModifyBootEntry
+00000000`749199e8  00000000`74902b78 wow64!whNtModifyDriverEntry
+00000000`749199f0  00000000`74902b90 wow64!whNtNotifyChangeDirectoryFile
+00000000`749199f8  00000000`74902c38 wow64!whNtNotifyChangeKey
+00000000`74919a00  00000000`74902cbc wow64!whNtNotifyChangeMultipleKeys
+00000000`74919a08  00000000`74902e6c wow64!whNtNotifyChangeSession
+00000000`74919a10  00000000`74902ec0 wow64!whNtOpenEnlistment
+00000000`74919a18  00000000`74902f5c wow64!whNtOpenEventPair
+00000000`74919a20  00000000`74902fdc wow64!whNtOpenIoCompletion
+00000000`74919a28  00000000`7490305c wow64!whNtOpenJobObject
+00000000`74919a30  00000000`749030dc wow64!whNtOpenKeyEx
+00000000`74919a38  00000000`74903174 wow64!whNtOpenKeyTransacted
+00000000`74919a40  00000000`7490322c wow64!whNtOpenKeyTransactedEx
+00000000`74919a48  00000000`749032e8 wow64!whNtOpenKeyedEvent
+00000000`74919a50  00000000`74903368 wow64!whNtOpenMutant
+00000000`74919a58  00000000`749033e8 wow64!whNtOpenObjectAuditAlarm
+00000000`74919a60  00000000`74903574 wow64!whNtOpenPrivateNamespace
+00000000`74919a68  00000000`74903604 wow64!whNtOpenProcessToken
+00000000`74919a70  00000000`74903654 wow64!whNtOpenResourceManager
+00000000`74919a78  00000000`749036f0 wow64!whNtOpenSemaphore
+00000000`74919a80  00000000`74903770 wow64!whNtOpenSession
+00000000`74919a88  00000000`749037f0 wow64!whNtOpenSymbolicLinkObject
+00000000`74919a90  00000000`74903870 wow64!whNtOpenThread
+00000000`74919a98  00000000`74903948 wow64!whNtOpenTimer
+00000000`74919aa0  00000000`749039c8 wow64!whNtOpenTransaction
+00000000`74919aa8  00000000`74903a64 wow64!whNtOpenTransactionManager
+00000000`74919ab0  00000000`74903b60 wow64!whNtPlugPlayControl
+00000000`74919ab8  00000000`74903b98 wow64!whNtPrePrepareComplete
+00000000`74919ac0  00000000`74903bb8 wow64!whNtPrePrepareEnlistment
+00000000`74919ac8  00000000`74903bd8 wow64!whNtPrepareComplete
+00000000`74919ad0  00000000`74903bf8 wow64!whNtPrepareEnlistment
+00000000`74919ad8  00000000`74903c18 wow64!whNtPrivilegeCheck
+00000000`74919ae0  00000000`74903c3c wow64!whNtPrivilegeObjectAuditAlarm
+00000000`74919ae8  00000000`74903cb8 wow64!whNtPrivilegedServiceAuditAlarm
+00000000`74919af0  00000000`74903d5c wow64!whNtPropagationComplete
+00000000`74919af8  00000000`74903d84 wow64!whNtPropagationFailed
+00000000`74919b00  00000000`74903da4 wow64!whNtPulseEvent
+00000000`74919b08  00000000`74903dc4 wow64!whNtQueryBootEntryOrder
+00000000`74919b10  00000000`74903de4 wow64!whNtQueryBootOptions
+00000000`74919b18  00000000`74903e04 wow64!whNtQueryDebugFilterState
+00000000`74919b20  00000000`74904098 wow64!whNtQueryDirectoryObject
+00000000`74919b28  00000000`749040dc wow64!whNtQueryDriverEntryOrder
+00000000`74919b30  00000000`749040fc wow64!whNtQueryEaFile
+00000000`74919b38  00000000`74904190 wow64!whNtQueryFullAttributesFile
+00000000`74919b40  00000000`749042c4 wow64!whNtQueryInformationAtom
+00000000`74919b48  00000000`74904330 wow64!whNtQueryInformationEnlistment
+00000000`74919b50  00000000`74904c74 wow64!whNtQueryInformationJobObject
+00000000`74919b58  00000000`74904e0c wow64!whNtQueryInformationPort
+00000000`74919b60  00000000`74904e3c wow64!whNtQueryInformationResourceManager
+00000000`74919b68  00000000`749050a8 wow64!whNtQueryInformationTransaction
+00000000`74919b70  00000000`7490514c wow64!whNtQueryInformationTransactionManager
+00000000`74919b78  00000000`7490547c wow64!whNtQueryInformationWorkerFactory
+00000000`74919b80  00000000`74905504 wow64!whNtQueryInstallUILanguage
+00000000`74919b88  00000000`7490551c wow64!whNtQueryIntervalProfile
+00000000`74919b90  00000000`74905538 wow64!whNtQueryIoCompletion
+00000000`74919b98  00000000`749055a4 wow64!whNtQueryLicenseValue
+00000000`74919ba0  00000000`74905618 wow64!whNtQueryMultipleValueKey
+00000000`74919ba8  00000000`749058c4 wow64!whNtQueryMutant
+00000000`74919bb0  00000000`7490594c wow64!whNtQueryOpenSubKeys
+00000000`74919bb8  00000000`749059a0 wow64!whNtQueryOpenSubKeysEx
+00000000`74919bc0  00000000`74905a14 wow64!whNtQueryPortInformationProcess
+00000000`74919bc8  00000000`74905a2c wow64!whNtQueryQuotaInformationFile
+00000000`74919bd0  00000000`74905ac0 wow64!whNtQuerySecurityAttributesToken
+00000000`74919bd8  00000000`74905ccc wow64!whNtQuerySecurityObject
+00000000`74919be0  00000000`74905d38 wow64!whNtQuerySemaphore
+00000000`74919be8  00000000`74905da4 wow64!whNtQuerySymbolicLinkObject
+00000000`74919bf0  00000000`74905e34 wow64!whNtQuerySystemEnvironmentValue
+00000000`74919bf8  00000000`74905ea0 wow64!whNtQuerySystemEnvironmentValueEx
+00000000`74919c00  00000000`74906824 wow64!whNtQuerySystemInformationEx
+00000000`74919c08  00000000`749069a8 wow64!whNtQueryTimerResolution
+00000000`74919c10  00000000`749069cc wow64!whNtQueueApcThreadEx
+00000000`74919c18  00000000`74906a10 wow64!whNtRaiseException
+00000000`74919c20  00000000`74906a34 wow64!whNtRaiseHardError
+00000000`74919c28  00000000`74906b64 wow64!whNtReadOnlyEnlistment
+00000000`74919c30  00000000`74906b84 wow64!whNtRecoverEnlistment
+00000000`74919c38  00000000`74906ba4 wow64!whNtRecoverResourceManager
+00000000`74919c40  00000000`74906bc0 wow64!whNtRecoverTransactionManager
+00000000`74919c48  00000000`74906bdc wow64!whNtRegisterProtocolAddressInformation
+00000000`74919c50  00000000`74906c0c wow64!whNtRegisterThreadTerminatePort
+00000000`74919c58  00000000`74906c28 wow64!whNtReleaseKeyedEvent
+00000000`74919c60  00000000`74906c50 wow64!whNtReleaseWorkerFactoryWorker
+00000000`74919c68  00000000`74906c6c wow64!whNtRemoveIoCompletionEx
+00000000`74919c70  00000000`74906e50 wow64!whNtRemoveProcessDebug
+00000000`74919c78  00000000`74906e70 wow64!whNtRenameKey
+00000000`74919c80  00000000`74906ed0 wow64!whNtRenameTransactionManager
+00000000`74919c88  00000000`74906f30 wow64!whNtReplaceKey
+00000000`74919c90  00000000`74906fc4 wow64!whNtReplacePartitionUnit
+00000000`74919c98  00000000`74907058 wow64!whNtReplyWaitReplyPort
+00000000`74919ca0  00000000`74907078 wow64!whNtRequestPort
+00000000`74919ca8  00000000`74907098 wow64!whNtResetEvent
+00000000`74919cb0  00000000`749070b8 wow64!whNtResetWriteWatch
+00000000`74919cb8  00000000`749070dc wow64!whNtRestoreKey
+00000000`74919cc0  00000000`74907100 wow64!whNtResumeProcess
+00000000`74919cc8  00000000`7490711c wow64!whNtRollbackComplete
+00000000`74919cd0  00000000`7490713c wow64!whNtRollbackEnlistment
+00000000`74919cd8  00000000`7490715c wow64!whNtRollbackTransaction
+00000000`74919ce0  00000000`74907178 wow64!whNtRollforwardTransactionManager
+00000000`74919ce8  00000000`74907198 wow64!whNtSaveKey
+00000000`74919cf0  00000000`749071b8 wow64!whNtSaveKeyEx
+00000000`74919cf8  00000000`749071dc wow64!whNtSaveMergedKeys
+00000000`74919d00  00000000`74907200 wow64!whNtSecureConnectPort
+00000000`74919d08  00000000`74907484 wow64!whNtSerializeBoot
+00000000`74919d10  00000000`7490749c wow64!whNtSetBootEntryOrder
+00000000`74919d18  00000000`749074b8 wow64!whNtSetBootOptions
+00000000`74919d20  00000000`749074d4 wow64!whNtSetContextThread
+00000000`74919d28  00000000`74907500 wow64!whNtSetDebugFilterState
+00000000`74919d30  00000000`74907520 wow64!whNtSetDefaultHardErrorPort
+00000000`74919d38  00000000`7490753c wow64!whNtSetDefaultLocale
+00000000`74919d40  00000000`74907558 wow64!whNtSetDefaultUILanguage
+00000000`74919d48  00000000`74907574 wow64!whNtSetDriverEntryOrder
+00000000`74919d50  00000000`74907590 wow64!whNtSetEaFile
+00000000`74919d58  00000000`749075f0 wow64!whNtSetHighEventPair
+00000000`74919d60  00000000`7490760c wow64!whNtSetHighWaitLowEventPair
+00000000`74919d68  00000000`74907628 wow64!whNtSetInformationDebugObject
+00000000`74919d70  00000000`74907658 wow64!whNtSetInformationEnlistment
+00000000`74919d78  00000000`74907860 wow64!whNtSetInformationJobObject
+00000000`74919d80  00000000`74907a40 wow64!whNtSetInformationKey
+00000000`74919d88  00000000`74907aa8 wow64!whNtSetInformationResourceManager
+00000000`74919d90  00000000`74907b2c wow64!whNtSetInformationToken
+00000000`74919d98  00000000`74907e30 wow64!whNtSetInformationTransaction
+00000000`74919da0  00000000`74907fa0 wow64!whNtSetInformationTransactionManager
+00000000`74919da8  00000000`74907fc8 wow64!whNtSetInformationWorkerFactory
+00000000`74919db0  00000000`749081dc wow64!whNtSetIntervalProfile
+00000000`74919db8  00000000`749081f8 wow64!whNtSetIoCompletion
+00000000`74919dc0  00000000`74908228 wow64!whNtSetIoCompletionEx
+00000000`74919dc8  00000000`74908264 wow64!whNtSetLdtEntries
+00000000`74919dd0  00000000`74908298 wow64!whNtSetLowEventPair
+00000000`74919dd8  00000000`749082b4 wow64!whNtSetLowWaitHighEventPair
+00000000`74919de0  00000000`749082d0 wow64!whNtSetQuotaInformationFile
+00000000`74919de8  00000000`74908330 wow64!whNtSetSecurityObject
+00000000`74919df0  00000000`74908368 wow64!whNtSetSystemEnvironmentValue
+00000000`74919df8  00000000`749083f4 wow64!whNtSetSystemEnvironmentValueEx
+00000000`74919e00  00000000`749087e0 wow64!whNtSetSystemInformation
+00000000`74919e08  00000000`7490905c wow64!whNtSetSystemPowerState
+00000000`74919e10  00000000`7490907c wow64!whNtSetSystemTime
+00000000`74919e18  00000000`7490909c wow64!whNtSetThreadExecutionState
+00000000`74919e20  00000000`749092cc wow64!whNtSetTimerEx
+00000000`74919e28  00000000`7490932c wow64!whNtSetTimerResolution
+00000000`74919e30  00000000`7490934c wow64!whNtSetUuidSeed
+00000000`74919e38  00000000`74909364 wow64!whNtSetVolumeInformationFile
+00000000`74919e40  00000000`7490940c wow64!whNtShutdownSystem
+00000000`74919e48  00000000`74909424 wow64!whNtShutdownWorkerFactory
+00000000`74919e50  00000000`74909454 wow64!whNtSignalAndWaitForSingleObject
+00000000`74919e58  00000000`7490947c wow64!whNtSinglePhaseReject
+00000000`74919e60  00000000`7490949c wow64!whNtStartProfile
+00000000`74919e68  00000000`749094b8 wow64!whNtStopProfile
+00000000`74919e70  00000000`749094d4 wow64!whNtSuspendProcess
+00000000`74919e78  00000000`749094f0 wow64!whNtSuspendThread
+00000000`74919e80  00000000`74909510 wow64!whNtSystemDebugControl
+00000000`74919e88  00000000`749097b0 wow64!whNtTerminateJobObject
+00000000`74919e90  00000000`749097cc wow64!whNtTestAlert
+00000000`74919e98  00000000`749097e4 wow64!whNtThawRegistry
+00000000`74919ea0  00000000`749097fc wow64!whNtThawTransactions
+00000000`74919ea8  00000000`74909814 wow64!whNtTraceControl
+00000000`74919eb0  00000000`74909a18 wow64!whNtTranslateFilePath
+00000000`74919eb8  00000000`74909a40 wow64!whNtUmsThreadYield
+00000000`74919ec0  00000000`74909a6c wow64!whNtUnloadDriver
+00000000`74919ec8  00000000`74909ac8 wow64!whNtUnloadKey
+00000000`74919ed0  00000000`74909b14 wow64!whNtUnloadKey2
+00000000`74919ed8  00000000`74909b68 wow64!whNtUnloadKeyEx
+00000000`74919ee0  00000000`74909bc0 wow64!whNtUnlockFile
+00000000`74919ee8  00000000`74909c28 wow64!whNtUnlockVirtualMemory
+00000000`74919ef0  00000000`74909cf0 wow64!whNtVdmControl
+00000000`74919ef8  00000000`74909d20 wow64!whNtWaitForDebugEvent
+00000000`74919f00  00000000`7490a2a8 wow64!whNtWaitForKeyedEvent
+00000000`74919f08  00000000`7490a2d0 wow64!whNtWaitForWorkViaWorkerFactory
+00000000`74919f10  00000000`7490a320 wow64!whNtWaitHighEventPair
+00000000`74919f18  00000000`7490a33c wow64!whNtWaitLowEventPair
+00000000`74919f20  00000000`7490a358 wow64!whNtWorkerFactoryWorkerReady
+00000000`74919f28  00000000`7490a374 wow64!whNtWow64CsrClientConnectToServer
+00000000`74919f30  00000000`7490a3e4 wow64!whNtWow64CsrIdentifyAlertableThread
+00000000`74919f38  00000000`7490a3fc wow64!whNtWow64CsrClientCallServer
+00000000`74919f40  00000000`7490a480 wow64!whNtWow64CsrAllocateCaptureBuffer
+00000000`74919f48  00000000`7490a4dc wow64!whNtWow64CsrFreeCaptureBuffer
+00000000`74919f50  00000000`7490a520 wow64!whNtWow64CsrAllocateMessagePointer
+00000000`74919f58  00000000`7490a590 wow64!whNtWow64CsrCaptureMessageBuffer
+00000000`74919f60  00000000`7490a60c wow64!whNtWow64CsrCaptureMessageString
+00000000`74919f68  00000000`7490a6a0 wow64!whNtWow64CsrGetProcessId
+00000000`74919f70  00000000`7490a6e4 wow64!whNtWow64CsrVerifyRegion
+00000000`74919f78  00000000`7490a700 wow64!whNtWow64DebuggerCall
+00000000`74919f80  00000000`7490a754 wow64!whNtWow64GetCurrentProcessorNumberEx
+00000000`74919f88  00000000`7490a8c8 wow64!whNtWow64GetNativeSystemInformation
+00000000`74919f90  00000000`7490a964 wow64!whNtWow64InterlockedPopEntrySList
+00000000`74919f98  00000000`7490a970 wow64!whNtWow64QueryInformationProcess64
+00000000`74919fa0  00000000`7490a9dc wow64!whNtWow64ReadVirtualMemory64
+00000000`74919fa8  00000000`7490aa54 wow64!whNtWow64WriteVirtualMemory64
+00000000`74919fb0  00000000`7490aacc wow64!whNtWow64QueryVirtualMemory64
+00000000`74919fb8  00000000`7490ab88 wow64!whNtWow64CallFunction64
+</code></pre><p>  可见，32位api在进入内核前要经过wow64.dll将参数转换成合适的形式(x64 __fastcall)，而旧调用参数作为结构体存在rcx中，同样，Shadow SSDT在wow64win!sdwhwin32JumpTable中：
+call r12以后，会进入wow64!whNtCreateThreadEx，实质上是取出32位NtCreateThreadEx参数，NtQueryInformationProcess获取peb的wow64成员，如果不为空，做相应处理调用给64位NtCreateThreadEx，而32位程序注入64位程序，也就是坏在NtQueryInformationProcess上，因为64位程序peb的wow64成员为NULL：</p>
+<pre tabindex="0"><code>wow64!whNtCreateThreadEx:
+00000000`748ffbfc 4c8bdc          mov     r11,rsp
+00000000`748ffbff 49897310        mov     qword ptr [r11+10h],rsi
+00000000`748ffc03 49897b18        mov     qword ptr [r11+18h],rdi
+00000000`748ffc07 4d896320        mov     qword ptr [r11+20h],r12
+00000000`748ffc0b 4155            push    r13
+00000000`748ffc0d 4156            push    r14
+00000000`748ffc0f 4157            push    r15
+00000000`748ffc11 4881ecb0010000  sub     rsp,1B0h
+00000000`748ffc18 488b05e1940100  mov     rax,qword ptr [wow64!_security_cookie (00000000`74919100)]
+00000000`748ffc1f 4833c4          xor     rax,rsp
+00000000`748ffc22 48898424a0010000 mov     qword ptr [rsp+1A0h],rax
+00000000`748ffc2a 4889a42498000000 mov     qword ptr [rsp+98h],rsp
+00000000`748ffc32 448b01          mov     r8d,dword ptr [rcx]
+00000000`748ffc35 44898424d8000000 mov     dword ptr [rsp+0D8h],r8d
+00000000`748ffc3d 8b5104          mov     edx,dword ptr [rcx+4]
+00000000`748ffc40 4863710c        movsxd  rsi,dword ptr [rcx+0Ch]
+00000000`748ffc44 448b6110        mov     r12d,dword ptr [rcx+10h]
+00000000`748ffc48 448b7114        mov     r14d,dword ptr [rcx+14h]
+00000000`748ffc4c 8b7918          mov     edi,dword ptr [rcx+18h]
+00000000`748ffc4f 897c2470        mov     dword ptr [rsp+70h],edi
+00000000`748ffc53 8b411c          mov     eax,dword ptr [rcx+1Ch]
+00000000`748ffc56 898424c8000000  mov     dword ptr [rsp+0C8h],eax
+00000000`748ffc5d 8b4120          mov     eax,dword ptr [rcx+20h]
+00000000`748ffc60 898424c0000000  mov     dword ptr [rsp+0C0h],eax
+00000000`748ffc67 8b4124          mov     eax,dword ptr [rcx+24h]
+00000000`748ffc6a 89442468        mov     dword ptr [rsp+68h],eax
+00000000`748ffc6e 8b4128          mov     eax,dword ptr [rcx+28h]
+00000000`748ffc71 89842488000000  mov     dword ptr [rsp+88h],eax
+00000000`748ffc78 4983a3d8feffff00 and     qword ptr [r11-128h],0
+00000000`748ffc80 418bc0          mov     eax,r8d
+00000000`748ffc83 f7d8            neg     eax
+00000000`748ffc85 4d1bed          sbb     r13,r13
+00000000`748ffc88 498d83d8feffff  lea     rax,[r11-128h]
+00000000`748ffc8f 4c23e8          and     r13,rax
+00000000`748ffc92 4d89ab30ffffff  mov     qword ptr [r11-0D0h],r13
+00000000`748ffc99 899424d4000000  mov     dword ptr [rsp+0D4h],edx
+00000000`748ffca0 8b4908          mov     ecx,dword ptr [rcx+8]
+00000000`748ffca3 498d9320ffffff  lea     rdx,[r11-0E0h]
+00000000`748ffcaa e8c1b3feff      call    wow64!Wow64ShallowThunkAllocObjectAttributes32TO64_FNC (00000000`748eb070)
+00000000`748ffcaf 898424d0000000  mov     dword ptr [rsp+0D0h],eax
+00000000`748ffcb6 85c0            test    eax,eax
+00000000`748ffcb8 791d            jns     wow64!whNtCreateThreadEx+0xdb (00000000`748ffcd7)
+
+wow64!whNtCreateThreadEx+0xbe:
+00000000`748ffcba 488d150a000000  lea     rdx,[wow64!whNtCreateThreadEx+0xcf (00000000`748ffccb)]
+00000000`748ffcc1 488bcc          mov     rcx,rsp
+00000000`748ffcc4 e891e50000      call    wow64!local_unwind (00000000`7490e25a)
+00000000`748ffcc9 90              nop
+00000000`748ffcca 90              nop
+00000000`748ffccb 8b8424d0000000  mov     eax,dword ptr [rsp+0D0h]
+00000000`748ffcd2 e9cf090000      jmp     wow64!whNtCreateThreadEx+0xaaa (00000000`749006a6)
+
+wow64!whNtCreateThreadEx+0xdb:
+00000000`748ffcd7 4c8bfe          mov     r15,rsi
+00000000`748ffcda 4889b424f0000000 mov     qword ptr [rsp+0F0h],rsi
+00000000`748ffce2 4c89a42410010000 mov     qword ptr [rsp+110h],r12
+00000000`748ffcea 4c89b42450010000 mov     qword ptr [rsp+150h],r14
+00000000`748ffcf2 89bc2490000000  mov     dword ptr [rsp+90h],edi
+00000000`748ffcf9 8b8424c8000000  mov     eax,dword ptr [rsp+0C8h]
+00000000`748ffd00 4889842430010000 mov     qword ptr [rsp+130h],rax
+00000000`748ffd08 8b8424c0000000  mov     eax,dword ptr [rsp+0C0h]
+00000000`748ffd0f 4889842428010000 mov     qword ptr [rsp+128h],rax
+00000000`748ffd17 8b442468        mov     eax,dword ptr [rsp+68h]
+00000000`748ffd1b 4889842438010000 mov     qword ptr [rsp+138h],rax
+00000000`748ffd23 8bbc2488000000  mov     edi,dword ptr [rsp+88h]
+00000000`748ffd2a 4889bc24c8000000 mov     qword ptr [rsp+0C8h],rdi
+00000000`748ffd32 4885ff          test    rdi,rdi
+00000000`748ffd35 0f84b1050000    je      wow64!whNtCreateThreadEx+0x6f0 (00000000`749002ec)
+
+wow64!whNtCreateThreadEx+0x13f:
+00000000`748ffd3b 8b07            mov     eax,dword ptr [rdi]
+00000000`748ffd3d 83f814          cmp     eax,14h
+00000000`748ffd40 7320            jae     wow64!whNtCreateThreadEx+0x166 (00000000`748ffd62)
+
+wow64!whNtCreateThreadEx+0x146:
+00000000`748ffd42 488d150f000000  lea     rdx,[wow64!whNtCreateThreadEx+0x15c (00000000`748ffd58)]
+00000000`748ffd49 488b8c2498000000 mov     rcx,qword ptr [rsp+98h]
+00000000`748ffd51 e804e50000      call    wow64!local_unwind (00000000`7490e25a)
+00000000`748ffd56 90              nop
+00000000`748ffd57 90              nop
+00000000`748ffd58 b80d0000c0      mov     eax,0C000000Dh
+00000000`748ffd5d e944090000      jmp     wow64!whNtCreateThreadEx+0xaaa (00000000`749006a6)
+
+wow64!whNtCreateThreadEx+0x166:
+00000000`748ffd62 83c0fc          add     eax,0FFFFFFFCh
+00000000`748ffd65 8bd0            mov     edx,eax
+00000000`748ffd67 a80f            test    al,0Fh
+00000000`748ffd69 7420            je      wow64!whNtCreateThreadEx+0x18f (00000000`748ffd8b)
+
+wow64!whNtCreateThreadEx+0x16f:
+00000000`748ffd6b 488d150f000000  lea     rdx,[wow64!whNtCreateThreadEx+0x185 (00000000`748ffd81)]
+00000000`748ffd72 488b8c2498000000 mov     rcx,qword ptr [rsp+98h]
+00000000`748ffd7a e8dbe40000      call    wow64!local_unwind (00000000`7490e25a)
+00000000`748ffd7f 90              nop
+00000000`748ffd80 90              nop
+00000000`748ffd81 b80d0000c0      mov     eax,0C000000Dh
+00000000`748ffd86 e91b090000      jmp     wow64!whNtCreateThreadEx+0xaaa (00000000`749006a6)
+
+wow64!whNtCreateThreadEx+0x18f:
+00000000`748ffd8b 48c1ea04        shr     rdx,4
+00000000`748ffd8f 4889942408010000 mov     qword ptr [rsp+108h],rdx
+00000000`748ffd97 4533c9          xor     r9d,r9d
+00000000`748ffd9a 4c894c2478      mov     qword ptr [rsp+78h],r9
+00000000`748ffd9f 33c9            xor     ecx,ecx
+00000000`748ffda1 48898c24b8000000 mov     qword ptr [rsp+0B8h],rcx
+00000000`748ffda9 4533c0          xor     r8d,r8d
+00000000`748ffdac 4c898424b0000000 mov     qword ptr [rsp+0B0h],r8
+00000000`748ffdb4 33c0            xor     eax,eax
+00000000`748ffdb6 48898424a8000000 mov     qword ptr [rsp+0A8h],rax
+
+wow64!whNtCreateThreadEx+0x1c2:
+00000000`748ffdbe 483bc2          cmp     rax,rdx
+00000000`748ffdc1 0f83dd000000    jae     wow64!whNtCreateThreadEx+0x2a8 (00000000`748ffea4)
+
+wow64!whNtCreateThreadEx+0x1cb:
+00000000`748ffdc7 4c8bd8          mov     r11,rax
+00000000`748ffdca 4d03db          add     r11,r11
+00000000`748ffdcd 460fb754df04    movzx   r10d,word ptr [rdi+r11*8+4]
+00000000`748ffdd3 4183fa03        cmp     r10d,3
+00000000`748ffdd7 0f82b7000000    jb      wow64!whNtCreateThreadEx+0x298 (00000000`748ffe94)
+
+wow64!whNtCreateThreadEx+0x1e1:
+00000000`748ffddd 4183fa04        cmp     r10d,4
+00000000`748ffde1 0f86a5000000    jbe     wow64!whNtCreateThreadEx+0x290 (00000000`748ffe8c)
+
+wow64!whNtCreateThreadEx+0x1eb:
+00000000`748ffde7 4183fa06        cmp     r10d,6
+00000000`748ffdeb 0f849b000000    je      wow64!whNtCreateThreadEx+0x290 (00000000`748ffe8c)
+
+wow64!whNtCreateThreadEx+0x1f5:
+00000000`748ffdf1 4183fa07        cmp     r10d,7
+00000000`748ffdf5 7450            je      wow64!whNtCreateThreadEx+0x24b (00000000`748ffe47)
+
+wow64!whNtCreateThreadEx+0x1fb:
+00000000`748ffdf7 4183fa0b        cmp     r10d,0Bh
+00000000`748ffdfb 0f8593000000    jne     wow64!whNtCreateThreadEx+0x298 (00000000`748ffe94)
+
+wow64!whNtCreateThreadEx+0x205:
+00000000`748ffe01 468b44df08      mov     r8d,dword ptr [rdi+r11*8+8]
+00000000`748ffe06 4c898424b0000000 mov     qword ptr [rsp+0B0h],r8
+00000000`748ffe0e 4d85c0          test    r8,r8
+00000000`748ffe11 7414            je      wow64!whNtCreateThreadEx+0x22b (00000000`748ffe27)
+
+wow64!whNtCreateThreadEx+0x217:
+00000000`748ffe13 41f6c003        test    r8b,3
+00000000`748ffe17 750e            jne     wow64!whNtCreateThreadEx+0x22b (00000000`748ffe27)
+
+wow64!whNtCreateThreadEx+0x21d:
+00000000`748ffe19 49c1e802        shr     r8,2
+00000000`748ffe1d 4c898424b0000000 mov     qword ptr [rsp+0B0h],r8
+00000000`748ffe25 eb6d            jmp     wow64!whNtCreateThreadEx+0x298 (00000000`748ffe94)
+
+wow64!whNtCreateThreadEx+0x22b:
+00000000`748ffe27 488d150f000000  lea     rdx,[wow64!whNtCreateThreadEx+0x241 (00000000`748ffe3d)]
+00000000`748ffe2e 488b8c2498000000 mov     rcx,qword ptr [rsp+98h]
+00000000`748ffe36 e81fe40000      call    wow64!local_unwind (00000000`7490e25a)
+00000000`748ffe3b 90              nop
+00000000`748ffe3c 90              nop
+00000000`748ffe3d b80d0000c0      mov     eax,0C000000Dh
+00000000`748ffe42 e95f080000      jmp     wow64!whNtCreateThreadEx+0xaaa (00000000`749006a6)
+
+wow64!whNtCreateThreadEx+0x24b:
+00000000`748ffe47 428b4cdf08      mov     ecx,dword ptr [rdi+r11*8+8]
+00000000`748ffe4c 48898c24b8000000 mov     qword ptr [rsp+0B8h],rcx
+00000000`748ffe54 4885c9          test    rcx,rcx
+00000000`748ffe57 7413            je      wow64!whNtCreateThreadEx+0x270 (00000000`748ffe6c)
+
+wow64!whNtCreateThreadEx+0x25d:
+00000000`748ffe59 f6c107          test    cl,7
+00000000`748ffe5c 750e            jne     wow64!whNtCreateThreadEx+0x270 (00000000`748ffe6c)
+
+wow64!whNtCreateThreadEx+0x262:
+00000000`748ffe5e 48c1e903        shr     rcx,3
+00000000`748ffe62 48898c24b8000000 mov     qword ptr [rsp+0B8h],rcx
+00000000`748ffe6a eb28            jmp     wow64!whNtCreateThreadEx+0x298 (00000000`748ffe94)
+
+wow64!whNtCreateThreadEx+0x270:
+00000000`748ffe6c 488d150f000000  lea     rdx,[wow64!whNtCreateThreadEx+0x286 (00000000`748ffe82)]
+00000000`748ffe73 488b8c2498000000 mov     rcx,qword ptr [rsp+98h]
+00000000`748ffe7b e8dae30000      call    wow64!local_unwind (00000000`7490e25a)
+00000000`748ffe80 90              nop
+00000000`748ffe81 90              nop
+00000000`748ffe82 b80d0000c0      mov     eax,0C000000Dh
+00000000`748ffe87 e91a080000      jmp     wow64!whNtCreateThreadEx+0xaaa (00000000`749006a6)
+
+wow64!whNtCreateThreadEx+0x290:
+00000000`748ffe8c 49ffc1          inc     r9
+00000000`748ffe8f 4c894c2478      mov     qword ptr [rsp+78h],r9
+
+wow64!whNtCreateThreadEx+0x298:
+00000000`748ffe94 48ffc0          inc     rax
+00000000`748ffe97 48898424a8000000 mov     qword ptr [rsp+0A8h],rax
+00000000`748ffe9f e91affffff      jmp     wow64!whNtCreateThreadEx+0x1c2 (00000000`748ffdbe)
+
+wow64!whNtCreateThreadEx+0x2a8:
+00000000`748ffea4 48c1e205        shl     rdx,5
+00000000`748ffea8 4883c208        add     rdx,8
+00000000`748ffeac 4889942480000000 mov     qword ptr [rsp+80h],rdx
+00000000`748ffeb4 4b8d0489        lea     rax,[r9+r9*4]
+00000000`748ffeb8 48c1e004        shl     rax,4
+00000000`748ffebc 4803c2          add     rax,rdx
+00000000`748ffebf 4889442468      mov     qword ptr [rsp+68h],rax
+00000000`748ffec4 48c1e104        shl     rcx,4
+00000000`748ffec8 4803c8          add     rcx,rax
+00000000`748ffecb 48894c2470      mov     qword ptr [rsp+70h],rcx
+00000000`748ffed0 4a8d4cc110      lea     rcx,[rcx+r8*8+10h]
+00000000`748ffed5 4885c9          test    rcx,rcx
+00000000`748ffed8 0f84ee030000    je      wow64!whNtCreateThreadEx+0x6d0 (00000000`749002cc)
+
+wow64!whNtCreateThreadEx+0x2e2:
+00000000`748ffede 48ff05dbab0100  inc     qword ptr [wow64!TotalHeapHits (00000000`7491aac0)]
+00000000`748ffee5 4883c10f        add     rcx,0Fh
+00000000`748ffee9 4883e1f0        and     rcx,0FFFFFFFFFFFFFFF0h
+00000000`748ffeed 65488b042530000000 mov   rax,qword ptr gs:[30h]
+00000000`748ffef6 488b9098140000  mov     rdx,qword ptr [rax+1498h]
+00000000`748ffefd 488b7218        mov     rsi,qword ptr [rdx+18h]
+00000000`748fff01 488d440a20      lea     rax,[rdx+rcx+20h]
+00000000`748fff06 483bc6          cmp     rax,rsi
+00000000`748fff09 7710            ja      wow64!whNtCreateThreadEx+0x31f (00000000`748fff1b)
+
+wow64!whNtCreateThreadEx+0x30f:
+00000000`748fff0b 48ff05b6ab0100  inc     qword ptr [wow64!LocalThreadHeapHits (00000000`7491aac8)]
+00000000`748fff12 482bf1          sub     rsi,rcx
+00000000`748fff15 48897218        mov     qword ptr [rdx+18h],rsi
+00000000`748fff19 eb08            jmp     wow64!whNtCreateThreadEx+0x327 (00000000`748fff23)
+
+wow64!whNtCreateThreadEx+0x31f:
+00000000`748fff1b e89ccdfeff      call    wow64!Wow64AllocateTempFromHeap (00000000`748eccbc)
+00000000`748fff20 488bf0          mov     rsi,rax
+
+wow64!whNtCreateThreadEx+0x327:
+00000000`748fff23 4885f6          test    rsi,rsi
+00000000`748fff26 0f84a0030000    je      wow64!whNtCreateThreadEx+0x6d0 (00000000`749002cc)
+
+wow64!whNtCreateThreadEx+0x330:
+00000000`748fff2c 48832600        and     qword ptr [rsi],0
+00000000`748fff30 4883660800      and     qword ptr [rsi+8],0
+00000000`748fff35 4883c610        add     rsi,10h
+00000000`748fff39 4889b424c0000000 mov     qword ptr [rsp+0C0h],rsi
+00000000`748fff41 4c8bb42480000000 mov     r14,qword ptr [rsp+80h]
+00000000`748fff49 4c8936          mov     qword ptr [rsi],r14
+00000000`748fff4c 4e8d2436        lea     r12,[rsi+r14]
+00000000`748fff50 4c89a424e0000000 mov     qword ptr [rsp+0E0h],r12
+00000000`748fff58 488b442468      mov     rax,qword ptr [rsp+68h]
+00000000`748fff5d 4c8d3c06        lea     r15,[rsi+rax]
+00000000`748fff61 488b442470      mov     rax,qword ptr [rsp+70h]
+00000000`748fff66 4c8d1406        lea     r10,[rsi+rax]
+00000000`748fff6a 4c89542468      mov     qword ptr [rsp+68h],r10
+00000000`748fff6f 33d2            xor     edx,edx
+00000000`748fff71 4889542478      mov     qword ptr [rsp+78h],rdx
+00000000`748fff76 4533c9          xor     r9d,r9d
+00000000`748fff79 4c898c24a8000000 mov     qword ptr [rsp+0A8h],r9
+00000000`748fff81 4c3b8c2408010000 cmp     r9,qword ptr [rsp+108h]
+00000000`748fff89 0f8320030000    jae     wow64!whNtCreateThreadEx+0x6b3 (00000000`749002af)
+
+wow64!whNtCreateThreadEx+0x393:
+00000000`748fff8f 498bc1          mov     rax,r9
+00000000`748fff92 48c1e005        shl     rax,5
+00000000`748fff96 488d7c3008      lea     rdi,[rax+rsi+8]
+00000000`748fff9b 498bc1          mov     rax,r9
+00000000`748fff9e 4803c0          add     rax,rax
+00000000`748fffa1 488b8c24c8000000 mov     rcx,qword ptr [rsp+0C8h]
+00000000`748fffa9 4c8d6cc104      lea     r13,[rcx+rax*8+4]
+00000000`748fffae 4d85ed          test    r13,r13
+00000000`748fffb1 7421            je      wow64!whNtCreateThreadEx+0x3d8 (00000000`748fffd4)
+
+wow64!whNtCreateThreadEx+0x3b7:
+00000000`748fffb3 418b4508        mov     eax,dword ptr [r13+8]
+00000000`748fffb7 48894710        mov     qword ptr [rdi+10h],rax
+00000000`748fffbb 418b4508        mov     eax,dword ptr [r13+8]
+00000000`748fffbf 48894710        mov     qword ptr [rdi+10h],rax
+00000000`748fffc3 418b4504        mov     eax,dword ptr [r13+4]
+00000000`748fffc7 48894708        mov     qword ptr [rdi+8],rax
+00000000`748fffcb 418b4500        mov     eax,dword ptr [r13]
+00000000`748fffcf 488907          mov     qword ptr [rdi],rax
+00000000`748fffd2 eb02            jmp     wow64!whNtCreateThreadEx+0x3da (00000000`748fffd6)
+
+wow64!whNtCreateThreadEx+0x3d8:
+00000000`748fffd4 33ff            xor     edi,edi
+
+wow64!whNtCreateThreadEx+0x3da:
+00000000`748fffd6 0fb70f          movzx   ecx,word ptr [rdi]
+00000000`748fffd9 4883f902        cmp     rcx,2
+00000000`748fffdd 0f86ac020000    jbe     wow64!whNtCreateThreadEx+0x693 (00000000`7490028f)
+
+wow64!whNtCreateThreadEx+0x3e7:
+00000000`748fffe3 4883f904        cmp     rcx,4
+00000000`748fffe7 0f8637020000    jbe     wow64!whNtCreateThreadEx+0x628 (00000000`74900224)
+
+wow64!whNtCreateThreadEx+0x3f1:
+00000000`748fffed 4883f905        cmp     rcx,5
+00000000`748ffff1 0f8479010000    je      wow64!whNtCreateThreadEx+0x574 (00000000`74900170)
+
+wow64!whNtCreateThreadEx+0x3fb:
+00000000`748ffff7 4883f906        cmp     rcx,6
+</code></pre><p>这里有下面几个方法解决：</p>
+<ul>
+<li>使用64位进程注入64位进程  能成功，然而不符合这篇文章的本意</li>
+<li>将64位进程peb的wow64成员置为其peb基址  不好实现，首先32位程序无法取得64位程序peb，其次32位程序的WriteProcessMemory无法写64位指针(peb地址通常都是大于0xFFFFFFFF的)</li>
+<li>在32位程序中hook住64位ntdll.dll的NtQueryInformationProcess，使whNtCreateThreadEx调用NtQueryInformationProcess返回成功，众所周知32位程序有32位和64位的2个ntdll.dll，流程为：32位api-&gt;32位ntdll-&gt;wow64.dll-&gt;64位ntdll-&gt;内核层，而要hook64位函数，也不容易在32位程序中实现，即使全写入机器码，也要先找到64位ntdll.dll，然后找导入表得到函数地址，然而还是有上述写入64位指针问题</li>
+</ul>
+<p>  综上所述，最理想的方式还是给32位程序加载一个64位dll，然而LoadLibrary肯定不会成功，那么最终解决方式，还是写一个适合32位程序加载64位dll PE64格式的LoadLibrary，而该64位dll所做的，可以是：①将wow64成员置peb基址 ②hook *** ③调用CreatRemoteThread    当然首选③，好扯淡。。。。</p>
+<blockquote>
+<p>&mdash;&mdash;&mdash;&ndash;未成熟的猜想&mdash;&mdash;&mdash;&mdash;<br>
+现在假设我们成功了，那么问题还没结束，首先我们要保证线程函数不能是32位的，这里有2种情况：<br>
+情况①将机器码写入目标进程空间执行，然而这里有个问题，不能把32位函数的机器码写入，64位程序应该不知道32位机器码如何执行吧？<br>
+情况②直接将本进程固定基址的api传给64位进程，这么做的前提是：假设本进程和目标进程api所在dll基址相同，那么api地址也相同，而32位程序ntdll和Kernel32通常基址是相同的。而64位则绝对和32位api地址不同了！<br>
+&mdash;&mdash;&mdash;&ndash;未成熟的猜想&mdash;&mdash;&mdash;&mdash;</p>
+</blockquote>
+<p>  自己写了一部分shellcode，然而不稳定，会出现STATUS_DATATYPE_MISALIGNMENT错误，然而用调试器单步过去却没有问题，百思不得其解！此外还会有加载地址冲突问题，不可调解！我的方法是从wow64.dll解析64位ntdll导出表找到ldrloaddll，然后进入x64模式调用之，之后返回32位模式。</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#ec0000">enum</span> <span style="color:#5f5fff">_MEMORY_INFORMATION_CLASS</span> 
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    MemoryBasicInformation
+</span></span><span style="display:flex;"><span>    ,MemoryWorkingSetInformation
+</span></span><span style="display:flex;"><span>    ,MemoryMappedFilenameInformation
+</span></span><span style="display:flex;"><span>    ,MemoryRegionInformation
+</span></span><span style="display:flex;"><span>    ,MemoryWorkingSetExInformation
+</span></span><span style="display:flex;"><span>} MEMORY_INFORMATION_CLASS;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#ec0000">struct</span> <span style="color:#5f5fff">_UNICODE_STRING</span> 
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    USHORT Length;
+</span></span><span style="display:flex;"><span>    USHORT MaximumLength;
+</span></span><span style="display:flex;"><span>    PWSTR  Buffer;
+</span></span><span style="display:flex;"><span>} UNICODE_STRING;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> UNICODE_STRING <span style="color:#ec0000">*</span>PUNICODE_STRING;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#ec0000">struct</span> <span style="color:#5f5fff">_UNICODE_STRING_X64</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    USHORT Length;
+</span></span><span style="display:flex;"><span>    USHORT MaximumLength;
+</span></span><span style="display:flex;"><span>    ULONG dup;//align
+</span></span><span style="display:flex;"><span>    PWSTR  Buffer;//x64 pointer
+</span></span><span style="display:flex;"><span>    ULONG dup2;//align
+</span></span><span style="display:flex;"><span>} UNICODE_STRING_X64;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> UNICODE_STRING_X64 <span style="color:#ec0000">*</span>PUNICODE_STRING_X64;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>#define STATUS_BUFFER_OVERFLOW       ((NTSTATUS)0x80000005L)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> LONG NTSTATUS;
+</span></span><span style="display:flex;"><span>#define NT_SUCCESS(Status) (((NTSTATUS)(Status)) &gt;= 0)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">extern</span> <span style="color:#008900">&#34;C&#34;</span> NTSTATUS <span style="color:#ec0000">__stdcall</span> NtQueryVirtualMemory(HANDLE,PVOID,MEMORY_INFORMATION_CLASS,PVOID,ULONG,PULONG);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">enum</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    DIR_EXPORT<span style="color:#ec0000">=</span><span style="color:#008900">0</span>,
+</span></span><span style="display:flex;"><span>    DIR_IMPORT,
+</span></span><span style="display:flex;"><span>    DIR_RESOURCE,
+</span></span><span style="display:flex;"><span>    DIR_EXCEPTION,
+</span></span><span style="display:flex;"><span>    DIR_CERTIFICATE,
+</span></span><span style="display:flex;"><span>    DIR_RELOCATION,
+</span></span><span style="display:flex;"><span>    DIR_DEBUG,
+</span></span><span style="display:flex;"><span>    DIR_ARCHITECTURE,
+</span></span><span style="display:flex;"><span>    DIR_GLOBALPTR,
+</span></span><span style="display:flex;"><span>    DIR_TLS,
+</span></span><span style="display:flex;"><span>    DIR_LOADCONFIG,
+</span></span><span style="display:flex;"><span>    DIR_BOUNDIMPORT,
+</span></span><span style="display:flex;"><span>    DIR_IAT,
+</span></span><span style="display:flex;"><span>    DIR_DELAYIMPORT,
+</span></span><span style="display:flex;"><span>    DIR_CLR,
+</span></span><span style="display:flex;"><span>    DIR_RESERVED,
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">GetNtdll64BaseAddr</span>()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    //找到wow64.dll基址
+</span></span><span style="display:flex;"><span>    PVOID wow64dllBase <span style="color:#ec0000">=</span> <span style="color:#ec0000">NULL</span>;
+</span></span><span style="display:flex;"><span>    PVOID baseAddress;
+</span></span><span style="display:flex;"><span>    MEMORY_BASIC_INFORMATION basicInfo;
+</span></span><span style="display:flex;"><span>    baseAddress <span style="color:#ec0000">=</span> (PVOID)<span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>    BOOL IsFound <span style="color:#ec0000">=</span> FALSE;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">while</span>(<span style="color:#ec0000">true</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        memset(<span style="color:#ec0000">&amp;</span>basicInfo,<span style="color:#008900">0</span>,<span style="color:#ec0000">sizeof</span>(basicInfo));
+</span></span><span style="display:flex;"><span>        NtQueryVirtualMemory(GetCurrentProcess(),baseAddress,MemoryBasicInformation,<span style="color:#ec0000">&amp;</span>basicInfo,<span style="color:#ec0000">sizeof</span>(MEMORY_BASIC_INFORMATION),<span style="color:#ec0000">NULL</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(basicInfo.Type <span style="color:#ec0000">==</span> MEM_MAPPED <span style="color:#ec0000">||</span> basicInfo.Type <span style="color:#ec0000">==</span> MEM_IMAGE)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            ULONG buffersize <span style="color:#ec0000">=</span> <span style="color:#008900">0x100</span>,returnLength;
+</span></span><span style="display:flex;"><span>            PVOID buffer <span style="color:#ec0000">=</span> malloc(buffersize);
+</span></span><span style="display:flex;"><span>            memset(buffer,<span style="color:#008900">0</span>,buffersize);
+</span></span><span style="display:flex;"><span>            NTSTATUS status;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">while</span>(<span style="color:#ec0000">true</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                status <span style="color:#ec0000">=</span> NtQueryVirtualMemory(GetCurrentProcess(),basicInfo.AllocationBase,MemoryMappedFilenameInformation,
+</span></span><span style="display:flex;"><span>                    buffer,buffersize,<span style="color:#ec0000">&amp;</span>returnLength);
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(NT_SUCCESS(status))
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span>(status <span style="color:#ec0000">==</span> STATUS_BUFFER_OVERFLOW)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    free(buffer);
+</span></span><span style="display:flex;"><span>                    buffersize <span style="color:#ec0000">=</span> returnLength;
+</span></span><span style="display:flex;"><span>                    buffer <span style="color:#ec0000">=</span> malloc(buffersize);
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">continue</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            PUNICODE_STRING dllName <span style="color:#ec0000">=</span> (PUNICODE_STRING)buffer;
+</span></span><span style="display:flex;"><span>            WCHAR objdllName[] <span style="color:#ec0000">=</span> <span style="color:#008900">L</span><span style="color:#008900">&#34;wow64.dll&#34;</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(dllName<span style="color:#ec0000">-&gt;</span>Length)
+</span></span><span style="display:flex;"><span>                dllName<span style="color:#ec0000">-&gt;</span>Buffer[dllName<span style="color:#ec0000">-&gt;</span>Length]<span style="color:#ec0000">=</span><span style="color:#008900">L</span><span style="color:#008900">&#39;\0&#39;</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(dllName<span style="color:#ec0000">-&gt;</span>Length <span style="color:#ec0000">&gt;=</span> wcslen(objdllName) <span style="color:#ec0000">&amp;&amp;</span> StrStrIW(dllName<span style="color:#ec0000">-&gt;</span>Buffer,objdllName))
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                free(buffer);
+</span></span><span style="display:flex;"><span>                wow64dllBase <span style="color:#ec0000">=</span> basicInfo.AllocationBase;
+</span></span><span style="display:flex;"><span>                IsFound <span style="color:#ec0000">=</span> TRUE;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            free(buffer);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(IsFound)
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(basicInfo.RegionSize <span style="color:#ec0000">==</span> <span style="color:#008900">0</span>)
+</span></span><span style="display:flex;"><span>            basicInfo.RegionSize <span style="color:#ec0000">+=</span> <span style="color:#008900">0x1000</span>;
+</span></span><span style="display:flex;"><span>        baseAddress <span style="color:#ec0000">=</span> (PVOID)((BYTE<span style="color:#ec0000">*</span>)baseAddress <span style="color:#ec0000">+</span> basicInfo.RegionSize);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>((DWORD)baseAddress <span style="color:#ec0000">&gt;</span> <span style="color:#008900">0x7FFFFFFF</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>IsFound)
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>    PIMAGE_DOS_HEADER dos_header <span style="color:#ec0000">=</span> (PIMAGE_DOS_HEADER)wow64dllBase;
+</span></span><span style="display:flex;"><span>    PIMAGE_NT_HEADERS64 nt_headers <span style="color:#ec0000">=</span> (PIMAGE_NT_HEADERS64)((BYTE<span style="color:#ec0000">*</span>)wow64dllBase <span style="color:#ec0000">+</span> dos_header<span style="color:#ec0000">-&gt;</span>e_lfanew);
+</span></span><span style="display:flex;"><span>    IMAGE_DATA_DIRECTORY wow64dll_importtable <span style="color:#ec0000">=</span> nt_headers<span style="color:#ec0000">-&gt;</span>OptionalHeader.DataDirectory[DIR_IMPORT];
+</span></span><span style="display:flex;"><span>    PIMAGE_IMPORT_DESCRIPTOR import_descriptor <span style="color:#ec0000">=</span> (PIMAGE_IMPORT_DESCRIPTOR)((BYTE<span style="color:#ec0000">*</span>)wow64dllBase <span style="color:#ec0000">+</span> wow64dll_importtable.VirtualAddress);
+</span></span><span style="display:flex;"><span>    ULONGLONG LdrLoadDll64Addr <span style="color:#ec0000">=</span> <span style="color:#ec0000">NULL</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;i <span style="color:#ec0000">&lt;</span> wow64dll_importtable.Size <span style="color:#ec0000">/</span> <span style="color:#ec0000">sizeof</span>(IMAGE_IMPORT_DESCRIPTOR);i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(import_descriptor<span style="color:#ec0000">-&gt;</span>OriginalFirstThunk)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            PIMAGE_THUNK_DATA64 pThunk <span style="color:#ec0000">=</span> (PIMAGE_THUNK_DATA64)((DWORD)wow64dllBase <span style="color:#ec0000">+</span> import_descriptor<span style="color:#ec0000">-&gt;</span>OriginalFirstThunk);
+</span></span><span style="display:flex;"><span>            PIMAGE_THUNK_DATA64 pFirstThunk <span style="color:#ec0000">=</span> (PIMAGE_THUNK_DATA64)((DWORD)wow64dllBase <span style="color:#ec0000">+</span> import_descriptor<span style="color:#ec0000">-&gt;</span>FirstThunk);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">while</span>(pThunk<span style="color:#ec0000">-&gt;</span>u1.AddressOfData)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                PIMAGE_IMPORT_BY_NAME FuncName <span style="color:#ec0000">=</span> (PIMAGE_IMPORT_BY_NAME)((DWORD)wow64dllBase <span style="color:#ec0000">+</span> pThunk<span style="color:#ec0000">-&gt;</span>u1.AddressOfData);
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>strcmpi((<span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span>)FuncName<span style="color:#ec0000">-&gt;</span>Name,<span style="color:#008900">&#34;LdrLoadDll&#34;</span>))
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    LdrLoadDll64Addr <span style="color:#ec0000">=</span> pFirstThunk<span style="color:#ec0000">-&gt;</span>u1.AddressOfData;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                pThunk<span style="color:#ec0000">++</span>;
+</span></span><span style="display:flex;"><span>                pFirstThunk<span style="color:#ec0000">++</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        import_descriptor<span style="color:#ec0000">++</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>#pragma pack(push,1)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">struct</span> <span style="color:#5f5fff">shellcode</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        BYTE farjmp1;//0xEA        构造jmp 0033:AbsoluteAddr =&gt; 0xea 0x?? 0x?? 0x?? 0x?? 0x33 0x00
+</span></span><span style="display:flex;"><span>        DWORD address1;
+</span></span><span style="display:flex;"><span>        WORD prefix1;//0x33
+</span></span><span style="display:flex;"><span>        BYTE pad1[<span style="color:#008900">9</span>];
+</span></span><span style="display:flex;"><span>        BYTE pushebp[<span style="color:#008900">11</span>];//0x55
+</span></span><span style="display:flex;"><span>        BYTE param12[<span style="color:#008900">6</span>];//xor rcx,rcx;xor rdx,rdx =&gt; 0x48 0x33 0xC9 0x48 0x33 0xD2  
+</span></span><span style="display:flex;"><span>        BYTE movr8[<span style="color:#008900">3</span>];//mov r8,? =&gt; 0x49 0xC7 0xC0
+</span></span><span style="display:flex;"><span>        DWORD r8;
+</span></span><span style="display:flex;"><span>        BYTE movr9[<span style="color:#008900">3</span>];//mov r9,? =&gt; 0x49 0xC7 0xC1
+</span></span><span style="display:flex;"><span>        DWORD r9;
+</span></span><span style="display:flex;"><span>        BYTE call[<span style="color:#008900">3</span>];//0xFF 0x14 0x25 =&gt; 构造invoke LdrLoadDll(x,x,x,x)
+</span></span><span style="display:flex;"><span>        DWORD ldrloaddll;//相对地址
+</span></span><span style="display:flex;"><span>        BYTE popebp[<span style="color:#008900">4</span>];//0x5D
+</span></span><span style="display:flex;"><span>        BYTE farjmp2[<span style="color:#008900">3</span>];//jmp fword ptr =&gt; 0xFF 0x2C 0x25
+</span></span><span style="display:flex;"><span>        DWORD address2;
+</span></span><span style="display:flex;"><span>        BYTE pad2[<span style="color:#008900">15</span>];
+</span></span><span style="display:flex;"><span>        DWORD address3;
+</span></span><span style="display:flex;"><span>        WORD prefix2;//0x23
+</span></span><span style="display:flex;"><span>        BYTE movretval;//保存返回值 mov [retval],eax
+</span></span><span style="display:flex;"><span>        DWORD address4;
+</span></span><span style="display:flex;"><span>        BYTE ret;//0xC3
+</span></span><span style="display:flex;"><span>        ULONGLONG originebp;
+</span></span><span style="display:flex;"><span>        ULONGLONG retval;//存储返回结果
+</span></span><span style="display:flex;"><span>        ULONGLONG baseaddress;//存储返回基址
+</span></span><span style="display:flex;"><span>    };
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>#pragma pack(pop) 
+</span></span><span style="display:flex;"><span>    //WCHAR dll[] = L&#34;E:\\Projects\\test2\\Debug\\testdll.dll&#34;;
+</span></span><span style="display:flex;"><span>    WCHAR dll[<span style="color:#008900">256</span>];
+</span></span><span style="display:flex;"><span>    BYTE uu[<span style="color:#008900">256</span>];
+</span></span><span style="display:flex;"><span>    WCHAR<span style="color:#ec0000">*</span> dll1<span style="color:#ec0000">=</span>(WCHAR<span style="color:#ec0000">*</span>)(((DWORD)dll<span style="color:#ec0000">+</span><span style="color:#008900">0x10</span>)<span style="color:#ec0000">&amp;</span><span style="color:#008900">0xFFFFFFF0</span>);
+</span></span><span style="display:flex;"><span>    wcscpy(dll1,<span style="color:#008900">L</span><span style="color:#008900">&#34;c:</span><span style="color:#008900">\\</span><span style="color:#008900">testdll.dll&#34;</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> len<span style="color:#ec0000">=</span>wcslen(dll1)<span style="color:#ec0000">*</span><span style="color:#008900">2</span><span style="color:#ec0000">+</span><span style="color:#008900">2</span>;
+</span></span><span style="display:flex;"><span>    UNICODE_STRING_X64<span style="color:#ec0000">&amp;</span> dllpath<span style="color:#ec0000">=*</span>(UNICODE_STRING_X64<span style="color:#ec0000">*</span>)(((DWORD)uu<span style="color:#ec0000">+</span><span style="color:#008900">0x10</span>)<span style="color:#ec0000">&amp;</span><span style="color:#008900">0xFFFFFFF0</span>);
+</span></span><span style="display:flex;"><span>    dllpath.Length<span style="color:#ec0000">=</span>len<span style="color:#ec0000">-</span><span style="color:#008900">2</span>;
+</span></span><span style="display:flex;"><span>    dllpath.MaximumLength<span style="color:#ec0000">=</span>len;
+</span></span><span style="display:flex;"><span>    dllpath.dup<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;dllpath.dup2<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>    dllpath.Buffer<span style="color:#ec0000">=</span>dll1;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    BYTE<span style="color:#ec0000">*</span> data<span style="color:#ec0000">=</span><span style="color:#ec0000">new</span> BYTE[<span style="color:#008900">512</span>];
+</span></span><span style="display:flex;"><span>    BYTE<span style="color:#ec0000">*</span> data1<span style="color:#ec0000">=</span> (BYTE<span style="color:#ec0000">*</span>)(((DWORD)data<span style="color:#ec0000">+</span><span style="color:#008900">0x10</span>)<span style="color:#ec0000">&amp;</span><span style="color:#008900">0xFFFFFFF0</span>);
+</span></span><span style="display:flex;"><span>    shellcode<span style="color:#ec0000">&amp;</span> sc <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(shellcode<span style="color:#ec0000">*</span>)data1;
+</span></span><span style="display:flex;"><span>    memset(<span style="color:#ec0000">&amp;</span>sc,<span style="color:#008900">0x90</span>,<span style="color:#ec0000">sizeof</span>(shellcode));
+</span></span><span style="display:flex;"><span>    DWORD oldp;
+</span></span><span style="display:flex;"><span>    VirtualProtect(<span style="color:#ec0000">&amp;</span>sc,<span style="color:#ec0000">sizeof</span>(shellcode),PAGE_EXECUTE_READWRITE,<span style="color:#ec0000">&amp;</span>oldp);
+</span></span><span style="display:flex;"><span>    sc.farjmp1 <span style="color:#ec0000">=</span> <span style="color:#008900">0xEA</span>;sc.prefix1 <span style="color:#ec0000">=</span> <span style="color:#008900">0x33</span>;
+</span></span><span style="display:flex;"><span>    sc.address1 <span style="color:#ec0000">=</span> (DWORD)<span style="color:#ec0000">&amp;</span>sc.pushebp;
+</span></span><span style="display:flex;"><span>    sc.pushebp[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x55</span>;sc.pushebp[<span style="color:#008900">1</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x48</span>;sc.pushebp[<span style="color:#008900">2</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x8B</span>;sc.pushebp[<span style="color:#008900">3</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0xEC</span>;
+</span></span><span style="display:flex;"><span>    sc.pushebp[<span style="color:#008900">4</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x48</span>;sc.pushebp[<span style="color:#008900">5</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x81</span>;sc.pushebp[<span style="color:#008900">6</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0xEC</span>;sc.pushebp[<span style="color:#008900">7</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x00</span>;
+</span></span><span style="display:flex;"><span>    sc.pushebp[<span style="color:#008900">8</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x01</span>;sc.pushebp[<span style="color:#008900">9</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x00</span>;sc.pushebp[<span style="color:#008900">10</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x00</span>;
+</span></span><span style="display:flex;"><span>    sc.popebp[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x48</span>;sc.popebp[<span style="color:#008900">1</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x8B</span>;sc.popebp[<span style="color:#008900">2</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0xE5</span>;sc.popebp[<span style="color:#008900">3</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x5D</span>;
+</span></span><span style="display:flex;"><span>    sc.param12[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x48</span>;sc.param12[<span style="color:#008900">1</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x33</span>;sc.param12[<span style="color:#008900">2</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0xC9</span>; 
+</span></span><span style="display:flex;"><span>    sc.param12[<span style="color:#008900">3</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x48</span>;sc.param12[<span style="color:#008900">4</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x33</span>;sc.param12[<span style="color:#008900">5</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0xD2</span>;
+</span></span><span style="display:flex;"><span>    sc.movr8[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x49</span>;sc.movr8[<span style="color:#008900">1</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0xC7</span>;sc.movr8[<span style="color:#008900">2</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0xC0</span>;
+</span></span><span style="display:flex;"><span>    sc.movr9[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x49</span>;sc.movr9[<span style="color:#008900">1</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0xC7</span>;sc.movr9[<span style="color:#008900">2</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0xC1</span>;
+</span></span><span style="display:flex;"><span>    sc.r8 <span style="color:#ec0000">=</span> (DWORD)<span style="color:#ec0000">&amp;</span>dllpath;sc.r9 <span style="color:#ec0000">=</span> (DWORD)<span style="color:#ec0000">&amp;</span>sc.baseaddress;
+</span></span><span style="display:flex;"><span>    sc.call[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0xFF</span>;sc.call[<span style="color:#008900">1</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x14</span>;sc.call[<span style="color:#008900">2</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x25</span>;
+</span></span><span style="display:flex;"><span>    sc.ldrloaddll <span style="color:#ec0000">=</span> (DWORD)<span style="color:#ec0000">&amp;</span>LdrLoadDll64Addr;
+</span></span><span style="display:flex;"><span>    sc.farjmp2[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0xFF</span>;sc.farjmp2[<span style="color:#008900">1</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x2C</span>;sc.farjmp2[<span style="color:#008900">2</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0x25</span>;
+</span></span><span style="display:flex;"><span>    sc.prefix2 <span style="color:#ec0000">=</span> <span style="color:#008900">0x23</span>;
+</span></span><span style="display:flex;"><span>    sc.address2 <span style="color:#ec0000">=</span> (DWORD)<span style="color:#ec0000">&amp;</span>sc.address3;
+</span></span><span style="display:flex;"><span>    sc.address3 <span style="color:#ec0000">=</span> (DWORD)<span style="color:#ec0000">&amp;</span>sc.movretval;
+</span></span><span style="display:flex;"><span>    sc.movretval <span style="color:#ec0000">=</span> <span style="color:#008900">0xA3</span>;
+</span></span><span style="display:flex;"><span>    sc.address4 <span style="color:#ec0000">=</span> (DWORD)<span style="color:#ec0000">&amp;</span>sc.retval;
+</span></span><span style="display:flex;"><span>    sc.ret <span style="color:#ec0000">=</span> <span style="color:#008900">0xC3</span>;
+</span></span><span style="display:flex;"><span>    sc.originebp <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>    sc.retval <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>    sc.baseaddress <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>    _asm {<span style="color:#5f5fff">int</span> <span style="color:#008900">3</span>};
+</span></span><span style="display:flex;"><span>    ((<span style="color:#5f5fff">void</span>(<span style="color:#ec0000">*</span>)())<span style="color:#ec0000">&amp;</span>sc)();
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="结论">结论</h2>
+<p>终极解决方案：WOW64EXT<br>
+<a href="https://github.com/rwfpl/rewolf-wow64ext">https://github.com/rwfpl/rewolf-wow64ext</a><br>
+<a href="http://blog.rewolf.pl/blog/?p=757">http://blog.rewolf.pl/blog/?p=757</a></p>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150709_windbg_proto/">
+                        Windbg内核调试协议分析
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150809_windbg_k/">
+                        Windbg K命令分析
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

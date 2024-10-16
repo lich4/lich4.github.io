@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    动态注入并执行Android代码到进程 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/android_posts/20170102_java_inject/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/android_posts/">Android_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/android_posts/20170102_java_inject/">动态注入并执行Android代码到进程</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">动态注入并执行Android代码到进程</h1>
+    
+    <p class="single-summary">动态注入并执行Android代码到进程</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2017-01-02T00:00:00&#43;00:00">January 2, 2017</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E6%B3%A8%E5%85%A5/">#注入</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#代码">代码</a></li>
+    <li><a href="#结论">结论</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="背景">背景</h2>
+<p>  网上可以见到很多帖子是如何注入进程并钩取c层api的例子，而动态的让目标进程加载一个dex并执行这个dex却没看到，c层的注入很简单，可以参考adbi，ptrace进去修改当前指令指针寄存器，构造一个dlopen的指令并调用，类似于win上getcontext修改eip， java层稍复杂一些，加载dex-&gt;解析dex-&gt;查找目标类-&gt;调用函数,下面是测试用例,我们的目标是打log</p>
+<h2 id="代码">代码</h2>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>import android.util.Log;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">public</span> <span style="color:#ec0000">class</span> <span style="color:#5f5fff">injectjava</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">static</span> <span style="color:#5f5fff">void</span> <span style="color:#5f5fff">initialize</span>(){
+</span></span><span style="display:flex;"><span>        Log.i(<span style="color:#008900">&#34;INJECTJAVA&#34;</span>,<span style="color:#008900">&#34;injectava called&#34;</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>#define LOGI(...)  __android_log_print(ANDROID_LOG_ERROR, &#34;INJECTJAVA&#34;, __VA_ARGS__)
+</span></span><span style="display:flex;"><span>#define DEXNAME &#34;/data/local/tmp/inject.dex&#34;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">void</span> Object;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">void</span> ClassObject;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">void</span> Thread;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">uint8_t</span> u1;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">uint32_t</span> u4;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> <span style="color:#5f5fff">JNIEnvExt</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">const</span> <span style="color:#ec0000">struct</span> <span style="color:#5f5fff">JNINativeInterface</span><span style="color:#ec0000">*</span> funcTable;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">const</span> <span style="color:#ec0000">struct</span> <span style="color:#5f5fff">JNINativeInterface</span><span style="color:#ec0000">*</span> baseFuncTable;
+</span></span><span style="display:flex;"><span>    u4      envThreadId;
+</span></span><span style="display:flex;"><span>    Thread<span style="color:#ec0000">*</span> self;
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">void</span> DexOptHeader;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">void</span> DexStringId;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">void</span> DexTypeId;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">void</span> DexFieldId;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">void</span> DexMethodId;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">void</span> DexProtoId;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">void</span> DexLink;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">void</span> DexClassLookup;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> <span style="color:#5f5fff">DexHeader</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    u1  magic[<span style="color:#008900">8</span>];           /* includes version number */
+</span></span><span style="display:flex;"><span>    u4  checksum;           /* adler32 checksum */
+</span></span><span style="display:flex;"><span>    u1  signature[<span style="color:#008900">20</span>];       /* SHA-1 hash */
+</span></span><span style="display:flex;"><span>    u4  fileSize;           /* length of entire file */
+</span></span><span style="display:flex;"><span>    u4  headerSize;         /* offset to start of next section */
+</span></span><span style="display:flex;"><span>    u4  endianTag;
+</span></span><span style="display:flex;"><span>    u4  linkSize;
+</span></span><span style="display:flex;"><span>    u4  linkOff;
+</span></span><span style="display:flex;"><span>    u4  mapOff;
+</span></span><span style="display:flex;"><span>    u4  stringIdsSize;
+</span></span><span style="display:flex;"><span>    u4  stringIdsOff;
+</span></span><span style="display:flex;"><span>    u4  typeIdsSize;
+</span></span><span style="display:flex;"><span>    u4  typeIdsOff;
+</span></span><span style="display:flex;"><span>    u4  protoIdsSize;
+</span></span><span style="display:flex;"><span>    u4  protoIdsOff;
+</span></span><span style="display:flex;"><span>    u4  fieldIdsSize;
+</span></span><span style="display:flex;"><span>    u4  fieldIdsOff;
+</span></span><span style="display:flex;"><span>    u4  methodIdsSize;
+</span></span><span style="display:flex;"><span>    u4  methodIdsOff;
+</span></span><span style="display:flex;"><span>    u4  classDefsSize;
+</span></span><span style="display:flex;"><span>    u4  classDefsOff;
+</span></span><span style="display:flex;"><span>    u4  dataSize;
+</span></span><span style="display:flex;"><span>    u4  dataOff;
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> <span style="color:#5f5fff">DexClassDef</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    u4  classIdx;           /* index into typeIds for this class */
+</span></span><span style="display:flex;"><span>    u4  accessFlags;
+</span></span><span style="display:flex;"><span>    u4  superclassIdx;      /* index into typeIds for superclass */
+</span></span><span style="display:flex;"><span>    u4  interfacesOff;      /* file offset to DexTypeList */
+</span></span><span style="display:flex;"><span>    u4  sourceFileIdx;      /* index into stringIds for source file name */
+</span></span><span style="display:flex;"><span>    u4  annotationsOff;     /* file offset to annotations_directory_item */
+</span></span><span style="display:flex;"><span>    u4  classDataOff;       /* file offset to class_data_item */
+</span></span><span style="display:flex;"><span>    u4  staticValuesOff;    /* file offset to DexEncodedArray */
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> <span style="color:#5f5fff">DexFile</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    DexOptHeader <span style="color:#ec0000">*</span>pOptHeader;
+</span></span><span style="display:flex;"><span>    DexHeader <span style="color:#ec0000">*</span>pHeader;
+</span></span><span style="display:flex;"><span>    DexStringId <span style="color:#ec0000">*</span>pStringIds;
+</span></span><span style="display:flex;"><span>    DexTypeId <span style="color:#ec0000">*</span>pTypeIds;
+</span></span><span style="display:flex;"><span>    DexFieldId <span style="color:#ec0000">*</span>pFieldIds;
+</span></span><span style="display:flex;"><span>    DexMethodId <span style="color:#ec0000">*</span>pMethodIds;
+</span></span><span style="display:flex;"><span>    DexProtoId <span style="color:#ec0000">*</span>pProtoIds;
+</span></span><span style="display:flex;"><span>    DexClassDef <span style="color:#ec0000">*</span>pClassDefs;
+</span></span><span style="display:flex;"><span>    DexLink <span style="color:#ec0000">*</span>pLinkData;
+</span></span><span style="display:flex;"><span>    DexClassLookup <span style="color:#ec0000">*</span>pClassLookup;
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> <span style="color:#5f5fff">DvmDex</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    DexFile<span style="color:#ec0000">*</span>            pDexFile;
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> (<span style="color:#ec0000">*</span>dvmDexFileOpenPartial)(<span style="color:#ec0000">const</span> <span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span> addr, <span style="color:#5f5fff">int</span> len, DvmDex<span style="color:#ec0000">**</span> ppDvmDex)<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> (<span style="color:#ec0000">*</span>dexSwapAndVerify)(<span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span> addr, <span style="color:#5f5fff">int</span> len)<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>JNIEnv<span style="color:#ec0000">*</span> (<span style="color:#ec0000">*</span>dvmGetJNIEnvForThread)()<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>Object<span style="color:#ec0000">*</span> (<span style="color:#ec0000">*</span>dvmDecodeIndirectRef)(JNIEnv<span style="color:#ec0000">*</span> env, jobject jobj)<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>Object<span style="color:#ec0000">*</span> (<span style="color:#ec0000">*</span>dvmDecodeIndirectRef_)(Thread<span style="color:#ec0000">*</span> self, jobject jobj)<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>ClassObject<span style="color:#ec0000">*</span> (<span style="color:#ec0000">*</span>dvmDefineClass)(DvmDex<span style="color:#ec0000">*</span> pDvmDex, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> descriptor, Object<span style="color:#ec0000">*</span> classLoader)<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>DexClassLookup<span style="color:#ec0000">*</span> (<span style="color:#ec0000">*</span>dexCreateClassLookup)(DexFile<span style="color:#ec0000">*</span> pDexFile)<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">inject</span>()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    /*
+</span></span><span style="display:flex;"><span>     * C层hook
+</span></span><span style="display:flex;"><span>     */
+</span></span><span style="display:flex;"><span>    /*
+</span></span><span style="display:flex;"><span>     * JAVA层hook
+</span></span><span style="display:flex;"><span>     */
+</span></span><span style="display:flex;"><span>    //获取关键函数指针
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">do</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span> hdvm <span style="color:#ec0000">=</span> dlopen(<span style="color:#008900">&#34;libdvm.so&#34;</span>, RTLD_LAZY <span style="color:#ec0000">|</span> RTLD_GLOBAL);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>hdvm)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;libdvm not exist!&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        dvmDexFileOpenPartial <span style="color:#ec0000">=</span> (typeof(dvmDexFileOpenPartial))dlsym(hdvm, <span style="color:#008900">&#34;dvmDexFileOpenPartial&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>dvmDexFileOpenPartial)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            dvmDexFileOpenPartial <span style="color:#ec0000">=</span> (typeof(dvmDexFileOpenPartial))dlsym(hdvm, <span style="color:#008900">&#34;_Z21dvmDexFileOpenPartialPKviPP6DvmDex&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>dvmDexFileOpenPartial)
+</span></span><span style="display:flex;"><span>                LOGI(<span style="color:#008900">&#34;dvmDexFileOpenPartial not exist!&#34;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        dexSwapAndVerify <span style="color:#ec0000">=</span> (typeof(dexSwapAndVerify))dlsym(hdvm, <span style="color:#008900">&#34;dexSwapAndVerify&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>dexSwapAndVerify)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            dexSwapAndVerify <span style="color:#ec0000">=</span> (typeof(dexSwapAndVerify))dlsym(hdvm, <span style="color:#008900">&#34;_Z16dexSwapAndVerifyPhi&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>dexSwapAndVerify)
+</span></span><span style="display:flex;"><span>                LOGI(<span style="color:#008900">&#34;dexSwapAndVerify not exist!&#34;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        dvmGetJNIEnvForThread <span style="color:#ec0000">=</span> (typeof(dvmGetJNIEnvForThread))dlsym(hdvm, <span style="color:#008900">&#34;dvmGetJNIEnvForThread&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>dvmGetJNIEnvForThread)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            dvmGetJNIEnvForThread <span style="color:#ec0000">=</span> (typeof(dvmGetJNIEnvForThread))dlsym(hdvm, <span style="color:#008900">&#34;_Z21dvmGetJNIEnvForThreadv&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>dvmGetJNIEnvForThread)
+</span></span><span style="display:flex;"><span>                LOGI(<span style="color:#008900">&#34;dvmGetJNIEnvForThread not exist!&#34;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        dvmDecodeIndirectRef <span style="color:#ec0000">=</span> (typeof(dvmDecodeIndirectRef))dlsym(hdvm, <span style="color:#008900">&#34;dvmDecodeIndirectRef&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>dvmDecodeIndirectRef)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            dvmDecodeIndirectRef <span style="color:#ec0000">=</span> (typeof(dvmDecodeIndirectRef))dlsym(hdvm, <span style="color:#008900">&#34;_Z20dvmDecodeIndirectRefP7_JNIEnvP8_jobject&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>dvmDecodeIndirectRef)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                dvmDecodeIndirectRef_ <span style="color:#ec0000">=</span> (typeof(dvmDecodeIndirectRef_))dlsym(hdvm, <span style="color:#008900">&#34;_Z20dvmDecodeIndirectRefP6ThreadP8_jobject&#34;</span>);
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>dvmDecodeIndirectRef_)
+</span></span><span style="display:flex;"><span>                    LOGI(<span style="color:#008900">&#34;dvmDecodeIndirectRef_ not exist!&#34;</span>);
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        dvmDefineClass <span style="color:#ec0000">=</span> (typeof(dvmDefineClass))dlsym(hdvm, <span style="color:#008900">&#34;dvmDefineClass&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>dvmDefineClass)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            dvmDefineClass <span style="color:#ec0000">=</span> (typeof(dvmDefineClass))dlsym(hdvm, <span style="color:#008900">&#34;_Z14dvmDefineClassP6DvmDexPKcP6Object&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>dvmDefineClass)
+</span></span><span style="display:flex;"><span>                LOGI(<span style="color:#008900">&#34;dvmDefineClass not exist!&#34;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        dexCreateClassLookup <span style="color:#ec0000">=</span> (typeof(dexCreateClassLookup))dlsym(hdvm, <span style="color:#008900">&#34;dexCreateClassLookup&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>dexCreateClassLookup)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            dexCreateClassLookup <span style="color:#ec0000">=</span> (typeof(dexCreateClassLookup))dlsym(hdvm, <span style="color:#008900">&#34;_Z20dexCreateClassLookupP7DexFile&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>dexCreateClassLookup)
+</span></span><span style="display:flex;"><span>                LOGI(<span style="color:#008900">&#34;dexCreateClassLookup not exist!&#34;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>dvmDexFileOpenPartial <span style="color:#ec0000">||</span> <span style="color:#ec0000">!</span>dexSwapAndVerify <span style="color:#ec0000">||</span> <span style="color:#ec0000">!</span>dvmGetJNIEnvForThread <span style="color:#ec0000">||</span> <span style="color:#ec0000">!</span>dvmDefineClass <span style="color:#ec0000">||</span> <span style="color:#ec0000">!</span>dexCreateClassLookup <span style="color:#ec0000">||</span> (<span style="color:#ec0000">!</span>dvmDecodeIndirectRef <span style="color:#ec0000">&amp;&amp;</span> <span style="color:#ec0000">!</span>dvmDecodeIndirectRef_))
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        LOGI(<span style="color:#008900">&#34;InitOk&#34;</span>);
+</span></span><span style="display:flex;"><span>        //读取dex以便动态加载
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span> dexdata <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> dexlen;
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> dexfd <span style="color:#ec0000">=</span> open(DEXNAME, O_RDONLY);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(dexfd <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;can&#39;t open inject.dex!&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">struct</span> <span style="color:#5f5fff">stat</span> st <span style="color:#ec0000">=</span> {<span style="color:#008900">0</span>};
+</span></span><span style="display:flex;"><span>        fstat(dexfd , <span style="color:#ec0000">&amp;</span>st);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(st.st_size)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            dexlen <span style="color:#ec0000">=</span> st.st_size;
+</span></span><span style="display:flex;"><span>            dexdata <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">char</span><span style="color:#ec0000">*</span>)malloc(st.st_size);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(dexdata)
+</span></span><span style="display:flex;"><span>                read(dexfd, dexdata, st.st_size);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        close(dexfd);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>dexdata)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;read inject.dex fail!&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> result;
+</span></span><span style="display:flex;"><span>        DvmDex<span style="color:#ec0000">*</span> dvmDex <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        JNIEnv<span style="color:#ec0000">*</span> env <span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        jclass java_lang_Class <span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        jmethodID java_lang_Class_forName <span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        jclass java_lang_ClassLoader <span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        jmethodID java_lang_ClassLoader_getSystemClassLoader <span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        jobject jSystemClassLoader <span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        Object<span style="color:#ec0000">*</span> SystemClassLoader <span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        jstring com_injectjava_str <span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        jclass com_injectjava <span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        jmethodID com_injectjava_initialize <span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        DexFile<span style="color:#ec0000">*</span> pDexFile <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> csize,i;
+</span></span><span style="display:flex;"><span>        dexSwapAndVerify(dexdata, dexlen);
+</span></span><span style="display:flex;"><span>        result <span style="color:#ec0000">=</span> dvmDexFileOpenPartial(dexdata, dexlen, <span style="color:#ec0000">&amp;</span>dvmDex);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(result <span style="color:#ec0000">!=</span> <span style="color:#008900">0</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;dvmDexFileOpenPartial fail!&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">goto</span> END1;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        env <span style="color:#ec0000">=</span> dvmGetJNIEnvForThread();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>env)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;dvmGetJNIEnvForThread fail!&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">goto</span> END1;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        java_lang_Class <span style="color:#ec0000">=</span> env<span style="color:#ec0000">-&gt;</span>FindClass(<span style="color:#008900">&#34;java/lang/Class&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>java_lang_Class)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;java_lang_Class null!&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">goto</span> END1;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        java_lang_Class_forName <span style="color:#ec0000">=</span> env<span style="color:#ec0000">-&gt;</span>GetStaticMethodID(java_lang_Class, <span style="color:#008900">&#34;forName&#34;</span>, <span style="color:#008900">&#34;(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>java_lang_Class_forName)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;java_lang_Class_forName null!&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">goto</span> END1;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        java_lang_ClassLoader <span style="color:#ec0000">=</span> env<span style="color:#ec0000">-&gt;</span>FindClass(<span style="color:#008900">&#34;java/lang/ClassLoader&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>java_lang_ClassLoader)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;java_lang_ClassLoader null!&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">goto</span> END1;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        java_lang_ClassLoader_getSystemClassLoader <span style="color:#ec0000">=</span> env<span style="color:#ec0000">-&gt;</span>GetStaticMethodID(java_lang_ClassLoader, <span style="color:#008900">&#34;getSystemClassLoader&#34;</span>, <span style="color:#008900">&#34;()Ljava/lang/ClassLoader;&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>java_lang_ClassLoader_getSystemClassLoader)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;java_lang_ClassLoader_getSystemClassLoader null!&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">goto</span> END1;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        jSystemClassLoader <span style="color:#ec0000">=</span> env<span style="color:#ec0000">-&gt;</span>CallStaticObjectMethod(java_lang_ClassLoader, java_lang_ClassLoader_getSystemClassLoader, <span style="color:#008900">&#34;()Ljava/lang/ClassLoader;&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>jSystemClassLoader)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;jSystemClassLoader null!&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">goto</span> END1;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        LOGI(<span style="color:#008900">&#34;InitOk1&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(dvmDecodeIndirectRef)
+</span></span><span style="display:flex;"><span>            SystemClassLoader <span style="color:#ec0000">=</span> dvmDecodeIndirectRef(env, jSystemClassLoader);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>            SystemClassLoader <span style="color:#ec0000">=</span> dvmDecodeIndirectRef_(((JNIEnvExt<span style="color:#ec0000">*</span>)env)<span style="color:#ec0000">-&gt;</span>self, jSystemClassLoader);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>SystemClassLoader)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;SystemClassLoader null!&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">goto</span> END1;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        pDexFile <span style="color:#ec0000">=</span> dvmDex<span style="color:#ec0000">-&gt;</span>pDexFile;
+</span></span><span style="display:flex;"><span>        pDexFile<span style="color:#ec0000">-&gt;</span>pClassLookup <span style="color:#ec0000">=</span> dexCreateClassLookup(dvmDex<span style="color:#ec0000">-&gt;</span>pDexFile);
+</span></span><span style="display:flex;"><span>        csize <span style="color:#ec0000">=</span> pDexFile<span style="color:#ec0000">-&gt;</span>pHeader<span style="color:#ec0000">-&gt;</span>classDefsSize;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span>(i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>csize;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            pDexFile<span style="color:#ec0000">-&gt;</span>pClassDefs[i].accessFlags <span style="color:#ec0000">|</span> <span style="color:#008900">0x10000</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        dvmDefineClass(dvmDex, <span style="color:#008900">&#34;Lcom/injectjava;&#34;</span>, SystemClassLoader);
+</span></span><span style="display:flex;"><span>        com_injectjava_str <span style="color:#ec0000">=</span> env<span style="color:#ec0000">-&gt;</span>NewStringUTF(<span style="color:#008900">&#34;com.injectjava&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>com_injectjava_str)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;com_injectjava null!&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">goto</span> END1;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        com_injectjava <span style="color:#ec0000">=</span> (jclass)env<span style="color:#ec0000">-&gt;</span>CallStaticObjectMethod(java_lang_Class, java_lang_Class_forName, com_injectjava_str, <span style="color:#ec0000">true</span>, jSystemClassLoader);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>com_injectjava)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;com_injectjava null!&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">goto</span> END1;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        com_injectjava_initialize <span style="color:#ec0000">=</span> env<span style="color:#ec0000">-&gt;</span>GetStaticMethodID(com_injectjava, <span style="color:#008900">&#34;initialize&#34;</span>, <span style="color:#008900">&#34;()V&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>com_injectjava_initialize)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            LOGI(<span style="color:#008900">&#34;com_injectjava_initialize null!&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">goto</span> END1;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        env<span style="color:#ec0000">-&gt;</span>CallStaticVoidMethod(com_injectjava, com_injectjava_initialize);
+</span></span><span style="display:flex;"><span>        LOGI(<span style="color:#008900">&#34;InitOk2&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">END1</span>:
+</span></span><span style="display:flex;"><span>        free(dexdata);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">while</span>(<span style="color:#ec0000">false</span>);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="结论">结论</h2>
+<p>  将要执行的dex放到/data/local/tmp/inject.dex即可</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">06-03 15:47:34.984 16197-16197/com.example.hellojni E/INJECTJAVA: InitOk
+06-03 15:47:35.074 16197-16197/com.example.hellojni E/INJECTJAVA: InitOk1
+06-03 15:54:08.304 16197-16197/com.example.hellojni I/INJECTJAVA: injectava called
+</code></pre><p>  <em><strong>这里只是做实验验证Java代码的注入原理分析，Frida注入框架是这类动态注入的最佳实践框架</strong></em></p>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/android_posts/20170101_android_newad/">
+                        Android新攻防技术研究与应用
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/android_posts/20170103_dexmaker/">
+                        动态生成dalvik字节码——dexmaker
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

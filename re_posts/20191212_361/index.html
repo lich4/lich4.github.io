@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    361改机改串一键新机原理分析 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/re_posts/20191212_361/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/re_posts/">Re_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/re_posts/20191212_361/">361改机改串一键新机原理分析</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">361改机改串一键新机原理分析</h1>
+    
+    <p class="single-summary">361改机改串一键新机原理分析</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2019-12-12T00:00:00&#43;00:00">December 12, 2019</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E8%B6%8A%E7%8B%B1%E6%A3%80%E6%B5%8B/">#越狱检测</a>
+    </span>
+    
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E6%94%B9%E6%9C%BA/">#改机</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#简介">简介</a>
+      <ul>
+        <li><a href="#361伪装了哪些参数">361伪装了哪些参数</a></li>
+      </ul>
+    </li>
+    <li><a href="#分析">分析</a>
+      <ul>
+        <li><a href="#第一阶段">第一阶段</a></li>
+        <li><a href="#第二阶段">第二阶段</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="简介">简介</h2>
+<p>  361软件套装，包括361一键新机(MultiAccount)以及360虚拟定位(FakeLocation)两个独立的英文界面App，下面分别来介绍：</p>
+<ul>
+<li>MultiAccount Master：最强大的傻瓜式改串软件，提供一键新机、全息备份、精准还原等功能。首创以App为中心的操作方式；无需任何参数配置；支持应用多开；自动更换IP；支持网络代理配置访问；模拟2G/3G/4G/Wifi；各种App组合随意搭配；支持分辨率调节。</li>
+<li>Fake Location Pro：针对任意位置进行定点、定区域、定路线的精准营销(拓展微信、QQ，微博粉丝，发放推广信息)。提供经典虚拟定位、随机扫街、路径扫街、模拟导航四种虚拟定位模式。支持微信、微博、QQ、考勤机。微信营销神器、模拟扫街神器、防查岗神器、模拟考勤打卡神器。</li>
+</ul>
+<h3 id="361伪装了哪些参数">361伪装了哪些参数</h3>
+<ul>
+<li>IDFA</li>
+<li>IDFV</li>
+<li>用户名</li>
+<li>系统版本</li>
+<li>设备型号，固件版本</li>
+<li>User-Agent</li>
+<li>移动网络运营商信息</li>
+<li>地理位置</li>
+<li>uname / sysctl等参数</li>
+<li>WIFI SSID BSSID</li>
+<li>IMEI</li>
+<li>序列号</li>
+<li>MAC地址</li>
+</ul>
+<p>361的Cydia源</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>apt.from2.vip               360     2.6.2
+</span></span><span style="display:flex;"><span>apt.from2.vip               361     2.0.2
+</span></span><span style="display:flex;"><span>www.x360y361.cn             360     2.6.2
+</span></span><span style="display:flex;"><span>www.x360y361.cn             361     2.0.2
+</span></span></code></pre></div><h2 id="分析">分析</h2>
+<p>这里只做学习讨论改机原理及361自身反逆向机制。361安装后，有如下文件：</p>
+<ul>
+<li>/Applications/RST.app 主程序，用于生成改机参数</li>
+<li>/Applications/location360Pro.app 主程序，用于生成位置参数</li>
+<li>/Library/MobileSubstrate/DynamicLibraries/rstweak.{dylib,plist} 该tweak通过hook一些可以获取系统属性和app属性的C函数和ObjC函数实现的修改app参数</li>
+<li>/Library/MobileSubstrate/DynamicLibraries/GPSTravellerTweakVIP.{dylib,plist} 该tweak通过hook一些系统服务中的函数实现位置修改</li>
+</ul>
+<h3 id="第一阶段">第一阶段</h3>
+<p>361/360系列工具和AWZ/ALS系列工具在分析时有如下区别：</p>
+<ul>
+<li>代码混淆
+AWZ/ALS使用Hikari工具链做了各种保护，361/360则自己内联了很多无用代码。后者更容易分析，只需要在IDA中使用Keypatch把指令全Nop掉就可以分析。然而AWZ/ALS对dylib没有做任何保护，很容易根据它的原理自己实现一套软件，而361/361对要Hook的函数名都做了加密。</li>
+<li>反调试
+AWZ/ALS使用了多种方式检测调试，361/360则无</li>
+<li>网络通信
+AWZ/ALS的特点是，尽可能不调用系统函数，比如在生成json串的时候是自己拼凑的，最终body再一次加密，同时使用底层socket函数做授权验证；361/360的保护相对较弱，只是对json的各个字段进行一次加密，最终使用Objective-C函数进行网络通信，很容易用fiddler定位。然而361/360也不是一无是处的，他的授权验证同时存在于RST.app和rstweak.dylib中，而AWZ/ALS我们只需要搞定ALS.app就算破解了。</li>
+<li>后台服务
+AWZ/ALS使用后台服务(DHPDaemon)来通过notify通信隐藏一些操作，同时daemon也有授权验证，361/360则无</li>
+</ul>
+<p>由于361/360系列工具调用Objective-C函数进行网络请求，因此切入点就是Objective-C的几个http网络通信函数。通过跟踪，可以解密得到如下字段，写tweak进行修改，即可成功破解App：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>&#34;xzd=d186b90f336a56b7f8d8a6c56b5983f7&amp;lalala=1&amp;la=2019-11-29 16:55:16&#34;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>lalala      是否激活
+</span></span><span style="display:flex;"><span>la          过期时间
+</span></span><span style="display:flex;"><span>enabled     是否激活
+</span></span><span style="display:flex;"><span>endDate     过期时间
+</span></span><span style="display:flex;"><span>s           过期时间
+</span></span><span style="display:flex;"><span>dy          过期时间
+</span></span><span style="display:flex;"><span>dr          过期时间
+</span></span></code></pre></div><p>最后别忘了，两个dylib中也存在类似的授权验证，否则改机是没有效果的。至于怎样验证修改了哪些参数，可以参考我写的另一篇文章ALS分析。</p>
+<h3 id="第二阶段">第二阶段</h3>
+<p>通过跟踪可知，361修改了以下函数(比AWZ/ALS更全一些)：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>sysctl                                  修改设备名，设备型号，iOS版本等
+</span></span><span style="display:flex;"><span>sysctlbyname                            修改设备名，设备型号，iOS版本等
+</span></span><span style="display:flex;"><span>uname                                   修改设备名，设备型号，iOS版本等
+</span></span><span style="display:flex;"><span>SCNetworkReachabilityGetFlags           修改网络类型，WIFI/2G/3G/4G
+</span></span><span style="display:flex;"><span>CNCopyCurrentNetworkInfo                修改WIFI名和BSSID
+</span></span><span style="display:flex;"><span>IORegistryEntrySearchCFProperty         修改设备串号，IMEI，序列号，mac地址，芯片ID等等
+</span></span><span style="display:flex;"><span>IORegistryEntryCreateCFProperty         修改设备串号，IMEI，序列号，mac地址，芯片ID等等
+</span></span><span style="display:flex;"><span>_CTServerConnectionCopyMobileIdentity   修改IMEI
+</span></span><span style="display:flex;"><span>UIDevice                                修改设备型号，iOS版本，设备名，IDFV
+</span></span><span style="display:flex;"><span>ASIdentifierManager                     修改IDFA
+</span></span><span style="display:flex;"><span>CTCarrier                               修改运营商信息，包括运营商名，MCC，MNC，ICC
+</span></span><span style="display:flex;"><span>NSProcessInfo                           修改启动时间
+</span></span><span style="display:flex;"><span>MSCopyAnswer                            修改设备名，设备型号，设备标识，序列号，Wifi地址，DieId，等许多内部参数
+</span></span><span style="display:flex;"><span>AADeviceInfo                            修改udid，apnsToken，UserAgent，序列号，wifi的mac地址，iOS版本，设备名
+</span></span><span style="display:flex;"><span>getifaddrs                              修改wifi的内网ip和蜂窝网内网ip
+</span></span><span style="display:flex;"><span>CLLocationManager                       修改位置参数，包括经纬度，海拔，速度等
+</span></span><span style="display:flex;"><span>MKUserLocation                          修改位置参数，包括经纬度，海拔，速度等
+</span></span><span style="display:flex;"><span>BSLaunchdUtilities                      屏蔽微信检测
+</span></span><span style="display:flex;"><span>NMSSHSession                            屏蔽越狱检测(ssh)
+</span></span><span style="display:flex;"><span>DeviceInfo                              屏蔽越狱检测
+</span></span><span style="display:flex;"><span>NSFileManager                           屏蔽越狱检测
+</span></span><span style="display:flex;"><span>NSString                                屏蔽越狱检测
+</span></span><span style="display:flex;"><span>NSData                                  屏蔽越狱检测
+</span></span></code></pre></div>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/re_posts/20191201_douyin_jb_detect/">
+                        抖音越狱检测深度分析
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/re_posts/20200516_zorro/">
+                        佐罗(Zorro)改机改串一键新机原理分析
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

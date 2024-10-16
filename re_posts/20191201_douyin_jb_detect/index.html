@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    抖音越狱检测深度分析 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/re_posts/20191201_douyin_jb_detect/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/re_posts/">Re_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/re_posts/20191201_douyin_jb_detect/">抖音越狱检测深度分析</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">抖音越狱检测深度分析</h1>
+    
+    <p class="single-summary">抖音越狱检测深度分析</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2019-12-01T00:00:00&#43;00:00">December 1, 2019</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E8%B6%8A%E7%8B%B1%E6%A3%80%E6%B5%8B/">#越狱检测</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#准备工作">准备工作</a>
+      <ul>
+        <li><a href="#工具">工具</a></li>
+        <li><a href="#脱壳">脱壳</a></li>
+      </ul>
+    </li>
+    <li><a href="#越狱检测分析">越狱检测分析</a>
+      <ul>
+        <li><a href="#第一阶段-初步分析">第一阶段 初步分析</a></li>
+        <li><a href="#第二阶段-深度分析">第二阶段 深度分析</a></li>
+      </ul>
+    </li>
+    <li><a href="#系统调用检测">系统调用检测</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="准备工作">准备工作</h2>
+<h3 id="工具">工具</h3>
+<p>  在本文中，用到的工具有IDA Pro, Frida, TheOS，文本编辑器(如VSCode)</p>
+<h3 id="脱壳">脱壳</h3>
+<p>  首先我们进行静态分析，第一步要脱壳，市面上常见的工具有dump-decrypted/frida-ios-dump/clutch等工具。使用frida查看App加载了哪些自带动态库，并对这些模块进行脱壳</p>
+<pre tabindex="0"><code>Process.enumerateModulesSync().forEach(function(e){if(e.path.indexOf(&#39;.app&#39;)!=-1){console.log(e.path)}})
+.../Aweme.app/Aweme
+.../Aweme.app/Frameworks/AgoraRtcEngineKit.framework/AgoraRtcEngineKit
+.../Frameworks/ByteRtcEngineKit.framework/ByteRtcEngineKit
+.../Aweme.app/Frameworks/AwemeDylib.framework/AwemeDylib
+</code></pre><h2 id="越狱检测分析">越狱检测分析</h2>
+<p>  由于抖音二进制相当大，单单IDA分析便需要几十分钟，而越狱逻辑可能隐藏在任何地方，而不限于在进程初始化时(mod_init_func)，如果在浩如烟海的代码里去慢慢分析是不可能的，下面就使用最快的思路来解决这个问题</p>
+<h3 id="第一阶段-初步分析">第一阶段 初步分析</h3>
+<p>  首先找到比较明显的痕迹，例如函数名，字符串，http请求body中的关键字(例如jail/break/jeil/jb/cydia/substrate/apt之类的)，函数名和字符串可在IDA分析后进行搜索，而http请求可以通过fiddler等抓包工具进行分析：</p>
+<pre tabindex="0"><code>相关的函数：
+[ANSMetadata computeIsJailbroken];
+[ASSStaticInfoCollector checkJB)];
+[ASSStaticInfoCollectorOpen checkJB]
+[AWECloudJailBreakUtility jailbroken];
+[AWEYAMInfoHelper isJailBroken]
+[BDADeviceHelper isJailBroken];
+[BDLogDeviceHelper isJailBroken]
+[IESLiveDeviceInfo isJailBroken]
+[HMDCrashBinaryImage isJailBroken];
+[HMDInfo isJailBroken]
+[MobClick isJailbroken]
+[TTAdSplashDeviceHelper isJailBroken];
+[TTInstallDeviceHelper isJailBroken]
+[UAConveniece deviceWasJailed];
+[UIDevice btd_isJailBroken]
+[UMANProtocolData isDeviceJailBreak]
+[WXOMTAHelper isJB]
+
+检测逻辑(参考我的另一篇文章&#34;iOS越狱检测研究&#34;)：
+(1)文件系统检测
+/bin/bash
+/Applications/Cydia.app
+/Library/MobileSubstrate/MobileSubstrate.dylib
+/user/Applictations
+/user/Continers/Bundle/Application
+/usr/sbin/sshd
+/etc/apt
+/Applications/RockApp.app,
+/Applications/Icy.app,
+/usr/sbin/sshd,
+/usr/bin/sshd,
+/usr/libexec/sftp-server,
+/Applications/WinterBoard.app,
+/Applications/SBSettings.app,
+/Applications/MxTube.app,
+/Applications/IntelliScreen.app,
+/Library/MobileSubstrate/DynamicLibraries/Veency.plist,
+/Library/MobileSubstrate/DynamicLibraries/LiveClock.plist,
+/private/var/lib/apt,
+/private/var/stash,
+/private/{uuid}可写
+/System/Library/LaunchDaemons/com.ikey.bbot.plist,
+/System/Library/LaunchDaemons/com.saurik.Cydia.Startup.plist,
+/private/var/tmp/cydia.log,
+/private/var/lib/cydia,
+/etc/clutch.conf,
+/var/cache/clutch.plist,
+/etc/clutch_cracked.plist,
+/var/cache/clutch_cracked.plist,
+/var/lib/clutch/overdrive.dylib,
+/var/root/Documents/Cracked/
+/etc/fstab 分区检测
+(2)沙盒完整性检测
+system函数
+(3)环境变量检测
+使用environ检测MobileSubstrate环境变量
+(4)mmap检测
+(5)进程检测
+MobileCydia
+Cydia
+afpd
+(6)schema检测
+cydia://
+</code></pre><h3 id="第二阶段-深度分析">第二阶段 深度分析</h3>
+<p>  上述使用的方式只能找到一些比较肤浅的检测手段，下面来深入挖掘隐藏检测手段。这里我们选择文件系统访问作为切入点，因为越狱检测最基本的方式就是文件系统检测。我们使用frida工具，只需要针对以下系统调用进行跟踪，就可以跟踪出所有可能的函数调用级别的文件操作：
+access,creat,faccessatgetxattr,getxattr,link,listxattr,lstat,open,opendir,readlink,realpath,stat,statfs,symlink <br>
+  这里需要注意的一点是，frida工具虽然方便，但是必须在进程启动后才能附加(启动进程的-n参数在老版本iOS有效，10以上失灵)，这里用到一个小技法是写一个抖音的tweak，在%ctor中延迟几秒以便我们附加。用此方法也可以跟踪启动时刻的网络请求调用，好处多多。根据附录中的脚本跟踪App得到以下结果：</p>
+<pre tabindex="0"><code>0x107b49140 AwemeDylib!YjA2MGM5NGQ3MTI5MjljYTA2Y2Y2Yjc3YzM2ZjAxYzAK
+0x107b69938 AwemeDylib!0x1f19938
+0x107b6e794 AwemeDylib!0x1f1e794
+
+stat /Applications/Cydia.app
+0x107b49150 AwemeDylib!YjA2MGM5NGQ3MTI5MjljYTA2Y2Y2Yjc3YzM2ZjAxYzAK
+0x107b69938 AwemeDylib!0x1f19938
+0x107b6e794 AwemeDylib!0x1f1e794
+
+stat /Library/MobileSubstrate/MobileSubstrate.dylib
+syscall 5
+syscall open /Library/MobileSubstrate/MobileSubstrate.dylib
+0x107b49140 AwemeDylib!YjA2MGM5NGQ3MTI5MjljYTA2Y2Y2Yjc3YzM2ZjAxYzAK
+0x107b69938 AwemeDylib!0x1f19938
+0x107b68c20 AwemeDylib!YzE0NjZkZDJjZWMyYzdhODdkMzNjNjhkYTI2ZmJhNGIK
+
+stat /Applications/Cydia.app
+0x107b49150 AwemeDylib!YjA2MGM5NGQ3MTI5MjljYTA2Y2Y2Yjc3YzM2ZjAxYzAK
+0x107b69938 AwemeDylib!0x1f19938
+0x107b68c20 AwemeDylib!YzE0NjZkZDJjZWMyYzdhODdkMzNjNjhkYTI2ZmJhNGIK
+
+stat /Library/MobileSubstrate/MobileSubstrate.dylib
+syscall open /Library/MobileSubstrate/MobileSubstrate.dylib
+0x107b4f700 AwemeDylib!MmNiMjczYTdiMjAzZjc5ODljZDg5MDBlZGQ3NmZmOTUK
+0x107b68c84 AwemeDylib!YzE0NjZkZDJjZWMyYzdhODdkMzNjNjhkYTI2ZmJhNGIK
+
+stat /Applications/iGameGuardian.app
+0x107b4f800 AwemeDylib!MmNiMjczYTdiMjAzZjc5ODljZDg5MDBlZGQ3NmZmOTUK
+0x107b68c84 AwemeDylib!YzE0NjZkZDJjZWMyYzdhODdkMzNjNjhkYTI2ZmJhNGIK
+
+stat /Applications/GamePlayer.app
+</code></pre><p>  由上面结果的调用栈，分析AwemeDylib中的代码，可以找到若干个经过函数名混淆的函数，其中两个函数长这样：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ec0000">__int64</span> <span style="color:#ec0000">？？？？？</span>()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  v2 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">__ldar</span>((<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>unk_25B617C);
+</span></span><span style="display:flex;"><span>  v27 <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span>)<span style="color:#ec0000">&amp;</span>unk_25B617C;
+</span></span><span style="display:flex;"><span>  v21 <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;stringWithCString:encoding:&#34;</span>;
+</span></span><span style="display:flex;"><span>  v20 <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;defaultManager&#34;</span>;
+</span></span><span style="display:flex;"><span>  v19 <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;fileExistsAtPath:&#34;</span>;
+</span></span><span style="display:flex;"><span>  v3 <span style="color:#ec0000">=</span> <span style="color:#008900">3649499418LL</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">do</span>
+</span></span><span style="display:flex;"><span>  {
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">while</span> ( <span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">while</span> ( <span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span>      {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">while</span> ( <span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">while</span> ( <span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span>          {
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">while</span> ( (<span style="color:#5f5fff">signed</span> <span style="color:#5f5fff">int</span>)v3 <span style="color:#ec0000">&gt;</span> <span style="color:#008900">39081286</span> )
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">if</span> ( (<span style="color:#5f5fff">signed</span> <span style="color:#5f5fff">int</span>)v3 <span style="color:#ec0000">&lt;=</span> <span style="color:#008900">244706462</span> )
+</span></span><span style="display:flex;"><span>              {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> ( (<span style="color:#5f5fff">signed</span> <span style="color:#5f5fff">int</span>)v3 <span style="color:#ec0000">&gt;</span> <span style="color:#008900">126009263</span> )
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                  <span style="color:#ec0000">if</span> ( (_DWORD)v3 <span style="color:#ec0000">==</span> <span style="color:#008900">229581047</span> )
+</span></span><span style="display:flex;"><span>                  {
+</span></span><span style="display:flex;"><span>                    v0 <span style="color:#ec0000">=</span> v30;
+</span></span><span style="display:flex;"><span>                    v3 <span style="color:#ec0000">=</span> <span style="color:#008900">3270936340LL</span>;
+</span></span><span style="display:flex;"><span>                  }
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> ( (_DWORD)v3 <span style="color:#ec0000">==</span> <span style="color:#008900">39081287</span> )
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                  <span style="color:#5f5fff">__stlr</span>(<span style="color:#008900">0</span>, (<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>unk_25B617C);
+</span></span><span style="display:flex;"><span>                  v28 <span style="color:#ec0000">=</span> (Dl_info <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v18;
+</span></span><span style="display:flex;"><span>                  v6 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">__ldar</span>((<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v18);
+</span></span><span style="display:flex;"><span>                  <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>(<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span>)<span style="color:#ec0000">&amp;</span>v18 )
+</span></span><span style="display:flex;"><span>                  {
+</span></span><span style="display:flex;"><span>                    cydialib <span style="color:#ec0000">=</span> <span style="color:#008900">47</span>;              // /Applications/Cydia.app
+</span></span><span style="display:flex;"><span>                    byte_2443F01 <span style="color:#ec0000">=</span> <span style="color:#008900">65</span>;
+</span></span><span style="display:flex;"><span>                    ....
+</span></span><span style="display:flex;"><span>                  }
+</span></span><span style="display:flex;"><span>                  <span style="color:#5f5fff">__stlr</span>(<span style="color:#008900">0</span>, (<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>unk_25B6180);
+</span></span><span style="display:flex;"><span>                  v7 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">objc_msgSend</span>(<span style="color:#ec0000">&amp;</span>OBJC_CLASS___NSString, v21, <span style="color:#ec0000">&amp;</span>cydialib, <span style="color:#008900">4LL</span>);
+</span></span><span style="display:flex;"><span>                  <span style="color:#5f5fff">objc_retainAutoreleasedReturnValue</span>(v7);
+</span></span><span style="display:flex;"><span>                  v8 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">objc_msgSend</span>(<span style="color:#ec0000">&amp;</span>OBJC_CLASS___NSFileManager, v20);
+</span></span><span style="display:flex;"><span>                  v9 <span style="color:#ec0000">=</span> v8;
+</span></span><span style="display:flex;"><span>                  v10 <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>)<span style="color:#5f5fff">objc_retainAutoreleasedReturnValue</span>(v8);
+</span></span><span style="display:flex;"><span>                  v11 <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span>)<span style="color:#5f5fff">objc_msgSend</span>(v10, v19, v7);
+</span></span><span style="display:flex;"><span>                  <span style="color:#5f5fff">objc_release</span>(v9);
+</span></span><span style="display:flex;"><span>                  <span style="color:#ec0000">if</span> ( v11 <span style="color:#ec0000">&amp;</span> <span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span>                    v12 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>                  <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>                    v12 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">access</span>(<span style="color:#ec0000">&amp;</span>cydialib, <span style="color:#008900">0</span>) <span style="color:#ec0000">==</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>                  v31 <span style="color:#ec0000">=</span> <span style="color:#008900">538</span>;
+</span></span><span style="display:flex;"><span>                  <span style="color:#5f5fff">objc_release</span>(v7);
+</span></span><span style="display:flex;"><span>                  <span style="color:#ec0000">if</span> ( v12 )
+</span></span><span style="display:flex;"><span>                    v3 <span style="color:#ec0000">=</span> <span style="color:#008900">4208507086LL</span>;
+</span></span><span style="display:flex;"><span>                  <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>                    v3 <span style="color:#ec0000">=</span> <span style="color:#008900">2699417432LL</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>              }
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> ( (<span style="color:#5f5fff">signed</span> <span style="color:#5f5fff">int</span>)v3 <span style="color:#ec0000">&lt;=</span> <span style="color:#008900">1095875126</span> )
+</span></span><span style="display:flex;"><span>              {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> ( (_DWORD)v3 <span style="color:#ec0000">==</span> <span style="color:#008900">1034641429</span> )
+</span></span><span style="display:flex;"><span>                  v4 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>                  v4 <span style="color:#ec0000">=</span> v1;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> ( (_DWORD)v3 <span style="color:#ec0000">==</span> <span style="color:#008900">1034641429</span> )
+</span></span><span style="display:flex;"><span>                  v5 <span style="color:#ec0000">=</span> <span style="color:#ec0000">-</span><span style="color:#008900">257687223</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>                  v5 <span style="color:#ec0000">=</span> v3;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> ( (_DWORD)v3 <span style="color:#ec0000">==</span> <span style="color:#008900">244706463</span> )
+</span></span><span style="display:flex;"><span>                  v1 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>                  v1 <span style="color:#ec0000">=</span> v4;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> ( (_DWORD)v3 <span style="color:#ec0000">==</span> <span style="color:#008900">244706463</span> )
+</span></span><span style="display:flex;"><span>                  v3 <span style="color:#ec0000">=</span> <span style="color:#008900">4037280073LL</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>                  v3 <span style="color:#ec0000">=</span> v5;
+</span></span><span style="display:flex;"><span>              }
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>              {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">switch</span> ( (_DWORD)v3 )
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                  <span style="color:#ec0000">case</span> <span style="color:#008900">0x4151BA37</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>                    v0 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>                    v3 <span style="color:#ec0000">=</span> <span style="color:#008900">3270936340LL</span>;
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                  <span style="color:#ec0000">case</span> <span style="color:#008900">0x5B3EC3D2</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>                    v29 <span style="color:#ec0000">=</span> v28;
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">if</span> ( <span style="color:#5f5fff">dladdr</span>(<span style="color:#ec0000">&amp;</span>_stat, v28) )
+</span></span><span style="display:flex;"><span>                      v3 <span style="color:#ec0000">=</span> <span style="color:#008900">3416709257LL</span>;
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>                      v3 <span style="color:#ec0000">=</span> <span style="color:#008900">244706463LL</span>;
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                  <span style="color:#ec0000">case</span> <span style="color:#008900">0x60C3A04F</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>                    v23 <span style="color:#ec0000">=</span> <span style="color:#008900">304</span>;
+</span></span><span style="display:flex;"><span>                    v22 <span style="color:#ec0000">=</span> <span style="color:#008900">214</span>;
+</span></span><span style="display:flex;"><span>                    v3 <span style="color:#ec0000">=</span> <span style="color:#008900">1530840018LL</span>;
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>              }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> ( (<span style="color:#5f5fff">signed</span> <span style="color:#5f5fff">int</span>)v3 <span style="color:#ec0000">&gt;</span> <span style="color:#ec0000">-</span><span style="color:#008900">1024030957</span> )
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> ( (<span style="color:#5f5fff">signed</span> <span style="color:#5f5fff">int</span>)v3 <span style="color:#ec0000">&gt;</span> <span style="color:#ec0000">-</span><span style="color:#008900">1595549865</span> )
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">if</span> ( (_DWORD)v3 <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">1595549864</span> )
+</span></span><span style="display:flex;"><span>              {
+</span></span><span style="display:flex;"><span>                v13 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">__ldar</span>((<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> <span style="color:#ec0000">*</span>)v3);
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">__stlr</span>(<span style="color:#008900">0</span>, (<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>unk_25B6184);
+</span></span><span style="display:flex;"><span>                v14 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">objc_msgSend</span>(<span style="color:#ec0000">&amp;</span>OBJC_CLASS___NSFileManager, v20);
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">objc_retainAutoreleasedReturnValue</span>(v14);
+</span></span><span style="display:flex;"><span>                v15 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">objc_msgSend</span>(<span style="color:#ec0000">&amp;</span>OBJC_CLASS___NSString, v21, <span style="color:#ec0000">&amp;</span>byte_2443F20, <span style="color:#008900">4LL</span>);
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">objc_retainAutoreleasedReturnValue</span>(v15);
+</span></span><span style="display:flex;"><span>                v16 <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span>)<span style="color:#5f5fff">objc_msgSend</span>(v14, v19, v15);
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">objc_release</span>(v15);
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">objc_release</span>(v14);
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> ( v16 )
+</span></span><span style="display:flex;"><span>                  v3 <span style="color:#ec0000">=</span> <span style="color:#008900">1095875127LL</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>                  v3 <span style="color:#ec0000">=</span> <span style="color:#008900">1623433295LL</span>;
+</span></span><span style="display:flex;"><span>              }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> ( (_DWORD)v3 <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">1895695304</span> )
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>              libsyskern <span style="color:#ec0000">=</span> <span style="color:#008900">47</span>;                  // /usr/lib/system/libsystem_kernel.dylib
+</span></span><span style="display:flex;"><span>              byte_2443ED1 <span style="color:#ec0000">=</span> <span style="color:#008900">117</span>;
+</span></span><span style="display:flex;"><span>              .....
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> ( (_DWORD)v3 <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">1799416459</span> )
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span><span style="color:#5f5fff">strcmp</span>(v28<span style="color:#ec0000">-&gt;</span>dli_fname, <span style="color:#ec0000">&amp;</span>libsyskern) )
+</span></span><span style="display:flex;"><span>                v3 <span style="color:#ec0000">=</span> <span style="color:#008900">244706463LL</span>;
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>                v3 <span style="color:#ec0000">=</span> <span style="color:#008900">1034641429LL</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>          }
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">if</span> ( (<span style="color:#5f5fff">signed</span> <span style="color:#5f5fff">int</span>)v3 <span style="color:#ec0000">&lt;=</span> <span style="color:#ec0000">-</span><span style="color:#008900">257687224</span> )
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">if</span> ( (_DWORD)v3 <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">257687223</span> )
+</span></span><span style="display:flex;"><span>          {
+</span></span><span style="display:flex;"><span>            v30 <span style="color:#ec0000">=</span> v1 <span style="color:#ec0000">&amp;</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>            v26 <span style="color:#ec0000">=</span> <span style="color:#008900">240</span>;
+</span></span><span style="display:flex;"><span>            v25 <span style="color:#ec0000">=</span> <span style="color:#008900">208</span>;
+</span></span><span style="display:flex;"><span>            v3 <span style="color:#ec0000">=</span> <span style="color:#008900">229581047LL</span>;
+</span></span><span style="display:flex;"><span>          }
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>          {
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> ( (_DWORD)v3 <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">86460210</span> )
+</span></span><span style="display:flex;"><span>              v0 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> ( (_DWORD)v3 <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">86460210</span> )
+</span></span><span style="display:flex;"><span>              v3 <span style="color:#ec0000">=</span> <span style="color:#008900">3270936340LL</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>              v3 <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span>)v3;
+</span></span><span style="display:flex;"><span>          }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> ( (_DWORD)v3 <span style="color:#ec0000">!=</span> <span style="color:#ec0000">-</span><span style="color:#008900">878258039</span> )
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        v24 <span style="color:#ec0000">=</span> <span style="color:#008900">583</span>;
+</span></span><span style="display:flex;"><span>        v3 <span style="color:#ec0000">=</span> <span style="color:#008900">2495550837LL</span>;
+</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> ( (_DWORD)v3 <span style="color:#ec0000">!=</span> <span style="color:#ec0000">-</span><span style="color:#008900">645467878</span> )
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> ( v27 )
+</span></span><span style="display:flex;"><span>        v3 <span style="color:#ec0000">=</span> <span style="color:#008900">39081287LL</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>        v3 <span style="color:#ec0000">=</span> <span style="color:#008900">2399271992LL</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">while</span> ( (_DWORD)v3 <span style="color:#ec0000">!=</span> <span style="color:#ec0000">-</span><span style="color:#008900">1024030956</span> );
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">return</span> v0 <span style="color:#ec0000">&amp;</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#ec0000">？？？</span>(<span style="color:#ec0000">__int64</span> a1)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  v68 <span style="color:#ec0000">=</span> a1;
+</span></span><span style="display:flex;"><span>  v2 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">__ldar</span>(__stack_chk_guard);
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>__stack_chk_guard )
+</span></span><span style="display:flex;"><span>  {
+</span></span><span style="display:flex;"><span>    v1 <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>cydia;
+</span></span><span style="display:flex;"><span>    cydia <span style="color:#ec0000">=</span> <span style="color:#008900">47</span>;                                 // /Applications/Cydia.app
+</span></span><span style="display:flex;"><span>    byte_24435C1 <span style="color:#ec0000">=</span> <span style="color:#008900">65</span>;
+</span></span><span style="display:flex;"><span>    ....
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">__stlr</span>(<span style="color:#008900">0</span>, (<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>unk_25B5CDC);
+</span></span><span style="display:flex;"><span>  v3 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">__ldar</span>(v1);
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>(_DWORD)v1 )
+</span></span><span style="display:flex;"><span>  {
+</span></span><span style="display:flex;"><span>    substrate <span style="color:#ec0000">=</span> <span style="color:#008900">47</span>;                             // /Library/MobileSubstrate/MobileSubstrate.dylib
+</span></span><span style="display:flex;"><span>    byte_24435E1 <span style="color:#ec0000">=</span> <span style="color:#008900">76</span>;
+</span></span><span style="display:flex;"><span>    ....
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">__stlr</span>(<span style="color:#008900">0</span>, (<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>unk_25B5CE0);
+</span></span><span style="display:flex;"><span>  v4 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">__ldar</span>((<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> <span style="color:#ec0000">*</span>)((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>dword_0 <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>));
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">__stlr</span>(<span style="color:#008900">0</span>, (<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>unk_25B5CE4);
+</span></span><span style="display:flex;"><span>  v5 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">__ldar</span>(v1);
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>(_DWORD)v1 )
+</span></span><span style="display:flex;"><span>  {                                             // /Library/TweakInject
+</span></span><span style="display:flex;"><span>    twea <span style="color:#ec0000">=</span> <span style="color:#008900">47</span>;
+</span></span><span style="display:flex;"><span>    byte_2443621 <span style="color:#ec0000">=</span> <span style="color:#008900">76</span>;
+</span></span><span style="display:flex;"><span>    ....
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">__stlr</span>(<span style="color:#008900">0</span>, (<span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>unk_25B5CE8);
+</span></span><span style="display:flex;"><span>  v69 <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>v50;
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">memset</span>(<span style="color:#ec0000">&amp;</span>v67, <span style="color:#008900">0</span>, <span style="color:#008900">0x90uLL</span>);
+</span></span><span style="display:flex;"><span>  v66 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>  v64 <span style="color:#ec0000">=</span> <span style="color:#008900">0u</span>;
+</span></span><span style="display:flex;"><span>  v65 <span style="color:#ec0000">=</span> <span style="color:#008900">0u</span>;
+</span></span><span style="display:flex;"><span>  v63 <span style="color:#ec0000">=</span> <span style="color:#008900">0u</span>;
+</span></span><span style="display:flex;"><span>  v62 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>  v60 <span style="color:#ec0000">=</span> <span style="color:#008900">0u</span>;
+</span></span><span style="display:flex;"><span>  v61 <span style="color:#ec0000">=</span> <span style="color:#008900">0u</span>;
+</span></span><span style="display:flex;"><span>  v58 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>  v56 <span style="color:#ec0000">=</span> <span style="color:#008900">0u</span>;
+</span></span><span style="display:flex;"><span>  v57 <span style="color:#ec0000">=</span> <span style="color:#008900">0u</span>;
+</span></span><span style="display:flex;"><span>  v55 <span style="color:#ec0000">=</span> <span style="color:#008900">0u</span>;
+</span></span><span style="display:flex;"><span>  v51 <span style="color:#ec0000">=</span> <span style="color:#008900">0u</span>;
+</span></span><span style="display:flex;"><span>  v52 <span style="color:#ec0000">=</span> <span style="color:#008900">0u</span>;
+</span></span><span style="display:flex;"><span>  v54 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>  v53 <span style="color:#ec0000">=</span> <span style="color:#008900">0u</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">strcpy</span>((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v63, <span style="color:#ec0000">&amp;</span>cydia);
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">strcpy</span>((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v59, <span style="color:#ec0000">&amp;</span>substrate);
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">strcpy</span>((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v55, <span style="color:#ec0000">&amp;</span>byte_244360F);          // file_sys
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">strcpy</span>((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v51, <span style="color:#ec0000">&amp;</span>twea);
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span><span style="color:#5f5fff">__libc_do_syscall</span>(<span style="color:#008900">573</span>, v6, v7, v8, v9, v10, v11, v12, <span style="color:#ec0000">&amp;</span>v51, <span style="color:#ec0000">&amp;</span>v67, v37, v38, v39, v40, v41)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&amp;&amp;</span> (<span style="color:#5f5fff">WORD2</span>(v67) <span style="color:#ec0000">&amp;</span> <span style="color:#008900">0xF000</span>) <span style="color:#ec0000">==</span> <span style="color:#008900">40960</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">||</span> <span style="color:#ec0000">!</span><span style="color:#5f5fff">stat</span>((<span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v63, (<span style="color:#ec0000">struct</span> stat <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v67) )
+</span></span><span style="display:flex;"><span>  {
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">goto</span> LABEL_14;
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  v13 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">stat</span>((<span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v59, (<span style="color:#ec0000">struct</span> stat <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v67);
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>(_DWORD)v13 )
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">JUMPOUT</span>(__CS__, <span style="color:#5f5fff">sub_1EF91A0</span>(v13, v14, v15, v16, v17, v18, v19, v20) <span style="color:#ec0000">+</span> <span style="color:#008900">52</span>);
+</span></span><span style="display:flex;"><span>  v21 <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>)<span style="color:#5f5fff">syscall</span>(<span style="color:#008900">5</span>, <span style="color:#ec0000">&amp;</span>v59, <span style="color:#008900">0LL</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( (<span style="color:#5f5fff">signed</span> <span style="color:#5f5fff">int</span>)v21 <span style="color:#ec0000">&gt;=</span> <span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span>  {
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">__libc_do_syscall</span>(<span style="color:#008900">239</span>, v22, v23, v24, v25, v26, v27, v28, v21, v36, v37, v38, v39, v40, v41);
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_14</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">qword_25B5CB0</span>(<span style="color:#008900">6LL</span>, <span style="color:#008900">77LL</span>);
+</span></span><span style="display:flex;"><span>    v29 <span style="color:#ec0000">=</span> <span style="color:#008900">1LL</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">goto</span> LABEL_15;
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span><span style="color:#5f5fff">access</span>((<span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v63, <span style="color:#008900">4</span>) )
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">goto</span> LABEL_14;
+</span></span><span style="display:flex;"><span>  v29 <span style="color:#ec0000">=</span> <span style="color:#008900">0LL</span>;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_15</span>:
+</span></span><span style="display:flex;"><span>  v30 <span style="color:#ec0000">=</span> (<span style="color:#ec0000">__int64</span>)v69;
+</span></span><span style="display:flex;"><span>  v69[<span style="color:#008900">1</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">0LL</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">*</span>(_QWORD <span style="color:#ec0000">*</span>)(v30 <span style="color:#ec0000">+</span> <span style="color:#008900">16</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0LL</span>;
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">*</span>(_QWORD <span style="color:#ec0000">*</span>)v30 <span style="color:#ec0000">=</span> <span style="color:#008900">0LL</span>;
+</span></span><span style="display:flex;"><span>  v47 <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>off_206CD00;
+</span></span><span style="display:flex;"><span>  v38 <span style="color:#ec0000">=</span> <span style="color:#008900">0LL</span>;
+</span></span><span style="display:flex;"><span>  std<span style="color:#ec0000">::</span>__1<span style="color:#ec0000">::</span>ios_base<span style="color:#ec0000">::</span><span style="color:#5f5fff">init</span>((std<span style="color:#ec0000">::</span>__1<span style="color:#ec0000">::</span>ios_base <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v47, <span style="color:#ec0000">&amp;</span>v40);
+</span></span><span style="display:flex;"><span>  v48 <span style="color:#ec0000">=</span> <span style="color:#008900">0LL</span>;
+</span></span><span style="display:flex;"><span>  v49 <span style="color:#ec0000">=</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>  v37 <span style="color:#ec0000">=</span> off_206CB88;
+</span></span><span style="display:flex;"><span>  v47 <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">void</span> <span style="color:#ec0000">**</span>)off_206CBD8;
+</span></span><span style="display:flex;"><span>  v39 <span style="color:#ec0000">=</span> off_206CBB0;
+</span></span><span style="display:flex;"><span>  std<span style="color:#ec0000">::</span>__1<span style="color:#ec0000">::</span>basic_streambuf<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">char</span>,std<span style="color:#ec0000">::</span>__1<span style="color:#ec0000">::</span>char_traits<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">char</span><span style="color:#ec0000">&gt;&gt;::</span><span style="color:#5f5fff">basic_streambuf</span>(<span style="color:#ec0000">&amp;</span>v40);
+</span></span><span style="display:flex;"><span>  v42 <span style="color:#ec0000">=</span> <span style="color:#008900">0LL</span>;
+</span></span><span style="display:flex;"><span>  v40 <span style="color:#ec0000">=</span> off_20C7460;
+</span></span><span style="display:flex;"><span>  v44 <span style="color:#ec0000">=</span> <span style="color:#008900">0LL</span>;
+</span></span><span style="display:flex;"><span>  v45 <span style="color:#ec0000">=</span> <span style="color:#008900">0LL</span>;
+</span></span><span style="display:flex;"><span>  v43 <span style="color:#ec0000">=</span> <span style="color:#008900">0LL</span>;
+</span></span><span style="display:flex;"><span>  v46 <span style="color:#ec0000">=</span> <span style="color:#008900">24</span>;
+</span></span><span style="display:flex;"><span>  v31 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">strlen</span>((<span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v55);
+</span></span><span style="display:flex;"><span>  v32 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">sub_DF61FC</span>(<span style="color:#ec0000">&amp;</span>v39, (<span style="color:#ec0000">__int64</span>)<span style="color:#ec0000">&amp;</span>v55, v31);
+</span></span><span style="display:flex;"><span>  std<span style="color:#ec0000">::</span>__1<span style="color:#ec0000">::</span>basic_ostream<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">char</span>,std<span style="color:#ec0000">::</span>__1<span style="color:#ec0000">::</span>char_traits<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">char</span><span style="color:#ec0000">&gt;&gt;::</span>operator<span style="color:#ec0000">&lt;&lt;</span>(v32, v29);
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">sub_E21700</span>((<span style="color:#ec0000">__int64</span> <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v37, v30);
+</span></span><span style="display:flex;"><span>  v33 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)(v30 <span style="color:#ec0000">+</span> <span style="color:#008900">23</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( v33 <span style="color:#ec0000">&gt;=</span> <span style="color:#008900">0</span> )
+</span></span><span style="display:flex;"><span>    v34 <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>)v30;
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>    v34 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(<span style="color:#5f5fff">void</span> <span style="color:#ec0000">**</span>)v30;
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( v33 <span style="color:#ec0000">&gt;=</span> <span style="color:#008900">0</span> )
+</span></span><span style="display:flex;"><span>    v35 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(<span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int8</span> <span style="color:#ec0000">*</span>)(v30 <span style="color:#ec0000">+</span> <span style="color:#008900">23</span>);
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>    v35 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(_QWORD <span style="color:#ec0000">*</span>)(v30 <span style="color:#ec0000">+</span> <span style="color:#008900">8</span>);
+</span></span><span style="display:flex;"><span>  std<span style="color:#ec0000">::</span>__1<span style="color:#ec0000">::</span>basic_string<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">char</span>,std<span style="color:#ec0000">::</span>__1<span style="color:#ec0000">::</span>char_traits<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">char</span><span style="color:#ec0000">&gt;</span>,std<span style="color:#ec0000">::</span>__1<span style="color:#ec0000">::</span>allocator<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">char</span><span style="color:#ec0000">&gt;&gt;::</span><span style="color:#5f5fff">append</span>(v68, v34, v35);
+</span></span><span style="display:flex;"><span>  v37 <span style="color:#ec0000">=</span> off_206CB88;
+</span></span><span style="display:flex;"><span>  v47 <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">void</span> <span style="color:#ec0000">**</span>)off_206CBD8;
+</span></span><span style="display:flex;"><span>  v39 <span style="color:#ec0000">=</span> off_206CBB0;
+</span></span><span style="display:flex;"><span>  v40 <span style="color:#ec0000">=</span> off_20C7460;
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( <span style="color:#5f5fff">SHIBYTE</span>(v44) <span style="color:#ec0000">&amp;</span> <span style="color:#008900">0x80000000</span> )
+</span></span><span style="display:flex;"><span>    operator <span style="color:#5f5fff">delete</span>(v42);
+</span></span><span style="display:flex;"><span>  std<span style="color:#ec0000">::</span>__1<span style="color:#ec0000">::</span>basic_streambuf<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">char</span>,std<span style="color:#ec0000">::</span>__1<span style="color:#ec0000">::</span>char_traits<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">char</span><span style="color:#ec0000">&gt;&gt;::~</span><span style="color:#5f5fff">basic_streambuf</span>(<span style="color:#ec0000">&amp;</span>v40);
+</span></span><span style="display:flex;"><span>  std<span style="color:#ec0000">::</span>__1<span style="color:#ec0000">::</span>basic_iostream<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">char</span>,std<span style="color:#ec0000">::</span>__1<span style="color:#ec0000">::</span>char_traits<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">char</span><span style="color:#ec0000">&gt;&gt;::~</span><span style="color:#5f5fff">basic_iostream</span>(<span style="color:#ec0000">&amp;</span>v37, off_206CBF8);
+</span></span><span style="display:flex;"><span>  std<span style="color:#ec0000">::</span>__1<span style="color:#ec0000">::</span>basic_ios<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">char</span>,std<span style="color:#ec0000">::</span>__1<span style="color:#ec0000">::</span>char_traits<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">char</span><span style="color:#ec0000">&gt;&gt;::~</span><span style="color:#5f5fff">basic_ios</span>(<span style="color:#ec0000">&amp;</span>v47);
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*</span>(<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)(v30 <span style="color:#ec0000">+</span> <span style="color:#008900">23</span>) <span style="color:#ec0000">&amp;</span> <span style="color:#008900">0x80000000</span> )
+</span></span><span style="display:flex;"><span>    operator <span style="color:#5f5fff">delete</span>(<span style="color:#ec0000">*</span>(<span style="color:#5f5fff">void</span> <span style="color:#ec0000">**</span>)v30);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>  从上面结果可以看到，App使用了syscall函数，以及汇编级别的SVC指令来进行越狱检测，其中SVC指令调用的函数都会经过一个导出函数__libc_do_syscall，我们使用frida跟踪一下该函数：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Javascript" data-lang="Javascript"><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;__libc_do_syscall&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> callnum <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].toInt32() <span style="color:#ec0000">-</span> <span style="color:#008900">233</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (<span style="color:#ec0000">false</span>) {
+</span></span><span style="display:flex;"><span>        } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (callnum <span style="color:#ec0000">==</span> <span style="color:#008900">3</span>) {
+</span></span><span style="display:flex;"><span>            // read
+</span></span><span style="display:flex;"><span>        } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (callnum <span style="color:#ec0000">==</span> <span style="color:#008900">5</span>) {
+</span></span><span style="display:flex;"><span>            console.log(<span style="color:#008900">&#39;open &#39;</span> <span style="color:#ec0000">+</span> args[<span style="color:#008900">8</span>].readUtf8String());
+</span></span><span style="display:flex;"><span>        } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (callnum <span style="color:#ec0000">==</span> <span style="color:#008900">6</span>) {
+</span></span><span style="display:flex;"><span>            // close
+</span></span><span style="display:flex;"><span>        } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (callnum <span style="color:#ec0000">==</span> <span style="color:#008900">20</span>) {
+</span></span><span style="display:flex;"><span>            // getpid
+</span></span><span style="display:flex;"><span>        } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (callnum <span style="color:#ec0000">==</span> <span style="color:#008900">39</span>) {
+</span></span><span style="display:flex;"><span>            // getppid
+</span></span><span style="display:flex;"><span>        } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (callnum <span style="color:#ec0000">==</span> <span style="color:#008900">202</span>) {
+</span></span><span style="display:flex;"><span>            // sysctl
+</span></span><span style="display:flex;"><span>        } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (callnum <span style="color:#ec0000">==</span> <span style="color:#008900">294</span>) {
+</span></span><span style="display:flex;"><span>            // shared_region_check_np
+</span></span><span style="display:flex;"><span>        } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (callnum <span style="color:#ec0000">==</span> <span style="color:#008900">340</span>) {
+</span></span><span style="display:flex;"><span>            console.log(<span style="color:#008900">&#39;stat64 &#39;</span> <span style="color:#ec0000">+</span> args[<span style="color:#008900">8</span>].readUtf8String());
+</span></span><span style="display:flex;"><span>        } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (callnum <span style="color:#ec0000">==</span> <span style="color:#008900">344</span>) {
+</span></span><span style="display:flex;"><span>            // getdirentries64
+</span></span><span style="display:flex;"><span>        } <span style="color:#ec0000">else</span> {
+</span></span><span style="display:flex;"><span>            console.log(<span style="color:#008900">&#39;__libc_do_syscall() &#39;</span> <span style="color:#ec0000">+</span> callnum);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>});
+</span></span></code></pre></div><p>可得到以下结果：</p>
+<pre tabindex="0"><code>stat64 /Library/TweakInject
+stat64 /Library/TweakInject
+open /Library/LaunchDaemons/
+open /Library/MobileSubstrate/DynamicLibraries
+open /Library/MobileSubstrate/DynamicLibraries/ALS.plist.bak
+open /Library/MobileSubstrate/DynamicLibraries/AppList.plist
+open /Library/MobileSubstrate/DynamicLibraries/FLEXing.plist
+open /Library/MobileSubstrate/DynamicLibraries/GPSTravellerTweakVIP.plist.bak
+open /Library/MobileSubstrate/DynamicLibraries/MobileSafety.plist
+open /Library/MobileSubstrate/DynamicLibraries/PreferenceLoader.plist
+open /Library/MobileSubstrate/DynamicLibraries/RocketBootstrap.plist
+open /Library/MobileSubstrate/DynamicLibraries/SSLKillSwitch2.plist
+open /Library/MobileSubstrate/DynamicLibraries/TSActivator.plist
+open /Library/MobileSubstrate/DynamicLibraries/TSEventTweak.plist
+</code></pre><h2 id="系统调用检测">系统调用检测</h2>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Javascript" data-lang="Javascript"><span style="display:flex;"><span><span style="color:#ec0000">function</span> logtrace(ctx) {
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">var</span> content <span style="color:#ec0000">=</span> Thread.backtrace(ctx.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join(<span style="color:#008900">&#39;\n&#39;</span>) <span style="color:#ec0000">+</span> <span style="color:#008900">&#39;\n&#39;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (content.indexOf(<span style="color:#008900">&#39;SubstrateLoader&#39;</span>) <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span> <span style="color:#ec0000">&amp;&amp;</span> content.indexOf(<span style="color:#008900">&#39;JavaScriptCore&#39;</span>) <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span> <span style="color:#ec0000">&amp;&amp;</span>
+</span></span><span style="display:flex;"><span>        content.indexOf(<span style="color:#008900">&#39;FLEXing.dylib&#39;</span>) <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span> <span style="color:#ec0000">&amp;&amp;</span> content.indexOf(<span style="color:#008900">&#39;NSResolveSymlinksInPathUsingCache&#39;</span>) <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span> <span style="color:#ec0000">&amp;&amp;</span>
+</span></span><span style="display:flex;"><span>        content.indexOf(<span style="color:#008900">&#39;MediaServices&#39;</span>) <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span> <span style="color:#ec0000">&amp;&amp;</span> content.indexOf(<span style="color:#008900">&#39;bundleWithPath&#39;</span>) <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span> <span style="color:#ec0000">&amp;&amp;</span>
+</span></span><span style="display:flex;"><span>        content.indexOf(<span style="color:#008900">&#39;CoreMotion&#39;</span>) <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span> <span style="color:#ec0000">&amp;&amp;</span> content.indexOf(<span style="color:#008900">&#39;infoDictionary&#39;</span>) <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span> <span style="color:#ec0000">&amp;&amp;</span>
+</span></span><span style="display:flex;"><span>        content.indexOf(<span style="color:#008900">&#39;objectForInfoDictionaryKey&#39;</span>) <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span>)  {
+</span></span><span style="display:flex;"><span>            console.log(content);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> <span style="color:#ec0000">false</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">function</span> iswhite(path) {
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path <span style="color:#ec0000">==</span> <span style="color:#ec0000">null</span>) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path.startsWith(<span style="color:#008900">&#39;/var/mobile/Containers&#39;</span>)) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path.startsWith(<span style="color:#008900">&#39;/var/containers&#39;</span>)) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path.startsWith(<span style="color:#008900">&#39;/var/mobile/Library&#39;</span>)) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path.startsWith(<span style="color:#008900">&#39;/var/db&#39;</span>)) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path.startsWith(<span style="color:#008900">&#39;/private/var/mobile&#39;</span>)) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path.startsWith(<span style="color:#008900">&#39;/private/var/containers&#39;</span>)) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path.startsWith(<span style="color:#008900">&#39;/private/var/mobile/Library&#39;</span>)) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path.startsWith(<span style="color:#008900">&#39;/private/var/db&#39;</span>)) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path.startsWith(<span style="color:#008900">&#39;/System&#39;</span>)) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path.startsWith(<span style="color:#008900">&#39;/Library/Preferences&#39;</span>)) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path.startsWith(<span style="color:#008900">&#39;/Library/Managed&#39;</span>)) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path.startsWith(<span style="color:#008900">&#39;/usr&#39;</span>)) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path.startsWith(<span style="color:#008900">&#39;/dev&#39;</span>)) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path <span style="color:#ec0000">==</span> <span style="color:#008900">&#39;/AppleInternal&#39;</span>) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path <span style="color:#ec0000">==</span> <span style="color:#008900">&#39;/etc/hosts&#39;</span>) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path <span style="color:#ec0000">==</span> <span style="color:#008900">&#39;/Library&#39;</span>) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path <span style="color:#ec0000">==</span> <span style="color:#008900">&#39;/var&#39;</span>) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path <span style="color:#ec0000">==</span> <span style="color:#008900">&#39;/private/var&#39;</span>) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path <span style="color:#ec0000">==</span> <span style="color:#008900">&#39;/private&#39;</span>) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path <span style="color:#ec0000">==</span> <span style="color:#008900">&#39;/&#39;</span>) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path <span style="color:#ec0000">==</span> <span style="color:#008900">&#39;/var/mobile&#39;</span>) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (path.indexOf(<span style="color:#008900">&#39;/containers/Bundle/Application&#39;</span>) <span style="color:#ec0000">!=</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span>) <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> <span style="color:#ec0000">false</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;access&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        console.log(<span style="color:#008900">&#34;access &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;creat&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (logtrace(<span style="color:#ec0000">this</span>)) console.log(<span style="color:#008900">&#34;creat &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;dlopen&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (<span style="color:#ec0000">!</span>iswhite(path)) console.log(<span style="color:#008900">&#34;dlopen &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;dlopen_preflight&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (<span style="color:#ec0000">!</span>iswhite(path)) console.log(<span style="color:#008900">&#34;dlopen_preflight &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;faccessat&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">1</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (logtrace(<span style="color:#ec0000">this</span>)) console.log(<span style="color:#008900">&#34;faccessat &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;getxattr&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (logtrace(<span style="color:#ec0000">this</span>)) console.log(<span style="color:#008900">&#34;getxattr &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;link&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (logtrace(<span style="color:#ec0000">this</span>)) console.log(<span style="color:#008900">&#34;link &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;listxattr&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (logtrace(<span style="color:#ec0000">this</span>)) console.log(<span style="color:#008900">&#34;listxattr &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;lstat&#34;</span>), {
+</span></span><span style="display:flex;"><span>    block<span style="color:#ec0000">:</span> <span style="color:#ec0000">false</span>,
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (logtrace(<span style="color:#ec0000">this</span>)) console.log(<span style="color:#008900">&#34;lstat &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;open&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> Memory.readUtf8String(args[<span style="color:#008900">0</span>]);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (logtrace(<span style="color:#ec0000">this</span>)) console.log(<span style="color:#008900">&#34;open &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;opendir&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (logtrace(<span style="color:#ec0000">this</span>)) console.log(<span style="color:#008900">&#34;opendir &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;__opendir2&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (logtrace(<span style="color:#ec0000">this</span>)) console.log(<span style="color:#008900">&#34;opendir2 &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;readlink&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (logtrace(<span style="color:#ec0000">this</span>)) console.log(<span style="color:#008900">&#34;readlink &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;realpath&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (logtrace(<span style="color:#ec0000">this</span>)) console.log(<span style="color:#008900">&#34;realpath &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;realpath$DARWIN_EXTSN&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (logtrace(<span style="color:#ec0000">this</span>)) console.log(<span style="color:#008900">&#34;realpath$DARWIN_EXTSN &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;stat&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (logtrace(<span style="color:#ec0000">this</span>)) console.log(<span style="color:#008900">&#34;stat &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;statfs&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (logtrace(<span style="color:#ec0000">this</span>)) console.log(<span style="color:#008900">&#34;statfs &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;symlink&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> path <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].readUtf8String();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (iswhite(path)) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (logtrace(<span style="color:#ec0000">this</span>)) console.log(<span style="color:#008900">&#34;symlink &#34;</span> <span style="color:#ec0000">+</span> path);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Interceptor.attach(Module.findExportByName(<span style="color:#ec0000">null</span>, <span style="color:#008900">&#34;syscall&#34;</span>), {
+</span></span><span style="display:flex;"><span>    onEnter<span style="color:#ec0000">:</span> <span style="color:#ec0000">function</span>(args) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (args[<span style="color:#008900">0</span>].isNull()) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">var</span> callnum <span style="color:#ec0000">=</span> args[<span style="color:#008900">0</span>].toInt32();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (callnum <span style="color:#ec0000">==</span> <span style="color:#008900">180</span>) <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        console.log(<span style="color:#008900">&#34;syscall &#34;</span> <span style="color:#ec0000">+</span> args[<span style="color:#008900">0</span>].toInt32());
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>})
+</span></span></code></pre></div>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/re_posts/20190827_awz/">
+                        爱伪装(AWZ)改机改串一键新机原理分析
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/re_posts/20191212_361/">
+                        361改机改串一键新机原理分析
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

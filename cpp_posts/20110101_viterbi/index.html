@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    卷积码的viterbi译码 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/cpp_posts/20110101_viterbi/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/cpp_posts/">Cpp_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/cpp_posts/20110101_viterbi/">卷积码的viterbi译码</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">卷积码的viterbi译码</h1>
+    
+    <p class="single-summary">卷积码的viterbi译码</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2011-01-01T00:00:00&#43;00:00">January 1, 2011</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#源码">源码</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="背景">背景</h2>
+<p>  此为我的本科毕设卷积码的viterbi译码，是我开始学编程之后的第一个作品，由于年代久远，仅当记录</p>
+<h2 id="源码">源码</h2>
+<p>编码</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>//encode.h
+</span></span><span style="display:flex;"><span>#include &lt;stdlib.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;time.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;math.h&gt;
+</span></span><span style="display:flex;"><span>#define PI 3.14
+</span></span><span style="display:flex;"><span>#define length 10
+</span></span><span style="display:flex;"><span>#define M 3
+</span></span><span style="display:flex;"><span>#define N 3
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">gensignal</span>(<span style="color:#5f5fff">int</span><span style="color:#ec0000">*</span> origin,<span style="color:#5f5fff">int</span> mode)//产生信号
+</span></span><span style="display:flex;"><span>{//生成随机二进制数作为编码前的信息序列
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(mode<span style="color:#ec0000">==</span><span style="color:#008900">0</span>) <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>length;i<span style="color:#ec0000">++</span>) origin[ i]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;//生成一位信息位
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(mode<span style="color:#ec0000">==</span><span style="color:#008900">1</span>) <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>length;i<span style="color:#ec0000">++</span>) origin[ i]<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;//生成一位信息位
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(mode<span style="color:#ec0000">==</span><span style="color:#008900">2</span>) <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>length;i<span style="color:#ec0000">++</span>) origin[ i]<span style="color:#ec0000">=</span>i<span style="color:#ec0000">&amp;</span><span style="color:#008900">1</span>;//生成一位信息位
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(mode<span style="color:#ec0000">==</span><span style="color:#008900">3</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>length;i<span style="color:#ec0000">++</span>) origin[ i]<span style="color:#ec0000">=</span>rand()<span style="color:#ec0000">&amp;</span><span style="color:#008900">1</span>;//生成一位信息位
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">encode</span>(<span style="color:#5f5fff">int</span> encodeori[length][N],<span style="color:#5f5fff">int</span><span style="color:#ec0000">*</span> origin,<span style="color:#5f5fff">int</span><span style="color:#ec0000">*</span> generate)//编码器
+</span></span><span style="display:flex;"><span>{//生成卷积码,码率为1/N,一个码元有N比特
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> shifter;//模拟左移移位寄存器当前状态[b(M-1),b(M-2),b(M-3),...,b(1)],最大表示16位
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> i,j,k,temp<span style="color:#ec0000">=</span>shifter;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(k<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;k<span style="color:#ec0000">&lt;</span>length;k<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>    {//由此信息位生成N bit码元
+</span></span><span style="display:flex;"><span>        temp<span style="color:#ec0000">=</span>(temp<span style="color:#ec0000">&lt;&lt;</span><span style="color:#008900">1</span>)<span style="color:#ec0000">^</span>origin[k];//模拟移位寄存器左移
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span>(i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>N;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>        {//生成此卷积码码元的1bit
+</span></span><span style="display:flex;"><span>            <span style="color:#5f5fff">int</span> sum<span style="color:#ec0000">=</span><span style="color:#008900">0</span>,temp1<span style="color:#ec0000">=</span>temp<span style="color:#ec0000">&amp;</span>generate[ i];
+</span></span><span style="display:flex;"><span>            encodeori[k][ i]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>M;j<span style="color:#ec0000">++</span>) sum<span style="color:#ec0000">^=</span>(temp1<span style="color:#ec0000">&gt;&gt;</span>j)<span style="color:#ec0000">&amp;</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>            //实现卷积码编码电路输入输出关系,乘矩阵的列后自模2加
+</span></span><span style="display:flex;"><span>            encodeori[k][ i]<span style="color:#ec0000">=</span>(encodeori[k][ i]<span style="color:#ec0000">&lt;&lt;</span><span style="color:#008900">1</span>)<span style="color:#ec0000">^</span>sum;//组合成卷积码码元
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        shifter<span style="color:#ec0000">=</span>temp;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>((encodeori[<span style="color:#008900">0</span>][<span style="color:#008900">0</span>]<span style="color:#ec0000">!=</span>encodeori[<span style="color:#008900">0</span>][<span style="color:#008900">1</span>])<span style="color:#ec0000">||</span>(encodeori[<span style="color:#008900">0</span>][<span style="color:#008900">1</span>]<span style="color:#ec0000">!=</span>encodeori[<span style="color:#008900">0</span>][<span style="color:#008900">2</span>])<span style="color:#ec0000">||</span>(encodeori[<span style="color:#008900">0</span>][<span style="color:#008900">0</span>]<span style="color:#ec0000">!=</span>encodeori[<span style="color:#008900">0</span>][<span style="color:#008900">2</span>])) cout<span style="color:#ec0000">&lt;&lt;</span><span style="color:#008900">&#34;</span><span style="color:#008900">\\\\\\</span><span style="color:#008900">&#34;</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">PSK</span>(<span style="color:#5f5fff">int</span> encodeori[length][N],<span style="color:#5f5fff">int</span> PSKmaker[length][N])<span style="color:#ec0000">//</span>PSK调制(<span style="color:#008900">1</span><span style="color:#ec0000">--&gt;-</span><span style="color:#008900">1</span>;<span style="color:#008900">0</span><span style="color:#ec0000">--&gt;</span><span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>length;i<span style="color:#ec0000">++</span>) 
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>N;j<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(encodeori[ i][j]) PSKmaker[ i][j]<span style="color:#ec0000">=-</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span> PSKmaker[ i][j]<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">gaosimaker</span>(<span style="color:#5f5fff">double</span> DX)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">double</span> rand1,rand2,result;
+</span></span><span style="display:flex;"><span>    rand1<span style="color:#ec0000">=</span>(<span style="color:#5f5fff">double</span>)(rand())<span style="color:#ec0000">/</span>RAND_MAX;//均匀分布
+</span></span><span style="display:flex;"><span>    rand2<span style="color:#ec0000">=</span>(<span style="color:#5f5fff">double</span>)(rand())<span style="color:#ec0000">/</span>RAND_MAX;//均匀分布
+</span></span><span style="display:flex;"><span>    result<span style="color:#ec0000">=</span>sqrt((<span style="color:#ec0000">-</span><span style="color:#008900">2</span>)<span style="color:#ec0000">*</span>log(rand1))<span style="color:#ec0000">*</span>cos(<span style="color:#008900">2</span><span style="color:#ec0000">*</span>PI<span style="color:#ec0000">*</span>rand2);
+</span></span><span style="display:flex;"><span>    //变换抽样,均匀分布变为正态分布
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> DX<span style="color:#ec0000">*</span>result;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">addgaosi</span>(<span style="color:#5f5fff">double</span> send[length][N],<span style="color:#5f5fff">int</span> PSKmaker[length][N],<span style="color:#5f5fff">double</span> DX)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>length;i<span style="color:#ec0000">++</span>) 
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>N;j<span style="color:#ec0000">++</span>) 
+</span></span><span style="display:flex;"><span>            send[ i][j]<span style="color:#ec0000">=</span>PSKmaker[ i][j]<span style="color:#ec0000">+</span>gaosimaker(DX);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">result</span>(<span style="color:#5f5fff">int</span> x)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(x<span style="color:#ec0000">=</span><span style="color:#008900">1</span>) <span style="color:#ec0000">return</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span>(x<span style="color:#ec0000">&gt;</span><span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span> result(x<span style="color:#ec0000">-</span><span style="color:#008900">1</span>)<span style="color:#ec0000">+</span>(<span style="color:#5f5fff">int</span>)pow(<span style="color:#008900">10</span>,x<span style="color:#ec0000">-</span><span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">else</span> <span style="color:#ec0000">return</span> <span style="color:#008900">65535</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>解码</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>//decode.h
+</span></span><span style="display:flex;"><span>#include &lt;math.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;iostream.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;stdlib&gt;
+</span></span><span style="display:flex;"><span>#define length 10
+</span></span><span style="display:flex;"><span>#define M 3
+</span></span><span style="display:flex;"><span>#define N 3
+</span></span><span style="display:flex;"><span>#define statenum (int)pow(2,M-1)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> <span style="color:#5f5fff">fencenode</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> currentstate;//左移寄存器当前状态(...000,...001,...010,...)
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> incode[<span style="color:#008900">2</span>];//输入数据后先后到达此点的两个点分别生成的卷积码
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> outcode[<span style="color:#008900">2</span>];//outcode[0]:输入0后生成的卷积码;outcode[1]:输入1后生成的卷积码
+</span></span><span style="display:flex;"><span>    fencenode<span style="color:#ec0000">*</span> in[<span style="color:#008900">2</span>];//输入数据后到达此点的两个点
+</span></span><span style="display:flex;"><span>    fencenode<span style="color:#ec0000">*</span> out[<span style="color:#008900">2</span>];//out[0]:输入0后从此点到达的点;out[1]:输入1后从此点到达的点
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> <span style="color:#5f5fff">survive</span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> hamingdist;//累积汉明距离
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> sufferstate[length<span style="color:#ec0000">+</span><span style="color:#008900">1</span>];//历经状态
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> outcode[length];//对应的原信号
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>fencenode<span style="color:#ec0000">*</span> <span style="color:#5f5fff">initstatediag</span>(<span style="color:#5f5fff">int</span><span style="color:#ec0000">*</span> generate);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">dist</span>(<span style="color:#5f5fff">int</span> dist1,<span style="color:#5f5fff">int</span><span style="color:#ec0000">*</span> dist2);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">distcomp</span>(<span style="color:#5f5fff">int</span> dist1,<span style="color:#5f5fff">int</span> dist2,<span style="color:#5f5fff">int</span><span style="color:#ec0000">*</span> dist0,<span style="color:#5f5fff">int</span> ham1,<span style="color:#5f5fff">int</span> ham2);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">copysur</span>(survive<span style="color:#ec0000">*</span> mysurvivenew,survive<span style="color:#ec0000">*</span> survive,<span style="color:#5f5fff">int</span> i);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">copysur1</span>(survive<span style="color:#ec0000">*</span> surv1,<span style="color:#5f5fff">int</span> m,survive<span style="color:#ec0000">*</span> surv2,<span style="color:#5f5fff">int</span> n,<span style="color:#5f5fff">int</span> i);
+</span></span><span style="display:flex;"><span>survive<span style="color:#ec0000">*</span> <span style="color:#5f5fff">findmin</span>(survive<span style="color:#ec0000">*</span> surv,<span style="color:#5f5fff">int</span> i);
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">demodulate</span>(<span style="color:#5f5fff">int</span> demodule[length][N],<span style="color:#5f5fff">double</span> receive[length][N])//解调2PSK信号
+</span></span><span style="display:flex;"><span>{//硬判决,判决门限0(小于0--&gt;1,大于0--&gt;0)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>length;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>N;j<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(receive[ i][j]<span style="color:#ec0000">&lt;</span><span style="color:#008900">0</span>) demodule[ i][j]<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">else</span> demodule[ i][j]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>survive<span style="color:#ec0000">*</span> <span style="color:#5f5fff">viterbidecoder</span>(<span style="color:#5f5fff">int</span> demodule[length][N],<span style="color:#5f5fff">int</span><span style="color:#ec0000">*</span> recover,<span style="color:#5f5fff">int</span><span style="color:#ec0000">*</span> generate)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> i,j;
+</span></span><span style="display:flex;"><span>    survive<span style="color:#ec0000">*</span> mysurvive<span style="color:#ec0000">=</span><span style="color:#ec0000">new</span> survive[statenum];//最多有状态数(statenum)个幸存路径
+</span></span><span style="display:flex;"><span>    survive<span style="color:#ec0000">*</span> mysurvivenew<span style="color:#ec0000">=</span><span style="color:#ec0000">new</span> survive[statenum];//最多有状态数(statenum)个幸存路径
+</span></span><span style="display:flex;"><span>    fencenode<span style="color:#ec0000">*</span> myfence<span style="color:#ec0000">=</span>initstatediag(generate);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>statenum;i<span style="color:#ec0000">++</span>)//对幸存路径的初始化
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        mysurvive[ i].hamingdist<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;//设置汉明初值
+</span></span><span style="display:flex;"><span>        mysurvive[ i].sufferstate[<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;//初始状态为0
+</span></span><span style="display:flex;"><span>        mysurvivenew[ i].hamingdist<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        mysurvivenew[ i].sufferstate[<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>length;j<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            mysurvive[ i].sufferstate[j<span style="color:#ec0000">+</span><span style="color:#008900">1</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>            mysurvivenew[ i].outcode[j]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>            mysurvive[ i].sufferstate[j<span style="color:#ec0000">+</span><span style="color:#008900">1</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>            mysurvivenew[ i].outcode[j]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(i<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;i<span style="color:#ec0000">&lt;=</span>length;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>    {//生成第i个时间段内的幸存路线片段
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(pow(<span style="color:#008900">2</span>,i)<span style="color:#ec0000">&lt;=</span>statenum)//对应篱笆图左部下落区
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>statenum;j<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>            {//生成第j状态对应的幸存路线
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">int</span> temp1<span style="color:#ec0000">=</span>(j<span style="color:#ec0000">&gt;&gt;</span>(M<span style="color:#ec0000">-</span>i))<span style="color:#ec0000">&amp;</span><span style="color:#008900">3</span>,temp2<span style="color:#ec0000">=</span>(j<span style="color:#ec0000">&gt;&gt;</span>(M<span style="color:#ec0000">-</span><span style="color:#008900">1</span><span style="color:#ec0000">-</span>i))<span style="color:#ec0000">&amp;</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>                mysurvive[j].sufferstate[ i]<span style="color:#ec0000">=</span>myfence[temp1].out[temp2]<span style="color:#ec0000">-&gt;</span>currentstate;
+</span></span><span style="display:flex;"><span>                mysurvive[j].hamingdist<span style="color:#ec0000">+=</span>dist(myfence[temp1].outcode[temp2],demodule[i<span style="color:#ec0000">-</span><span style="color:#008900">1</span>]);
+</span></span><span style="display:flex;"><span>                mysurvive[j].outcode[i<span style="color:#ec0000">-</span><span style="color:#008900">1</span>]<span style="color:#ec0000">=</span>temp2;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>        {//此篱笆图区域内每个状态必由2条路径到达,取汉明距离较小的为此时间段内此状态的幸存路径
+</span></span><span style="display:flex;"><span>            copysur(mysurvivenew,mysurvive,i);
+</span></span><span style="display:flex;"><span>            //准备由前一次结果重新排序幸存队列,将mysurvive赋给mysurvivenew
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>statenum;j<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                fencenode<span style="color:#ec0000">*</span> node1<span style="color:#ec0000">=</span>myfence[j].in[<span style="color:#008900">0</span>];fencenode<span style="color:#ec0000">*</span> node2<span style="color:#ec0000">=</span>myfence[j].in[<span style="color:#008900">1</span>];//找到转移至状态j的两个状态的地址
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">int</span> code1<span style="color:#ec0000">=</span>myfence[j].incode[<span style="color:#008900">0</span>],code2<span style="color:#ec0000">=</span>myfence[j].incode[<span style="color:#008900">1</span>];
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">int</span> k<span style="color:#ec0000">=</span>distcomp(code1,code2,demodule[i<span style="color:#ec0000">-</span><span style="color:#008900">1</span>],mysurvivenew[node1<span style="color:#ec0000">-&gt;</span>currentstate].hamingdist,mysurvivenew[node2<span style="color:#ec0000">-&gt;</span>currentstate].hamingdist);
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(<span style="color:#008900">0</span><span style="color:#ec0000">==</span>k)
+</span></span><span style="display:flex;"><span>                {//node1的距离小
+</span></span><span style="display:flex;"><span>                    copysur1(mysurvive,j,mysurvivenew,node1<span style="color:#ec0000">-&gt;</span>currentstate,i);//赋予新路径
+</span></span><span style="display:flex;"><span>                    mysurvive[j].sufferstate[ i]<span style="color:#ec0000">=</span>j;
+</span></span><span style="display:flex;"><span>                    mysurvive[j].hamingdist<span style="color:#ec0000">+=</span>dist(code1,demodule[i<span style="color:#ec0000">-</span><span style="color:#008900">1</span>]);
+</span></span><span style="display:flex;"><span>                    mysurvive[j].outcode[i<span style="color:#ec0000">-</span><span style="color:#008900">1</span>]<span style="color:#ec0000">=</span>j<span style="color:#ec0000">&amp;</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span>(<span style="color:#008900">1</span><span style="color:#ec0000">==</span>k)
+</span></span><span style="display:flex;"><span>                {//node2的距离小
+</span></span><span style="display:flex;"><span>                    copysur1(mysurvive,j,mysurvivenew,node2<span style="color:#ec0000">-&gt;</span>currentstate,i);//赋予新路径
+</span></span><span style="display:flex;"><span>                    mysurvive[j].sufferstate[ i]<span style="color:#ec0000">=</span>j;
+</span></span><span style="display:flex;"><span>                    mysurvive[j].hamingdist<span style="color:#ec0000">+=</span>dist(code2,demodule[i<span style="color:#ec0000">-</span><span style="color:#008900">1</span>]);
+</span></span><span style="display:flex;"><span>                    mysurvive[j].outcode[i<span style="color:#ec0000">-</span><span style="color:#008900">1</span>]<span style="color:#ec0000">=</span>j<span style="color:#ec0000">&amp;</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">if</span>(rand()<span style="color:#ec0000">&lt;</span>RAND_MAX<span style="color:#ec0000">/</span><span style="color:#008900">2</span>)
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        copysur1(mysurvive,j,mysurvivenew,node1<span style="color:#ec0000">-&gt;</span>currentstate,i);//赋予新路径
+</span></span><span style="display:flex;"><span>                        mysurvive[j].sufferstate[ i]<span style="color:#ec0000">=</span>j;
+</span></span><span style="display:flex;"><span>                        mysurvive[j].hamingdist<span style="color:#ec0000">+=</span>dist(code1,demodule[i<span style="color:#ec0000">-</span><span style="color:#008900">1</span>]);
+</span></span><span style="display:flex;"><span>                        mysurvive[j].outcode[i<span style="color:#ec0000">-</span><span style="color:#008900">1</span>]<span style="color:#ec0000">=</span>j<span style="color:#ec0000">&amp;</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        copysur1(mysurvive,j,mysurvivenew,node2<span style="color:#ec0000">-&gt;</span>currentstate,i);//赋予新路径
+</span></span><span style="display:flex;"><span>                        mysurvive[j].sufferstate[ i]<span style="color:#ec0000">=</span>j;
+</span></span><span style="display:flex;"><span>                        mysurvive[j].hamingdist<span style="color:#ec0000">+=</span>dist(code2,demodule[i<span style="color:#ec0000">-</span><span style="color:#008900">1</span>]);
+</span></span><span style="display:flex;"><span>                        mysurvive[j].outcode[i<span style="color:#ec0000">-</span><span style="color:#008900">1</span>]<span style="color:#ec0000">=</span>j<span style="color:#ec0000">&amp;</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }    
+</span></span><span style="display:flex;"><span>    survive<span style="color:#ec0000">*</span> thebest<span style="color:#ec0000">=</span>findmin(mysurvive,statenum);//找出statenum条路径中汉明距离最小的
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>statenum;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>length;j<span style="color:#ec0000">++</span>) recover[j]<span style="color:#ec0000">=</span>thebest<span style="color:#ec0000">-&gt;</span>outcode[j];
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">delete</span> []mysurvive;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">delete</span> []mysurvivenew;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">delete</span> []myfence;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> mysurvive;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>fencenode<span style="color:#ec0000">*</span> <span style="color:#5f5fff">initstatediag</span>(<span style="color:#5f5fff">int</span><span style="color:#ec0000">*</span> generate)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    fencenode<span style="color:#ec0000">*</span> trellisdiagram<span style="color:#ec0000">=</span><span style="color:#ec0000">new</span> fencenode[statenum];//网格图雏形
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>statenum;i<span style="color:#ec0000">++</span>) trellisdiagram[ i].currentstate<span style="color:#ec0000">=</span>i;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">0</span>].in[<span style="color:#008900">0</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">0</span>];trellisdiagram[<span style="color:#008900">0</span>].incode[<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">0</span>].in[<span style="color:#008900">1</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">2</span>];trellisdiagram[<span style="color:#008900">0</span>].incode[<span style="color:#008900">1</span>]<span style="color:#ec0000">=</span><span style="color:#008900">3</span>;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">0</span>].out[<span style="color:#008900">0</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">0</span>];trellisdiagram[<span style="color:#008900">0</span>].outcode[<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">0</span>].out[<span style="color:#008900">1</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">1</span>];trellisdiagram[<span style="color:#008900">0</span>].outcode[<span style="color:#008900">1</span>]<span style="color:#ec0000">=</span><span style="color:#008900">7</span>;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">1</span>].in[<span style="color:#008900">0</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">0</span>];trellisdiagram[<span style="color:#008900">1</span>].incode[<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">7</span>;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">1</span>].in[<span style="color:#008900">1</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">2</span>];trellisdiagram[<span style="color:#008900">1</span>].incode[<span style="color:#008900">1</span>]<span style="color:#ec0000">=</span><span style="color:#008900">4</span>;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">1</span>].out[<span style="color:#008900">0</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">2</span>];trellisdiagram[<span style="color:#008900">1</span>].outcode[<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">1</span>].out[<span style="color:#008900">1</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">3</span>];trellisdiagram[<span style="color:#008900">1</span>].outcode[<span style="color:#008900">1</span>]<span style="color:#ec0000">=</span><span style="color:#008900">6</span>;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">2</span>].in[<span style="color:#008900">0</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">1</span>];trellisdiagram[<span style="color:#008900">2</span>].incode[<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">2</span>].in[<span style="color:#008900">1</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">3</span>];trellisdiagram[<span style="color:#008900">2</span>].incode[<span style="color:#008900">1</span>]<span style="color:#ec0000">=</span><span style="color:#008900">2</span>;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">2</span>].out[<span style="color:#008900">0</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">0</span>];trellisdiagram[<span style="color:#008900">2</span>].outcode[<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">3</span>;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">2</span>].out[<span style="color:#008900">1</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">1</span>];trellisdiagram[<span style="color:#008900">2</span>].outcode[<span style="color:#008900">1</span>]<span style="color:#ec0000">=</span><span style="color:#008900">4</span>;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">3</span>].in[<span style="color:#008900">0</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">1</span>];trellisdiagram[<span style="color:#008900">3</span>].incode[<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">6</span>;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">3</span>].in[<span style="color:#008900">1</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">3</span>];trellisdiagram[<span style="color:#008900">3</span>].incode[<span style="color:#008900">1</span>]<span style="color:#ec0000">=</span><span style="color:#008900">5</span>;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">3</span>].out[<span style="color:#008900">0</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">2</span>];trellisdiagram[<span style="color:#008900">3</span>].outcode[<span style="color:#008900">0</span>]<span style="color:#ec0000">=</span><span style="color:#008900">2</span>;
+</span></span><span style="display:flex;"><span>    trellisdiagram[<span style="color:#008900">3</span>].out[<span style="color:#008900">1</span>]<span style="color:#ec0000">=&amp;</span>trellisdiagram[<span style="color:#008900">3</span>];trellisdiagram[<span style="color:#008900">3</span>].outcode[<span style="color:#008900">1</span>]<span style="color:#ec0000">=</span><span style="color:#008900">5</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> trellisdiagram;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">dist</span>(<span style="color:#5f5fff">int</span> dist1,<span style="color:#5f5fff">int</span><span style="color:#ec0000">*</span> dist2)//dist1:二进制数,dist2:十进制数组,宽均为N
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> sum<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">switch</span>(<span style="color:#008900">4</span><span style="color:#ec0000">*</span>dist2[<span style="color:#008900">0</span>]<span style="color:#ec0000">+</span><span style="color:#008900">2</span><span style="color:#ec0000">*</span>dist2[<span style="color:#008900">1</span>]<span style="color:#ec0000">+</span>dist2[<span style="color:#008900">2</span>])
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">case</span> <span style="color:#008900">0</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">switch</span>(dist1)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">0</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">1</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">2</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">4</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">3</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">5</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">6</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">2</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">7</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">3</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">case</span> <span style="color:#008900">1</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">switch</span>(dist1)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">1</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">0</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">3</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">5</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">2</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">4</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">7</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">2</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">6</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">3</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">case</span> <span style="color:#008900">2</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">switch</span>(dist1)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">2</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">0</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">3</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">6</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">1</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">4</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">7</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">2</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">5</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">3</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">case</span> <span style="color:#008900">3</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">switch</span>(dist1)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">3</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">1</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">2</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">7</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">0</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">5</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">6</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">2</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">4</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">3</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">case</span> <span style="color:#008900">4</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">switch</span>(dist1)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">4</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">0</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">5</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">6</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">1</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">2</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">7</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">2</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">3</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">3</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">case</span> <span style="color:#008900">5</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">switch</span>(dist1)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">5</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">1</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">4</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">7</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">0</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">3</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">6</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">2</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">2</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">3</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">case</span> <span style="color:#008900">6</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">switch</span>(dist1)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">6</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">2</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">4</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">7</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">0</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">3</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">5</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">2</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">1</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">3</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">case</span> <span style="color:#008900">7</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">switch</span>(dist1)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">7</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">3</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">5</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">6</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">1</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">2</span><span style="color:#ec0000">:</span> <span style="color:#ec0000">case</span> <span style="color:#008900">4</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">2</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">case</span> <span style="color:#008900">0</span><span style="color:#ec0000">:</span>sum<span style="color:#ec0000">=</span><span style="color:#008900">3</span>;<span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">default</span><span style="color:#ec0000">:</span><span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>/*
+</span></span><span style="display:flex;"><span>    int temp,sum=0,i;//按位异或
+</span></span><span style="display:flex;"><span>    for(i=0;i&lt;N;i++)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        temp=((dist1&gt;&gt;i)&amp;1)^dist2[N-1-i];
+</span></span><span style="display:flex;"><span>        sum=sum+temp;
+</span></span><span style="display:flex;"><span>    }//求汉明距离*/
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> sum;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">distcomp</span>(<span style="color:#5f5fff">int</span> dist1,<span style="color:#5f5fff">int</span> dist2,<span style="color:#5f5fff">int</span><span style="color:#ec0000">*</span> dist0,<span style="color:#5f5fff">int</span> ham1,<span style="color:#5f5fff">int</span> ham2)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>((dist(dist1,dist0)<span style="color:#ec0000">+</span>ham1)<span style="color:#ec0000">&lt;</span>(dist(dist2,dist0)<span style="color:#ec0000">+</span>ham2)) <span style="color:#ec0000">return</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span>((dist(dist1,dist0)<span style="color:#ec0000">+</span>ham1)<span style="color:#ec0000">&gt;</span>(dist(dist2,dist0)<span style="color:#ec0000">+</span>ham2)) <span style="color:#ec0000">return</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">else</span> <span style="color:#ec0000">return</span> <span style="color:#008900">2</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">copysur</span>(survive<span style="color:#ec0000">*</span> mysurvivenew,survive<span style="color:#ec0000">*</span> mysurvive,<span style="color:#5f5fff">int</span> i)
+</span></span><span style="display:flex;"><span>{//将路径数组mysurvive中每个路径的前i个数据赋给mysurvivene中的每个路径
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>statenum;j<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> l<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;l<span style="color:#ec0000">&lt;</span>i;l<span style="color:#ec0000">++</span>)//找到不同路径的源头
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(mysurvivenew[j].sufferstate[l]<span style="color:#ec0000">!=</span>mysurvive[j].sufferstate[l]) <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        mysurvivenew[j].hamingdist<span style="color:#ec0000">=</span>mysurvive[j].hamingdist;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> k<span style="color:#ec0000">=</span>l;k<span style="color:#ec0000">&lt;</span>i;k<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            mysurvivenew[j].sufferstate[k]<span style="color:#ec0000">=</span>mysurvive[j].sufferstate[k];
+</span></span><span style="display:flex;"><span>            mysurvivenew[j].outcode[k<span style="color:#ec0000">-</span><span style="color:#008900">1</span>]<span style="color:#ec0000">=</span>mysurvive[j].outcode[k<span style="color:#ec0000">-</span><span style="color:#008900">1</span>];
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">copysur1</span>(survive<span style="color:#ec0000">*</span> surv1,<span style="color:#5f5fff">int</span> m,survive<span style="color:#ec0000">*</span> surv2,<span style="color:#5f5fff">int</span> n,<span style="color:#5f5fff">int</span> i)
+</span></span><span style="display:flex;"><span>{//将路径surv2的前i个数据赋给surv1,变成新的surv1
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> l<span style="color:#ec0000">=</span><span style="color:#008900">1</span>;l<span style="color:#ec0000">&lt;</span>i;l<span style="color:#ec0000">++</span>)//找到不同路径的源头
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(surv1[m].sufferstate[l]<span style="color:#ec0000">!=</span>surv2[n].sufferstate[l]) <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    surv1[m].hamingdist<span style="color:#ec0000">=</span>surv2[n].hamingdist;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">int</span> k<span style="color:#ec0000">=</span>l;k<span style="color:#ec0000">&lt;</span>i;k<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        surv1[m].sufferstate[k]<span style="color:#ec0000">=</span>surv2[n].sufferstate[k];
+</span></span><span style="display:flex;"><span>        surv1[m].outcode[k<span style="color:#ec0000">-</span><span style="color:#008900">1</span>]<span style="color:#ec0000">=</span>surv2[n].outcode[k<span style="color:#ec0000">-</span><span style="color:#008900">1</span>];
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>survive<span style="color:#ec0000">*</span> <span style="color:#5f5fff">findmin</span>(survive<span style="color:#ec0000">*</span> surv,<span style="color:#5f5fff">int</span> i)//在i个路径中找汉明距离最小的
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> j,k<span style="color:#ec0000">=</span><span style="color:#008900">0</span>,best<span style="color:#ec0000">=</span><span style="color:#008900">0</span>,smaller<span style="color:#ec0000">=</span>surv[<span style="color:#008900">0</span>].hamingdist;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>i;j<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(surv[j].hamingdist<span style="color:#ec0000">&lt;</span>smaller) {smaller<span style="color:#ec0000">=</span>surv[j].hamingdist;best<span style="color:#ec0000">=</span>j;}
+</span></span><span style="display:flex;"><span>/*
+</span></span><span style="display:flex;"><span>        else if(surv[j].hamingdist=smaller)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            if(rand()&amp;1) best=j;
+</span></span><span style="display:flex;"><span>        }*/
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> <span style="color:#ec0000">&amp;</span>surv[best];
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">pe</span>(<span style="color:#5f5fff">int</span><span style="color:#ec0000">*</span> origin,<span style="color:#5f5fff">int</span><span style="color:#ec0000">*</span> recover)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> i,sum<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>length;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(origin[ i]<span style="color:#ec0000">!=</span>recover[ i]) <span style="color:#ec0000">return</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>主模块</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>//main.cpp
+</span></span><span style="display:flex;"><span>//卷积码(N,1,M)的viterbi译码
+</span></span><span style="display:flex;"><span>#include &lt;iostream.h&gt;
+</span></span><span style="display:flex;"><span>#include &#34;encode.h&#34;
+</span></span><span style="display:flex;"><span>#include &#34;decode.h&#34;
+</span></span><span style="display:flex;"><span>#include &lt;stdlib.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;math.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;iomanip.h&gt; 
+</span></span><span style="display:flex;"><span>#define length 10
+</span></span><span style="display:flex;"><span>#define M 3
+</span></span><span style="display:flex;"><span>#define N 3
+</span></span><span style="display:flex;"><span>#define statenum (int)pow(2,M-1)
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> generate[N]<span style="color:#ec0000">=</span>{<span style="color:#008900">1</span>,<span style="color:#008900">5</span>,<span style="color:#008900">7</span>};//001,101,111
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> origin[length];
+</span></span><span style="display:flex;"><span>//encodeori[length][N]由信息位生成卷积码,码率为1/N,一个码元有N比特
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> encodeori[length][N];
+</span></span><span style="display:flex;"><span>//PSKmaker[length][N]将卷积码调制成PSK信号
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> PSKmaker[length][N];
+</span></span><span style="display:flex;"><span>//send[length][N]加入高斯白噪声后的信号
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> send[length][N];
+</span></span><span style="display:flex;"><span>//从信道里接收的信号
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> demodule[length][N];
+</span></span><span style="display:flex;"><span>//解码后的信号;由statenum个幸存路径筛选得出
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> recover[length];
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">viterbikey</span>(<span style="color:#5f5fff">double</span> DX,<span style="color:#5f5fff">int</span> mode)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    gensignal(origin,mode);
+</span></span><span style="display:flex;"><span>    encode(encodeori,origin,generate);//产生信号
+</span></span><span style="display:flex;"><span>    PSK(encodeori,PSKmaker);//PSK调制
+</span></span><span style="display:flex;"><span>    addgaosi(send,PSKmaker,DX);//加高斯白噪声
+</span></span><span style="display:flex;"><span>    demodulate(demodule,send);//解调
+</span></span><span style="display:flex;"><span>    survive<span style="color:#ec0000">*</span> sur<span style="color:#ec0000">=</span>viterbidecoder(demodule,recover,generate);
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> PE<span style="color:#ec0000">=</span>pe(origin,recover);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> PE;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">viterbi</span>()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> mode<span style="color:#ec0000">=</span><span style="color:#008900">3</span>,sum<span style="color:#ec0000">=</span><span style="color:#008900">0</span>,i,j,k;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">double</span> DX<span style="color:#ec0000">=</span><span style="color:#008900">1.0</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span>(i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span><span style="color:#008900">100</span>;i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(viterbikey(DX,mode)<span style="color:#ec0000">==</span><span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            sum<span style="color:#ec0000">=</span>sum<span style="color:#ec0000">+</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>            cout<span style="color:#ec0000">&lt;&lt;</span><span style="color:#008900">&#34;origin: &#34;</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>length;j<span style="color:#ec0000">++</span>) cout<span style="color:#ec0000">&lt;&lt;</span>origin[j];
+</span></span><span style="display:flex;"><span>            cout<span style="color:#ec0000">&lt;&lt;</span>endl<span style="color:#ec0000">&lt;&lt;</span><span style="color:#008900">&#34;encodeori: &#34;</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>length;j<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">for</span>(k<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;k<span style="color:#ec0000">&lt;</span>N;k<span style="color:#ec0000">++</span>) cout<span style="color:#ec0000">&lt;&lt;</span>encodeori[j][k];
+</span></span><span style="display:flex;"><span>                cout<span style="color:#ec0000">&lt;&lt;</span><span style="color:#008900">&#34; &#34;</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            cout<span style="color:#ec0000">&lt;&lt;</span>endl<span style="color:#ec0000">&lt;&lt;</span><span style="color:#008900">&#34;PSKmaker: &#34;</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>length;j<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">for</span>(k<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;k<span style="color:#ec0000">&lt;</span>N;k<span style="color:#ec0000">++</span>) cout<span style="color:#ec0000">&lt;&lt;</span>;PSKmaker[j][k];
+</span></span><span style="display:flex;"><span>                cout<span style="color:#ec0000">&lt;&lt;</span><span style="color:#008900">&#34; &#34;</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            cout<span style="color:#ec0000">&lt;&lt;</span>endl<span style="color:#ec0000">&lt;&lt;</span><span style="color:#008900">&#34;send &#34;</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>length;j<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">for</span>(k<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;k<span style="color:#ec0000">&lt;</span>N;k<span style="color:#ec0000">++</span>) cout<span style="color:#ec0000">&lt;&lt;</span>setprecision(<span style="color:#008900">2</span>)<span style="color:#ec0000">&lt;&lt;</span>send[j][k]<span style="color:#ec0000">&lt;&lt;</span><span style="color:#008900">&#34; &#34;</span>;
+</span></span><span style="display:flex;"><span>                cout<span style="color:#ec0000">&lt;&lt;</span><span style="color:#008900">&#34;  &#34;</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            cout<span style="color:#ec0000">&lt;&lt;</span>endl<span style="color:#ec0000">&lt;&lt;</span><span style="color:#008900">&#34;demodule: &#34;</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>length;j<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">for</span>(k<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;k<span style="color:#ec0000">&lt;</span>N;k<span style="color:#ec0000">++</span>) cout<span style="color:#ec0000">&lt;&lt;</span>demodule[j][k];
+</span></span><span style="display:flex;"><span>                cout<span style="color:#ec0000">&lt;&lt;</span><span style="color:#008900">&#34; &#34;</span>;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            cout<span style="color:#ec0000">&lt;&lt;</span>endl<span style="color:#ec0000">&lt;&lt;</span><span style="color:#008900">&#34;recover: &#34;</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">for</span>(j<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;j<span style="color:#ec0000">&lt;</span>length;j<span style="color:#ec0000">++</span>) cout<span style="color:#ec0000">&lt;&lt;</span>recover[j];
+</span></span><span style="display:flex;"><span>            cout<span style="color:#ec0000">&lt;&lt;</span>endl<span style="color:#ec0000">&lt;&lt;</span>endl;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> <span style="color:#008900">1.0</span><span style="color:#ec0000">*</span>sum<span style="color:#ec0000">/</span><span style="color:#008900">1000</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">main</span>()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">long</span> seed;
+</span></span><span style="display:flex;"><span>    time((<span style="color:#5f5fff">long</span><span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>seed);
+</span></span><span style="display:flex;"><span>    srand(seed);
+</span></span><span style="display:flex;"><span>    cout<span style="color:#ec0000">&lt;&lt;</span><span style="color:#008900">&#34;误码率为： &#34;</span><span style="color:#ec0000">&lt;&lt;</span>viterbi()<span style="color:#ec0000">&lt;&lt;</span>endl;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>matlab版</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-matlab" data-lang="matlab"><span style="display:flex;"><span><span style="color:#ec0000">length</span>=<span style="color:#008900">1000</span>;M=<span style="color:#008900">3</span>;N=<span style="color:#008900">3</span>;statenum=<span style="color:#008900">2</span>^(M<span style="color:#ec0000">-</span><span style="color:#008900">1</span>);error=<span style="color:#ec0000">zeros</span>(<span style="color:#008900">1</span>,<span style="color:#008900">101</span>);
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">for</span> xyz=<span style="color:#008900">1</span>:<span style="color:#008900">1</span>:<span style="color:#008900">101</span>
+</span></span><span style="display:flex;"><span>    DX=(xyz<span style="color:#ec0000">-</span><span style="color:#008900">1</span>)<span style="color:#ec0000">/</span><span style="color:#008900">10</span>;
+</span></span><span style="display:flex;"><span>    origin=randi([<span style="color:#008900">0</span>,<span style="color:#008900">1</span>],<span style="color:#008900">1</span>,<span style="color:#ec0000">length</span>);generate=[<span style="color:#008900">0</span>,<span style="color:#008900">1</span>,<span style="color:#008900">1</span>;<span style="color:#008900">0</span>,<span style="color:#008900">0</span>,<span style="color:#008900">1</span>;<span style="color:#008900">1</span>,<span style="color:#008900">1</span>,<span style="color:#008900">1</span>];
+</span></span><span style="display:flex;"><span>    encodeori=<span style="color:#ec0000">zeros</span>(<span style="color:#ec0000">length</span>,N);PSKmaker=<span style="color:#ec0000">zeros</span>(<span style="color:#ec0000">length</span>,N);
+</span></span><span style="display:flex;"><span>    send=<span style="color:#ec0000">zeros</span>(<span style="color:#ec0000">length</span>,N);demodule=<span style="color:#ec0000">zeros</span>(<span style="color:#ec0000">length</span>,N);recover=<span style="color:#ec0000">zeros</span>(<span style="color:#008900">1</span>,<span style="color:#ec0000">length</span>);
+</span></span><span style="display:flex;"><span>    shift=<span style="color:#ec0000">zeros</span>(<span style="color:#ec0000">length</span>,M);
+</span></span><span style="display:flex;"><span>    shift(<span style="color:#008900">1</span>,M)=origin(<span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> <span style="color:#ec0000">i</span>=<span style="color:#008900">2</span>:<span style="color:#008900">1</span>:<span style="color:#ec0000">length</span>
+</span></span><span style="display:flex;"><span>        shift(<span style="color:#ec0000">i</span>,:)=[shift(<span style="color:#ec0000">i</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>,<span style="color:#008900">2</span>:<span style="color:#ec0000">end</span>),origin(<span style="color:#ec0000">i</span>)];
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">end</span>
+</span></span><span style="display:flex;"><span>    encodeori=<span style="color:#ec0000">mod</span>(shift<span style="color:#ec0000">*</span>generate,<span style="color:#008900">2</span>);
+</span></span><span style="display:flex;"><span>    PSKmaker=<span style="color:#ec0000">ones</span>(<span style="color:#ec0000">size</span>(encodeori))<span style="color:#ec0000">-</span>encodeori<span style="color:#ec0000">*</span><span style="color:#008900">2</span>;
+</span></span><span style="display:flex;"><span>    send=PSKmaker<span style="color:#ec0000">+</span>DX<span style="color:#ec0000">*</span><span style="color:#ec0000">randn</span>(<span style="color:#ec0000">size</span>(PSKmaker));
+</span></span><span style="display:flex;"><span>    demodule=send<span style="color:#ec0000">&lt;</span><span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>    shift=<span style="color:#ec0000">zeros</span>(statenum,<span style="color:#008900">1</span>,<span style="color:#008900">2</span><span style="color:#ec0000">*</span>M<span style="color:#ec0000">-</span><span style="color:#008900">3</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> <span style="color:#ec0000">i</span>=<span style="color:#008900">1</span>:<span style="color:#008900">1</span>:statenum
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">j</span>=<span style="color:#ec0000">i</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>;k=<span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">while</span> <span style="color:#ec0000">j</span><span style="color:#ec0000">~=</span><span style="color:#008900">0</span>
+</span></span><span style="display:flex;"><span>            shift(<span style="color:#ec0000">i</span>,<span style="color:#008900">1</span>,<span style="color:#ec0000">end</span><span style="color:#ec0000">-</span>k)=<span style="color:#ec0000">mod</span>(<span style="color:#ec0000">j</span>,<span style="color:#008900">2</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">j</span>=bitshift(<span style="color:#ec0000">j</span>,<span style="color:#ec0000">-</span><span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>            k=k<span style="color:#ec0000">+</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">end</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">end</span>
+</span></span><span style="display:flex;"><span>    arraytonum=<span style="color:#ec0000">ones</span>(M<span style="color:#ec0000">-</span><span style="color:#008900">1</span>,<span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> <span style="color:#ec0000">i</span>=M<span style="color:#ec0000">-</span><span style="color:#008900">1</span>:<span style="color:#ec0000">-</span><span style="color:#008900">1</span>:<span style="color:#008900">2</span>
+</span></span><span style="display:flex;"><span>        arraytonum(<span style="color:#ec0000">i</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>)=<span style="color:#008900">2</span><span style="color:#ec0000">*</span>arraytonum(<span style="color:#ec0000">i</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">end</span>
+</span></span><span style="display:flex;"><span>    shift1=<span style="color:#ec0000">squeeze</span>(shift(:,:,<span style="color:#ec0000">end</span><span style="color:#ec0000">-</span>M<span style="color:#ec0000">+</span><span style="color:#008900">2</span>:<span style="color:#ec0000">end</span>));
+</span></span><span style="display:flex;"><span>    myfence.incode(<span style="color:#008900">1</span>).value=<span style="color:#ec0000">mod</span>([<span style="color:#ec0000">zeros</span>(statenum,<span style="color:#008900">1</span>),shift1]<span style="color:#ec0000">*</span>generate,<span style="color:#008900">2</span>);
+</span></span><span style="display:flex;"><span>    myfence.incode(<span style="color:#008900">2</span>).value=<span style="color:#ec0000">mod</span>([<span style="color:#ec0000">ones</span>(statenum,<span style="color:#008900">1</span>),shift1]<span style="color:#ec0000">*</span>generate,<span style="color:#008900">2</span>);
+</span></span><span style="display:flex;"><span>    mysurvive.hamingdist=<span style="color:#ec0000">zeros</span>(statenum,<span style="color:#ec0000">length</span>);
+</span></span><span style="display:flex;"><span>    mysurvive.sufferstate=<span style="color:#ec0000">zeros</span>(statenum,<span style="color:#ec0000">length</span><span style="color:#ec0000">+</span><span style="color:#008900">1</span>,M<span style="color:#ec0000">-</span><span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>    mysurvive.outcode=<span style="color:#ec0000">zeros</span>(statenum,<span style="color:#ec0000">length</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> <span style="color:#ec0000">i</span>=<span style="color:#008900">2</span>:<span style="color:#008900">1</span>:M
+</span></span><span style="display:flex;"><span>        mysurvive.sufferstate(:,<span style="color:#ec0000">i</span>,:)=shift(:,<span style="color:#008900">1</span>,(<span style="color:#ec0000">i</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>):(<span style="color:#ec0000">i</span><span style="color:#ec0000">+</span>M<span style="color:#ec0000">-</span><span style="color:#008900">3</span>));
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">end</span>
+</span></span><span style="display:flex;"><span>    mysurvive.outcode(:,<span style="color:#008900">1</span>:M<span style="color:#ec0000">-</span><span style="color:#008900">1</span>)=shift1;
+</span></span><span style="display:flex;"><span>    mysurvive.sufferstate1=<span style="color:#ec0000">cat</span>(<span style="color:#008900">3</span>,<span style="color:#ec0000">zeros</span>(statenum,M<span style="color:#ec0000">-</span><span style="color:#008900">1</span>,<span style="color:#008900">1</span>),mysurvive.sufferstate(:,<span style="color:#008900">2</span>:M,:));
+</span></span><span style="display:flex;"><span>    mysurvive.hamingdist(:,<span style="color:#008900">1</span>)=sum(<span style="color:#ec0000">mod</span>(<span style="color:#ec0000">squeeze</span>(mysurvive.sufferstate1(:,<span style="color:#008900">1</span>,:))<span style="color:#ec0000">*</span>generate,<span style="color:#008900">2</span>)<span style="color:#ec0000">~=</span>(<span style="color:#ec0000">ones</span>(statenum,<span style="color:#008900">1</span>)<span style="color:#ec0000">*</span>demodule(<span style="color:#008900">1</span>,:)),<span style="color:#008900">2</span>)<span style="color:#ec0000">&#39;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> <span style="color:#ec0000">i</span>=<span style="color:#008900">2</span>:<span style="color:#008900">1</span>:M<span style="color:#ec0000">-</span><span style="color:#008900">1</span>
+</span></span><span style="display:flex;"><span>        mysurvive.hamingdist(:,<span style="color:#ec0000">i</span>)=sum(<span style="color:#ec0000">mod</span>(<span style="color:#ec0000">squeeze</span>(mysurvive.sufferstate1(:,<span style="color:#ec0000">i</span>,:))<span style="color:#ec0000">*</span>generate,<span style="color:#008900">2</span>)<span style="color:#ec0000">~=</span>(<span style="color:#ec0000">ones</span>(statenum,<span style="color:#008900">1</span>)<span style="color:#ec0000">*</span>demodule(<span style="color:#ec0000">i</span>,:)),<span style="color:#008900">2</span>)<span style="color:#ec0000">+</span>mysurvive.hamingdist(:,<span style="color:#ec0000">i</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">end</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> <span style="color:#ec0000">i</span>=M:<span style="color:#008900">1</span>:<span style="color:#ec0000">length</span>
+</span></span><span style="display:flex;"><span>        mysurvivenew=mysurvive;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span> <span style="color:#ec0000">j</span>=<span style="color:#008900">1</span>:<span style="color:#008900">1</span>:statenum
+</span></span><span style="display:flex;"><span>            mysurvive.outcode(<span style="color:#ec0000">j</span>,<span style="color:#ec0000">i</span>)=<span style="color:#ec0000">mod</span>(<span style="color:#ec0000">j</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>,<span style="color:#008900">2</span>);
+</span></span><span style="display:flex;"><span>            mysurvive.sufferstate(<span style="color:#ec0000">j</span>,<span style="color:#ec0000">i</span><span style="color:#ec0000">+</span><span style="color:#008900">1</span>,:)=shift1(<span style="color:#ec0000">j</span>,:);
+</span></span><span style="display:flex;"><span>            state1=[<span style="color:#008900">0</span>,shift1(<span style="color:#ec0000">j</span>,<span style="color:#008900">1</span>:<span style="color:#ec0000">end</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>)]<span style="color:#ec0000">*</span>arraytonum<span style="color:#ec0000">+</span><span style="color:#008900">1</span>;state2=[<span style="color:#008900">1</span>,shift1(<span style="color:#ec0000">j</span>,<span style="color:#008900">1</span>:<span style="color:#ec0000">end</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>)]<span style="color:#ec0000">*</span>arraytonum<span style="color:#ec0000">+</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>            dist1=sum(myfence.incode(<span style="color:#008900">1</span>).value(<span style="color:#ec0000">j</span>,:)<span style="color:#ec0000">~=</span>demodule(<span style="color:#ec0000">i</span>,:))<span style="color:#ec0000">+</span>mysurvivenew.hamingdist(state1,<span style="color:#ec0000">i</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>            dist2=sum(myfence.incode(<span style="color:#008900">2</span>).value(<span style="color:#ec0000">j</span>,:)<span style="color:#ec0000">~=</span>demodule(<span style="color:#ec0000">i</span>,:))<span style="color:#ec0000">+</span>mysurvivenew.hamingdist(state2,<span style="color:#ec0000">i</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> (dist1<span style="color:#ec0000">&lt;</span>dist2)<span style="color:#ec0000">||</span>((dist1<span style="color:#ec0000">==</span>dist2)<span style="color:#ec0000">&amp;&amp;</span>(randi([<span style="color:#008900">0</span>,<span style="color:#008900">1</span>])<span style="color:#ec0000">==</span><span style="color:#008900">0</span>))
+</span></span><span style="display:flex;"><span>                mysurvive.outcode(<span style="color:#ec0000">j</span>,<span style="color:#008900">1</span>:<span style="color:#ec0000">i</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>)=mysurvivenew.outcode(state1,<span style="color:#008900">1</span>:<span style="color:#ec0000">i</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>                mysurvive.sufferstate(<span style="color:#ec0000">j</span>,<span style="color:#008900">2</span>:<span style="color:#ec0000">i</span>,:)=mysurvivenew.sufferstate(state1,<span style="color:#008900">2</span>:<span style="color:#ec0000">i</span>,:);
+</span></span><span style="display:flex;"><span>                mysurvive.hamingdist(<span style="color:#ec0000">j</span>,<span style="color:#008900">1</span>:<span style="color:#ec0000">i</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>)=mysurvivenew.hamingdist(state1,<span style="color:#008900">1</span>:<span style="color:#ec0000">i</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>                mysurvive.hamingdist(<span style="color:#ec0000">j</span>,<span style="color:#ec0000">i</span>)=dist1;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>                mysurvive.outcode(<span style="color:#ec0000">j</span>,<span style="color:#008900">1</span>:<span style="color:#ec0000">i</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>)=mysurvivenew.outcode(state2,<span style="color:#008900">1</span>:<span style="color:#ec0000">i</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>                mysurvive.sufferstate(<span style="color:#ec0000">j</span>,<span style="color:#008900">2</span>:<span style="color:#ec0000">i</span>,:)=mysurvivenew.sufferstate(state2,<span style="color:#008900">2</span>:<span style="color:#ec0000">i</span>,:);
+</span></span><span style="display:flex;"><span>                mysurvive.hamingdist(<span style="color:#ec0000">j</span>,<span style="color:#008900">1</span>:<span style="color:#ec0000">i</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>)=mysurvivenew.hamingdist(state2,<span style="color:#008900">1</span>:<span style="color:#ec0000">i</span><span style="color:#ec0000">-</span><span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>                mysurvive.hamingdist(<span style="color:#ec0000">j</span>,<span style="color:#ec0000">i</span>)=dist2;            
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">end</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">end</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">end</span>
+</span></span><span style="display:flex;"><span>    thebest=min(<span style="color:#ec0000">find</span>(mysurvive.hamingdist(:,<span style="color:#ec0000">end</span>)<span style="color:#ec0000">==</span>min(mysurvive.hamingdist(:,<span style="color:#ec0000">end</span>))));
+</span></span><span style="display:flex;"><span>    recover=mysurvive.outcode(thebest,:);
+</span></span><span style="display:flex;"><span>    error(xyz)=sum(recover<span style="color:#ec0000">~=</span>origin)<span style="color:#ec0000">/</span><span style="color:#ec0000">length</span>;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">end</span>
+</span></span><span style="display:flex;"><span>plot(<span style="color:#ec0000">linspace</span>(<span style="color:#008900">0</span>,<span style="color:#008900">10</span>,<span style="color:#008900">101</span>),error)
+</span></span></code></pre></div>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/cpp_posts/20140311_tulun/">
+                        凸轮曲线计算工具
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

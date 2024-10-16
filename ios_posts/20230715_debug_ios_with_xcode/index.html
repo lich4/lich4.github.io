@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    XCode调试越狱iOS任意进程 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/ios_posts/20230715_debug_ios_with_xcode/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/ios_posts/">Ios_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/ios_posts/20230715_debug_ios_with_xcode/">XCode调试越狱iOS任意进程</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">XCode调试越狱iOS任意进程</h1>
+    
+    <p class="single-summary">XCode调试越狱iOS任意进程</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2023-07-15T00:00:00&#43;00:00">July 15, 2023</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E8%B0%83%E8%AF%95/">#调试</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#分析">分析</a></li>
+    <li><a href="#编码">编码</a></li>
+    <li><a href="#使用">使用</a></li>
+    <li><a href="#注意">注意</a></li>
+    <li><a href="#后记2024年6月">后记(2024年6月)</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="背景">背景</h2>
+<p>  近一年没发过帖子了，近几年一直在iOS系统深耕，现在分享一个我去年的研究成果，项目地址[https://github.com/lich4/debugserver_azj]。
+此项目为增强越狱环境下iOS上的调试器功能。主要为以下几点：</p>
+<ol>
+<li>使XCode支持调试任意第三方签名的App或者进程，包括系统进程</li>
+<li>使XCode支持查看任意App界面布局<br>
+笔者主要用的调试方式仍然是命令行远程调试，而图形化调试在某些情况下方便一些，如果开发了某些Tweak想要调试，使用XCode附加调试也能起到很好的效果</li>
+</ol>
+<h2 id="分析">分析</h2>
+<p>笔者环境: XCode11.x + iOS12.x<br>
+  先从XCode入手研究XCode怎么实现调试的，可以看到设备在首次连接到Mac上时，会挂一个/Developer分区进去，debugserver就在其中，此debugserver用于XCode调试有自己开发着签名的App。而挂载的dmg其实在/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/DeviceSupport/12.5/DeveloperDiskImage.dmg  <br>
+  而Cydia源里其实也提供debugserver，此debugserver可以用于命令行远程调试任意进程，实际上是加了root权限和额外的entitlemet。XCode控制debugserver是通过lockdownd来通信的，此系统进程提供了USB相关的各种功能，例如XCode安装调试，还有爱思助手的各种功能，都要走lockdownd(如果想改爱思助手显示的设备参数其实也是从这里改)。<br>
+  经过调试可以定位关键系统API为SMJobSubmit</p>
+<pre tabindex="0"><code>{
+    EnvironmentVariables =     {
+        &#34;LOCKDOWN_MACH_SERVICE&#34; = &#34;lockdown.2144085414520.com.apple.debugserver&#34;;
+    };
+    KeepAlive = 0;
+    Label = &#34;lockdown.2144085414520.com.apple.debugserver&#34;;
+    LaunchOnlyOnce = 1;
+    MachServices =     {
+        &#34;lockdown.2144085414520.com.apple.debugserver&#34; = 1;
+    };
+    POSIXSpawnType = Interactive;
+    ProgramArguments =     (
+        &#34;/Developer/usr/bin/debugserver&#34;,
+        &#34;--lockdown&#34;,
+        &#34;--launch=frontboard&#34;
+    );
+    RunAtLoad = 0;
+    UserName = mobile;
+}
+</code></pre><p>  可以发现XCode使用了/Developer/usr/bin/debugserver。但由于debugserver缺少root权限以及entitlemet导致无法附加到系统进程，因此XCode正常情况无法调试系统进程和第三方App(MonkeyDev之类重打包不算)。那么直接换成Cydia源里的debugserver是否可行呢，经过笔者测试，那个debugserver也是无法使用的，因为苹果原生debugserver是支持&ndash;lockdown参数的，而Cydia源的却不支持，因此必须自行改版debugserver。这一步其实很简单，将Cydia源里的debugserver的entitlement，ldid签名到Developer的debugserver即可。<br>
+  下一步，想办法让lockdownd使用我们改版debugserver，最直接的想法是做个dmg，让lockdown挂上去，然而经过逆向和测试发现DeviceSupport下的有DeveloperDiskImage.dmg和DeveloperDiskImage.dmg.signature，后者用于文件校验，且用到RSA加密了，无解。因此笔者考虑使用tweak来改lockdownd</p>
+<h2 id="编码">编码</h2>
+<p>  替换ProgramArguments中的debugserver为我们定制的debugserver即可</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-objc" data-lang="objc"><span style="display:flex;"><span>#include &lt;dlfcn.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;time.h&gt;
+</span></span><span style="display:flex;"><span>#import &lt;Foundation/Foundation.h&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">static</span> <span style="color:#5f5fff">void</span> <span style="color:#5f5fff">nouse</span>(){}
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">static</span> <span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span> _SMJobSubmit <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span>)nouse;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">static</span> <span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span> _CFPropertyListCreateData <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span>)nouse;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">static</span> <span style="color:#5f5fff">int</span> last_inst_time <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">%</span>hookf(CFDataRef, _CFPropertyListCreateData, CFAllocatorRef allocator, CFPropertyListRef propertyList, CFPropertyListFormat format, CFOptionFlags options, CFErrorRef<span style="color:#ec0000">*</span> error) {
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (CFGetTypeID(propertyList) <span style="color:#ec0000">==</span> CFDictionaryGetTypeID()) {
+</span></span><span style="display:flex;"><span>        NSDictionary<span style="color:#ec0000">*</span> info <span style="color:#ec0000">=</span> (<span style="color:#ec0000">__bridge</span> NSDictionary<span style="color:#ec0000">*</span>)propertyList;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (info[<span style="color:#008900">@&#34;Service&#34;</span>] <span style="color:#ec0000">!=</span> <span style="color:#ec0000">nil</span> <span style="color:#ec0000">&amp;&amp;</span> [info[<span style="color:#008900">@&#34;Service&#34;</span>] <span style="color:#ec0000">isEqualToString</span>:<span style="color:#008900">@&#34;com.apple.mobile.installation_proxy&#34;</span>]) {
+</span></span><span style="display:flex;"><span>            last_inst_time <span style="color:#ec0000">=</span> time(<span style="color:#008900">0</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> <span style="color:#ec0000">%</span>orig;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">%</span>hookf(<span style="color:#5f5fff">Boolean</span>, _SMJobSubmit, CFStringRef domain, CFDictionaryRef job, CFTypeID auth, CFErrorRef <span style="color:#ec0000">*</span>outError) {
+</span></span><span style="display:flex;"><span>    NSMutableDictionary<span style="color:#ec0000">*</span> mjob <span style="color:#ec0000">=</span> [(<span style="color:#ec0000">__bridge</span> NSDictionary<span style="color:#ec0000">*</span>)job mutableCopy];
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (job <span style="color:#ec0000">!=</span> <span style="color:#ec0000">nil</span> <span style="color:#ec0000">&amp;&amp;</span> mjob[<span style="color:#008900">@&#34;ProgramArguments&#34;</span>] <span style="color:#ec0000">!=</span> <span style="color:#ec0000">nil</span>) {
+</span></span><span style="display:flex;"><span>        NSArray<span style="color:#ec0000">*</span> argv <span style="color:#ec0000">=</span> mjob[<span style="color:#008900">@&#34;ProgramArguments&#34;</span>];
+</span></span><span style="display:flex;"><span>        NSString<span style="color:#ec0000">*</span> full_cmd <span style="color:#ec0000">=</span> [argv <span style="color:#ec0000">componentsJoinedByString</span>:<span style="color:#008900">@&#34; &#34;</span>];
+</span></span><span style="display:flex;"><span>        NSLog(<span style="color:#008900">@&#34;debugserver_azj %@&#34;</span>, full_cmd);
+</span></span><span style="display:flex;"><span>        NSString<span style="color:#ec0000">*</span> path <span style="color:#ec0000">=</span> argv.firstObject;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (time(<span style="color:#008900">0</span>) <span style="color:#ec0000">-</span> last_inst_time <span style="color:#ec0000">&gt;</span> <span style="color:#008900">3</span>) { // 防止影响Xcode安装调试普通App
+</span></span><span style="display:flex;"><span>            NSOperatingSystemVersion sysver <span style="color:#ec0000">=</span> NSProcessInfo.processInfo.operatingSystemVersion;;
+</span></span><span style="display:flex;"><span>            <span style="color:#5f5fff">int</span> mv <span style="color:#ec0000">=</span> sysver.majorVersion;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> ([path <span style="color:#ec0000">isEqualToString</span>:<span style="color:#008900">@&#34;/Developer/usr/bin/debugserver&#34;</span>]) {
+</span></span><span style="display:flex;"><span>                NSMutableArray<span style="color:#ec0000">*</span> margv <span style="color:#ec0000">=</span> [argv mutableCopy];
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> (mv <span style="color:#ec0000">&lt;=</span> <span style="color:#008900">8</span>) {
+</span></span><span style="display:flex;"><span>                    // not implement
+</span></span><span style="display:flex;"><span>                } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (mv <span style="color:#ec0000">==</span> <span style="color:#008900">9</span> <span style="color:#ec0000">||</span> mv <span style="color:#ec0000">==</span> <span style="color:#008900">10</span>) {
+</span></span><span style="display:flex;"><span>                    margv[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">@&#34;/usr/bin/debugserver_azj10&#34;</span>;
+</span></span><span style="display:flex;"><span>                } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (mv <span style="color:#ec0000">==</span> <span style="color:#008900">11</span> <span style="color:#ec0000">||</span> mv <span style="color:#ec0000">==</span> <span style="color:#008900">12</span>) {
+</span></span><span style="display:flex;"><span>                    margv[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">@&#34;/usr/bin/debugserver_azj12&#34;</span>;
+</span></span><span style="display:flex;"><span>                } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (mv <span style="color:#ec0000">==</span> <span style="color:#008900">13</span> <span style="color:#ec0000">||</span> mv <span style="color:#ec0000">==</span> <span style="color:#008900">14</span>) {
+</span></span><span style="display:flex;"><span>                    margv[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">@&#34;/usr/bin/debugserver_azj14&#34;</span>;
+</span></span><span style="display:flex;"><span>                } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (mv <span style="color:#ec0000">&gt;=</span> <span style="color:#008900">15</span>) { // XCode 12+ is need for iOS15  // not test on iOS16+
+</span></span><span style="display:flex;"><span>                    margv[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">@&#34;/usr/bin/debugserver_azj15&#34;</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                mjob[<span style="color:#008900">@&#34;UserName&#34;</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">@&#34;root&#34;</span>;
+</span></span><span style="display:flex;"><span>                mjob[<span style="color:#008900">@&#34;ProgramArguments&#34;</span>] <span style="color:#ec0000">=</span> margv;
+</span></span><span style="display:flex;"><span>            } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> ([path <span style="color:#ec0000">isEqualToString</span>:<span style="color:#008900">@&#34;/Developer/usr/libexec/gputoolsd&#34;</span>]) {
+</span></span><span style="display:flex;"><span>                NSMutableArray<span style="color:#ec0000">*</span> margv <span style="color:#ec0000">=</span> [argv mutableCopy];
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> (mv <span style="color:#ec0000">&lt;=</span> <span style="color:#008900">8</span>) {
+</span></span><span style="display:flex;"><span>                    // not implement
+</span></span><span style="display:flex;"><span>                } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (mv <span style="color:#ec0000">==</span> <span style="color:#008900">9</span> <span style="color:#ec0000">||</span> mv <span style="color:#ec0000">==</span> <span style="color:#008900">10</span>) {
+</span></span><span style="display:flex;"><span>                    margv[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">@&#34;/usr/bin/gputoolsd_azj10&#34;</span>;
+</span></span><span style="display:flex;"><span>                } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (mv <span style="color:#ec0000">==</span> <span style="color:#008900">11</span> <span style="color:#ec0000">||</span> mv <span style="color:#ec0000">==</span> <span style="color:#008900">12</span>) {
+</span></span><span style="display:flex;"><span>                    margv[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">@&#34;/usr/bin/gputoolsd_azj12&#34;</span>;
+</span></span><span style="display:flex;"><span>                } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (mv <span style="color:#ec0000">==</span> <span style="color:#008900">13</span> <span style="color:#ec0000">||</span> mv <span style="color:#ec0000">==</span> <span style="color:#008900">14</span>) {
+</span></span><span style="display:flex;"><span>                    margv[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">@&#34;/usr/bin/gputoolsd_azj14&#34;</span>;
+</span></span><span style="display:flex;"><span>                } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (mv <span style="color:#ec0000">&gt;=</span> <span style="color:#008900">15</span>) { // not test on iOS16+
+</span></span><span style="display:flex;"><span>                    margv[<span style="color:#008900">0</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">@&#34;/usr/bin/gputoolsd_azj15&#34;</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                mjob[<span style="color:#008900">@&#34;UserName&#34;</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">@&#34;root&#34;</span>;
+</span></span><span style="display:flex;"><span>                mjob[<span style="color:#008900">@&#34;ProgramArguments&#34;</span>] <span style="color:#ec0000">=</span> margv;
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            job <span style="color:#ec0000">=</span> (__bridge_retained CFDictionaryRef)mjob;
+</span></span><span style="display:flex;"><span>        }      
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> <span style="color:#ec0000">%</span>orig;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">%</span>ctor {
+</span></span><span style="display:flex;"><span>    _SMJobSubmit <span style="color:#ec0000">=</span> dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;SMJobSubmit&#34;</span>);
+</span></span><span style="display:flex;"><span>    _CFPropertyListCreateData <span style="color:#ec0000">=</span> dlsym(RTLD_DEFAULT, <span style="color:#008900">&#34;CFPropertyListCreateData&#34;</span>);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h2 id="使用">使用</h2>
+<p>  附加已有进程不必赘述，直接选择&quot;Attach to Process by PID or Name&quot;即可，这里谈下启动附加。由于进程在启动以后，再附加调试可能错过启动时刻的执行逻辑，因此可以在进程启动前就选择&quot;Attach to Process by PID or Name&quot;并指定进程名，然后启动进程，这样能实现启动时附加(底层是通过debugserver的-waitfor实现) <br>
+  而获取界面元素则和正常开发相同，先暂停进程，然后选择&quot;View Debugging&quot; -&gt; &ldquo;Capture View Hierarchy&rdquo;</p>
+<p>
+
+
+
+
+
+
+
+
+
+
+<figure class="">
+
+    <div>
+        <img loading="lazy" alt="" src=" /img/debug_sb.png">
+    </div>
+
+    
+</figure></p>
+<h2 id="注意">注意</h2>
+<p>  本插件在iOS9/10/12/13/14/15 iPhone5s/6/6s/7/X上均做过测试，XCode11.7完美支持iOS9-14</p>
+<ol>
+<li>安装完本插件需要重新插拔USB，以便注入到lockdownd生效。</li>
+<li>若App有反调试，需要先想办法去除反调试</li>
+<li>若调试老型号手机出现Jetsam相关错误，为调试时内存占用过大被系统kill，需要开发tweak使用memorystatus_control修改下进程权限。这种情况笔者在分析iOS10的SpringBoard界面元素时遇到过</li>
+<li>附加时间: iOS15 &gt; iOS13/14 &gt; iOS12 &hellip; ；iOS15上附加进程速度会比较慢，笔者测附加Safari在2分钟左右</li>
+<li>XCode12.x附加调试iOS15的SpringBoard会因为时间过长而导致桌面被系统kill，但XCode13.x却可以</li>
+<li>本插件只增强附加调试，会影响XCode调试普通App，所以代码中设置last_inst_time用于记录IPA安装时间避开XCode安装调试。(其实也可以在设置里增加开关来控制是否root身份启动debugserver不过那样更麻烦一些)。</li>
+<li>亲测支持无根越狱(dopamine已测)，arm64e架构，安装我提供的release里arm64e的deb即可</li>
+</ol>
+<h2 id="后记2024年6月">后记(2024年6月)</h2>
+<p>  之前遇到lldb卡几分钟的主要原因是DeviceSupport文件不正确导致lldb从内存读取符号，所以速度缓慢，需要先用高版本XCode生成正确的DeviceSupport再进行调试</p>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20220705_svc_call/">
+                        iOS一种隐式调用svc的方式
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

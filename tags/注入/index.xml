@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>注入 on 超哥的博客</title>
+    <link>https://lich4.github.io/tags/%E6%B3%A8%E5%85%A5/</link>
+    <description>Recent content in 注入 on 超哥的博客</description>
+    <generator>Hugo</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Mon, 02 Jan 2017 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://lich4.github.io/tags/%E6%B3%A8%E5%85%A5/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>动态注入并执行Android代码到进程</title>
+      <link>https://lich4.github.io/android_posts/20170102_java_inject/</link>
+      <pubDate>Mon, 02 Jan 2017 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/android_posts/20170102_java_inject/</guid>
+      <description>动态注入并执行Android代码到进程</description>
+    </item>
+  </channel>
+</rss>

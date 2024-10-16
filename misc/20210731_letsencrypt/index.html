@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    使用Letsencrypt免费证书搭建tornado的https服务 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/misc/20210731_letsencrypt/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/misc/">Miscs</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/misc/20210731_letsencrypt/">使用Letsencrypt免费证书搭建tornado的https服务</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">使用Letsencrypt免费证书搭建tornado的https服务</h1>
+    
+    <p class="single-summary">使用Letsencrypt免费证书搭建tornado的https服务</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2021-07-31T00:00:00&#43;00:00">July 31, 2021</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents"></nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <p>letsencrypt是个非盈利组织，他们搞出来一整套自动授权ssl免费证书体系，方便了很多中小用户。这里笔者参照官方网站一步步完成：<a href="https://certbot.eff.org/">https://certbot.eff.org/</a>。certbot是letsencrypt团队研发的自动化更新ssl证书的工具</p>
+<p>笔者的服务器是centos7+tornado自己搭建的，因此需要手动DIY一小部分操作，如果你的服务器是nginx/apache之类的，certbot直接提供了自动化功能。</p>
+<p>确保使用root权限进行如下操作:</p>
+<p>1 按certbot官网说明，先安装snapd，这玩意儿用来做软件包管理器了. <a href="https://snapcraft.io/docs/installing-snap-on-centos">https://snapcraft.io/docs/installing-snap-on-centos</a></p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>yum install snapd
+</span></span><span style="display:flex;"><span>systemctl <span style="color:#ec0000">enable</span> --now snapd.socket
+</span></span><span style="display:flex;"><span>ln -s /var/lib/snapd/snap /snap
+</span></span></code></pre></div><p>2  安装certbot</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>snap install core
+</span></span><span style="display:flex;"><span>snap refresh core
+</span></span><span style="display:flex;"><span>yum remove certbot
+</span></span><span style="display:flex;"><span>snap install --classic certbot
+</span></span><span style="display:flex;"><span>ln -s /snap/bin/certbot /usr/bin/certbot
+</span></span><span style="display:flex;"><span># 如果可以停止服务器
+</span></span><span style="display:flex;"><span>certbot certonly --standalone
+</span></span><span style="display:flex;"><span># 如果不能停止服务器
+</span></span><span style="display:flex;"><span>certbot certonly --webroot
+</span></span></code></pre></div><p>此时，certbot从远程服务器生成并下载证书到你的服务器，并给你生成Cert和Key:</p>
+<pre tabindex="0"><code>/etc/letsencrypt/live/[HOST]/fullchain.pem
+/etc/letsencrypt/live/[HOST]/privkey.pem
+</code></pre><p>letsencrypt证书有效期为90天，certbot会在证书过期前自动更新，这样在更新前，我们需要停止服务器，再更新后再启动服务器。certbot专门为这种需求提供了hook功能，即用户只需要写启动关闭自己服务器的功能脚本(/etc/letsencrypt/renewal-hooks/pre和/etc/letsencrypt/renewal-hooks/post)，即可实现在certbot更新域名前自动停止服务器，在更新域名后自动启动服务器。(certbot更新证书过程需要占用本地80端口，所以要先关掉服务，而证书文件的更新，也必然需要重启https服务)</p>
+<p>在tonado中，相应的开发代码:</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>https_server <span style="color:#ec0000">=</span> tornado<span style="color:#ec0000">.</span>httpserver<span style="color:#ec0000">.</span>HTTPServer(application, decompress_request<span style="color:#ec0000">=</span><span style="color:#ec0000">True</span>, ssl_options<span style="color:#ec0000">=</span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;certfile&#34;</span>: <span style="color:#008900">&#34;/etc/letsencrypt/live/域名/fullchain.pem&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;keyfile&#34;</span>: <span style="color:#008900">&#34;/etc/letsencrypt/live/域名/privkey.pem&#34;</span>,
+</span></span><span style="display:flex;"><span>    })
+</span></span><span style="display:flex;"><span>https_server<span style="color:#ec0000">.</span>listen(<span style="color:#008900">443</span>)
+</span></span></code></pre></div>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/misc/20161215_verify_https_cert/">
+                        使用burpsuite验证https证书是否安全
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/misc/20230821_cloudflare_workers/">
+                        Cloudflare之Workers初试使用
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

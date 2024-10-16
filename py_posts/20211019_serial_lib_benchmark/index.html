@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    常见的序列化方式性能测试 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/py_posts/20211019_serial_lib_benchmark/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/py_posts/">Py_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/py_posts/20211019_serial_lib_benchmark/">常见的序列化方式性能测试</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">常见的序列化方式性能测试</h1>
+    
+    <p class="single-summary">常见的序列化方式性能测试</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2021-10-19T00:00:00&#43;00:00">October 19, 2021</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#json">json</a></li>
+    <li><a href="#protobuf">protobuf</a></li>
+    <li><a href="#capnproto">capnproto</a></li>
+    <li><a href="#msgpack">msgpack</a></li>
+    <li><a href="#flatbuffers">flatbuffers</a></li>
+    <li><a href="#性能对比">性能对比</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="json">json</h2>
+<ul>
+<li>测试</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#ec0000">import</span> json
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">def</span> <span style="color:#5f5fff">gen_json_inst</span>():
+</span></span><span style="display:flex;"><span>    inst <span style="color:#ec0000">=</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f01&#34;</span>: <span style="color:#008900">0.1</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f02&#34;</span>: <span style="color:#008900">0.1</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f03&#34;</span>: <span style="color:#008900">1</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f04&#34;</span>: <span style="color:#008900">1</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f05&#34;</span>: <span style="color:#008900">1</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f06&#34;</span>: <span style="color:#008900">1</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f07&#34;</span>: <span style="color:#ec0000">True</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f08&#34;</span>: <span style="color:#008900">&#34;1&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f09&#34;</span>: <span style="color:#008900">&#34;1&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f10&#34;</span>: {
+</span></span><span style="display:flex;"><span>            <span style="color:#008900">&#34;f11&#34;</span>: [<span style="color:#008900">&#34;1&#34;</span>]
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> inst
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">def</span> <span style="color:#5f5fff">test_json</span>():
+</span></span><span style="display:flex;"><span>    inst <span style="color:#ec0000">=</span> gen_json_inst()
+</span></span><span style="display:flex;"><span>    data <span style="color:#ec0000">=</span> json<span style="color:#ec0000">.</span>dumps(inst)
+</span></span><span style="display:flex;"><span>    t1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time()<span style="color:#ec0000">*</span><span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> i <span style="color:#ec0000">in</span> <span style="color:#ec0000">range</span>(<span style="color:#008900">100000</span>):
+</span></span><span style="display:flex;"><span>        encoded <span style="color:#ec0000">=</span> json<span style="color:#ec0000">.</span>dumps(inst)
+</span></span><span style="display:flex;"><span>        json<span style="color:#ec0000">.</span>loads(encoded)
+</span></span><span style="display:flex;"><span>    t2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time()<span style="color:#ec0000">*</span><span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">print</span>(<span style="color:#008900">&#34;data len:</span><span style="color:#008900">%d</span><span style="color:#008900">, time elapsed:</span><span style="color:#008900">%d</span><span style="color:#008900">ms&#34;</span> <span style="color:#ec0000">%</span> (<span style="color:#ec0000">len</span>(data), t2 <span style="color:#ec0000">-</span> t1))
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">print</span>(data)
+</span></span></code></pre></div><ul>
+<li>结果</li>
+</ul>
+<pre tabindex="0"><code>data len:124, time elapsed:1118ms
+{&#34;f01&#34;: 0.1, &#34;f02&#34;: 0.1, &#34;f03&#34;: 1, &#34;f04&#34;: 1, &#34;f05&#34;: 1, &#34;f06&#34;: 1, &#34;f07&#34;: true, &#34;f08&#34;: &#34;1&#34;, &#34;f09&#34;: &#34;1&#34;, &#34;f10&#34;: {&#34;f11&#34;: [&#34;1&#34;]}}
+</code></pre><h2 id="protobuf">protobuf</h2>
+<ul>
+<li>数据模板</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-proto" data-lang="proto"><span style="display:flex;"><span>// test.proto
+</span></span><span style="display:flex;"><span>syntax <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;proto3&#34;</span>;<span style="color:#ec0000">
+</span></span></span><span style="display:flex;"><span><span style="color:#ec0000"></span><span style="color:#ec0000">message</span> <span style="color:#5f5fff">Other</span> {<span style="color:#ec0000">
+</span></span></span><span style="display:flex;"><span><span style="color:#ec0000"></span>    <span style="color:#ec0000">repeated</span> <span style="color:#5f5fff">string</span> f11 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;<span style="color:#ec0000">
+</span></span></span><span style="display:flex;"><span><span style="color:#ec0000"></span>}<span style="color:#ec0000">
+</span></span></span><span style="display:flex;"><span><span style="color:#ec0000"></span><span style="color:#ec0000">message</span> <span style="color:#5f5fff">SearchRequest</span> {<span style="color:#ec0000">
+</span></span></span><span style="display:flex;"><span><span style="color:#ec0000"></span>  <span style="color:#5f5fff">float</span>     f01 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;<span style="color:#ec0000">
+</span></span></span><span style="display:flex;"><span><span style="color:#ec0000"></span>  <span style="color:#5f5fff">double</span>    f02 <span style="color:#ec0000">=</span> <span style="color:#008900">2</span>;<span style="color:#ec0000">
+</span></span></span><span style="display:flex;"><span><span style="color:#ec0000"></span>  <span style="color:#5f5fff">int32</span>     f03 <span style="color:#ec0000">=</span> <span style="color:#008900">3</span>;<span style="color:#ec0000">
+</span></span></span><span style="display:flex;"><span><span style="color:#ec0000"></span>  <span style="color:#5f5fff">int64</span>     f04 <span style="color:#ec0000">=</span> <span style="color:#008900">4</span>;<span style="color:#ec0000">
+</span></span></span><span style="display:flex;"><span><span style="color:#ec0000"></span>  <span style="color:#5f5fff">uint32</span>    f05 <span style="color:#ec0000">=</span> <span style="color:#008900">5</span>;<span style="color:#ec0000">
+</span></span></span><span style="display:flex;"><span><span style="color:#ec0000"></span>  <span style="color:#5f5fff">uint64</span>    f06 <span style="color:#ec0000">=</span> <span style="color:#008900">6</span>;<span style="color:#ec0000">
+</span></span></span><span style="display:flex;"><span><span style="color:#ec0000"></span>  <span style="color:#5f5fff">bool</span>      f07 <span style="color:#ec0000">=</span> <span style="color:#008900">13</span>;<span style="color:#ec0000">
+</span></span></span><span style="display:flex;"><span><span style="color:#ec0000"></span>  <span style="color:#5f5fff">string</span>    f08 <span style="color:#ec0000">=</span> <span style="color:#008900">14</span>;<span style="color:#ec0000">
+</span></span></span><span style="display:flex;"><span><span style="color:#ec0000"></span>  <span style="color:#5f5fff">bytes</span>     f09 <span style="color:#ec0000">=</span> <span style="color:#008900">15</span>;<span style="color:#ec0000">
+</span></span></span><span style="display:flex;"><span><span style="color:#ec0000"></span>  Other     f10 <span style="color:#ec0000">=</span> <span style="color:#008900">16</span>;<span style="color:#ec0000">
+</span></span></span><span style="display:flex;"><span><span style="color:#ec0000"></span>}<span style="color:#ec0000">
+</span></span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>protoc test.proto --python_out<span style="color:#ec0000">=</span>. # 编译生成test_pb2.py
+</span></span></code></pre></div><ul>
+<li>测试</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#ec0000">import</span> time
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">from</span> google.protobuf.json_format <span style="color:#ec0000">import</span> Parse
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">import</span> test_pb2
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">def</span> <span style="color:#5f5fff">gen_pb_inst</span>():
+</span></span><span style="display:flex;"><span>    inst <span style="color:#ec0000">=</span> test_pb2<span style="color:#ec0000">.</span>SearchRequest()
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f01 <span style="color:#ec0000">=</span> <span style="color:#008900">0.1</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f02 <span style="color:#ec0000">=</span> <span style="color:#008900">0.1</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f03 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f04 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f05 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f06 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f07 <span style="color:#ec0000">=</span> <span style="color:#ec0000">True</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f08 <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;1&#34;</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f09 <span style="color:#ec0000">=</span> <span style="color:#008900">b</span><span style="color:#008900">&#34;1&#34;</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f10<span style="color:#ec0000">.</span>f11<span style="color:#ec0000">.</span>append(<span style="color:#008900">&#34;1&#34;</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> inst
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">def</span> <span style="color:#5f5fff">test_pb</span>():
+</span></span><span style="display:flex;"><span>    inst <span style="color:#ec0000">=</span> gen_pb_inst()
+</span></span><span style="display:flex;"><span>    data <span style="color:#ec0000">=</span> inst<span style="color:#ec0000">.</span>SerializeToString()
+</span></span><span style="display:flex;"><span>    t1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time()<span style="color:#ec0000">*</span><span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> i <span style="color:#ec0000">in</span> <span style="color:#ec0000">range</span>(<span style="color:#008900">100000</span>):
+</span></span><span style="display:flex;"><span>        encoded <span style="color:#ec0000">=</span> inst<span style="color:#ec0000">.</span>SerializeToString()
+</span></span><span style="display:flex;"><span>        inst_1 <span style="color:#ec0000">=</span> test_pb2<span style="color:#ec0000">.</span>SearchRequest()
+</span></span><span style="display:flex;"><span>        inst_1<span style="color:#ec0000">.</span>ParseFromString(encoded)
+</span></span><span style="display:flex;"><span>    t2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time()<span style="color:#ec0000">*</span><span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">print</span>(<span style="color:#008900">&#34;data len:</span><span style="color:#008900">%d</span><span style="color:#008900">, time elapsed:</span><span style="color:#008900">%d</span><span style="color:#008900">ms&#34;</span> <span style="color:#ec0000">%</span> (<span style="color:#ec0000">len</span>(data), t2 <span style="color:#ec0000">-</span> t1))
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">print</span>(data<span style="color:#ec0000">.</span>hex())
+</span></span></code></pre></div><ul>
+<li>结果</li>
+</ul>
+<pre tabindex="0"><code>data len:36, time elapsed:498ms
+0dcdcccc3d119a9999999999b93f180120012801300168017201317a01318201030a0131
+</code></pre><h2 id="capnproto">capnproto</h2>
+<ul>
+<li>数据模板</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-capnp" data-lang="capnp"><span style="display:flex;"><span># test.capnp
+</span></span><span style="display:flex;"><span><span style="color:#008900">@0x9e391fc8f3af545d</span>;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> Other {
+</span></span><span style="display:flex;"><span>    f11 <span style="color:#008900">@0</span>  <span style="color:#5f5fff">:List(Text)</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> SearchRequest {
+</span></span><span style="display:flex;"><span>    f01 <span style="color:#008900">@0</span>  <span style="color:#5f5fff">:Float32</span>;
+</span></span><span style="display:flex;"><span>    f02 <span style="color:#008900">@1</span>  <span style="color:#5f5fff">:Float64</span>;
+</span></span><span style="display:flex;"><span>    f03 <span style="color:#008900">@2</span>  <span style="color:#5f5fff">:Int32</span>;
+</span></span><span style="display:flex;"><span>    f04 <span style="color:#008900">@3</span>  <span style="color:#5f5fff">:Int64</span>;
+</span></span><span style="display:flex;"><span>    f05 <span style="color:#008900">@4</span>  <span style="color:#5f5fff">:UInt32</span>;
+</span></span><span style="display:flex;"><span>    f06 <span style="color:#008900">@5</span>  <span style="color:#5f5fff">:UInt64</span>;
+</span></span><span style="display:flex;"><span>    f07 <span style="color:#008900">@6</span>  <span style="color:#5f5fff">:Bool</span>;
+</span></span><span style="display:flex;"><span>    f08 <span style="color:#008900">@7</span>  <span style="color:#5f5fff">:Text</span>;
+</span></span><span style="display:flex;"><span>    f09 <span style="color:#008900">@8</span>  <span style="color:#5f5fff">:Data</span>;
+</span></span><span style="display:flex;"><span>    f10 <span style="color:#008900">@9</span>  <span style="color:#5f5fff">:Other</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><ul>
+<li>测试</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#ec0000">import</span> capnp
+</span></span><span style="display:flex;"><span>capnp<span style="color:#ec0000">.</span>remove_import_hook()
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">def</span> <span style="color:#5f5fff">gen_capnp_inst</span>():
+</span></span><span style="display:flex;"><span>    test_capnp <span style="color:#ec0000">=</span> capnp<span style="color:#ec0000">.</span>load(<span style="color:#008900">&#34;test.capnp&#34;</span>)
+</span></span><span style="display:flex;"><span>    inst <span style="color:#ec0000">=</span> test_capnp<span style="color:#ec0000">.</span>SearchRequest<span style="color:#ec0000">.</span>new_message()
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f01 <span style="color:#ec0000">=</span> <span style="color:#008900">0.1</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f02 <span style="color:#ec0000">=</span> <span style="color:#008900">0.1</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f03 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f04 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f05 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f06 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f07 <span style="color:#ec0000">=</span> <span style="color:#ec0000">True</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f08 <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;1&#34;</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f09 <span style="color:#ec0000">=</span> <span style="color:#008900">b</span><span style="color:#008900">&#34;1&#34;</span>
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>f10<span style="color:#ec0000">.</span>f11 <span style="color:#ec0000">=</span> [<span style="color:#008900">&#34;1&#34;</span>]
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> inst
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">def</span> <span style="color:#5f5fff">test_capnp</span>():
+</span></span><span style="display:flex;"><span>    test_capnp <span style="color:#ec0000">=</span> capnp<span style="color:#ec0000">.</span>load(<span style="color:#008900">&#34;test.capnp&#34;</span>)
+</span></span><span style="display:flex;"><span>    inst <span style="color:#ec0000">=</span> gen_capnp_inst()
+</span></span><span style="display:flex;"><span>    data <span style="color:#ec0000">=</span> inst<span style="color:#ec0000">.</span>to_bytes_packed()
+</span></span><span style="display:flex;"><span>    t1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time()<span style="color:#ec0000">*</span><span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> i <span style="color:#ec0000">in</span> <span style="color:#ec0000">range</span>(<span style="color:#008900">100000</span>):
+</span></span><span style="display:flex;"><span>        encoded <span style="color:#ec0000">=</span> inst<span style="color:#ec0000">.</span>to_bytes_packed()
+</span></span><span style="display:flex;"><span>        out <span style="color:#ec0000">=</span> test_capnp<span style="color:#ec0000">.</span>SearchRequest<span style="color:#ec0000">.</span>from_bytes_packed(encoded)
+</span></span><span style="display:flex;"><span>    t2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time()<span style="color:#ec0000">*</span><span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">print</span>(<span style="color:#008900">&#34;data len:</span><span style="color:#008900">%d</span><span style="color:#008900">, time elapsed:</span><span style="color:#008900">%d</span><span style="color:#008900">ms&#34;</span> <span style="color:#ec0000">%</span> (<span style="color:#ec0000">len</span>(data), t2 <span style="color:#ec0000">-</span> t1))
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">print</span>(data<span style="color:#ec0000">.</span>hex())
+</span></span></code></pre></div><ul>
+<li>结果</li>
+</ul>
+<pre tabindex="0"><code>data len:49, time elapsed:250ms
+100e5005031fcdcccc3d01ff9a9999999999b93f000101110101010111091211090a4108010131013111010e1101120131
+</code></pre><h2 id="msgpack">msgpack</h2>
+<ul>
+<li>测试</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#ec0000">import</span> msgpack
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">def</span> <span style="color:#5f5fff">gen_msgpack_inst</span>():
+</span></span><span style="display:flex;"><span>    inst <span style="color:#ec0000">=</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f01&#34;</span>: <span style="color:#008900">0.1</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f02&#34;</span>: <span style="color:#008900">0.1</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f03&#34;</span>: <span style="color:#008900">1</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f04&#34;</span>: <span style="color:#008900">1</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f05&#34;</span>: <span style="color:#008900">1</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f06&#34;</span>: <span style="color:#008900">1</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f07&#34;</span>: <span style="color:#ec0000">True</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f08&#34;</span>: <span style="color:#008900">&#34;1&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f09&#34;</span>: <span style="color:#008900">&#34;1&#34;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#008900">&#34;f10&#34;</span>: {
+</span></span><span style="display:flex;"><span>            <span style="color:#008900">&#34;f11&#34;</span>: [<span style="color:#008900">&#34;1&#34;</span>]
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> inst
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">def</span> <span style="color:#5f5fff">test_msgpack</span>():
+</span></span><span style="display:flex;"><span>    inst <span style="color:#ec0000">=</span> gen_msgpack_inst()
+</span></span><span style="display:flex;"><span>    data <span style="color:#ec0000">=</span> msgpack<span style="color:#ec0000">.</span>dumps(inst)
+</span></span><span style="display:flex;"><span>    t1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time()<span style="color:#ec0000">*</span><span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> i <span style="color:#ec0000">in</span> <span style="color:#ec0000">range</span>(<span style="color:#008900">100000</span>):
+</span></span><span style="display:flex;"><span>        encoded <span style="color:#ec0000">=</span> msgpack<span style="color:#ec0000">.</span>dumps(inst)
+</span></span><span style="display:flex;"><span>        msgpack<span style="color:#ec0000">.</span>loads(encoded)
+</span></span><span style="display:flex;"><span>    t2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time()<span style="color:#ec0000">*</span><span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">print</span>(<span style="color:#008900">&#34;data len:</span><span style="color:#008900">%d</span><span style="color:#008900">, time elapsed:</span><span style="color:#008900">%d</span><span style="color:#008900">ms&#34;</span> <span style="color:#ec0000">%</span> (<span style="color:#ec0000">len</span>(data), t2 <span style="color:#ec0000">-</span> t1))
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">print</span>(data<span style="color:#ec0000">.</span>hex())
+</span></span></code></pre></div><ul>
+<li>结果</li>
+</ul>
+<pre tabindex="0"><code>data len:76, time elapsed:354ms
+8aa3663031cb3fb999999999999aa3663032cb3fb999999999999aa366303301a366303401a366303501a366303601a3663037c3a3663038a131a3663039a131a366313081a366313191a131
+</code></pre><h2 id="flatbuffers">flatbuffers</h2>
+<ul>
+<li>数据模板</li>
+</ul>
+<pre tabindex="0"><code class="language-fbs" data-lang="fbs">// test.fbs
+table Other {
+  f11:[string];
+}
+table SearchRequest {
+  f01:float;
+  f02:double;
+  f03:int;
+  f04:long;
+  f05:uint;
+  f06:ulong;
+  f07:bool;
+  f08:string;
+  f09:[ubyte];
+  f10:Other;
+}
+</code></pre><div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>flatc -p test.fbs # 生成Other.py SearchRequest.py
+</span></span></code></pre></div><ul>
+<li>开发</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#ec0000">import</span> flatbuffers
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">import</span> SearchRequest<span style="color:#ec0000">,</span> Other
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">def</span> <span style="color:#5f5fff">dump_flatbuf_inst</span>(inst):
+</span></span><span style="display:flex;"><span>    f08_val <span style="color:#ec0000">=</span> inst<span style="color:#ec0000">.</span>CreateString(<span style="color:#008900">&#34;1&#34;</span>)
+</span></span><span style="display:flex;"><span>    f11_0_val <span style="color:#ec0000">=</span> inst<span style="color:#ec0000">.</span>CreateString(<span style="color:#008900">&#34;1&#34;</span>)
+</span></span><span style="display:flex;"><span>    SearchRequest<span style="color:#ec0000">.</span>StartF09Vector(inst, <span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>PrependByte(<span style="color:#ec0000">ord</span>(<span style="color:#008900">&#39;1&#39;</span>))
+</span></span><span style="display:flex;"><span>    f09_val <span style="color:#ec0000">=</span> inst<span style="color:#ec0000">.</span>EndVector()
+</span></span><span style="display:flex;"><span>    Other<span style="color:#ec0000">.</span>StartF11Vector(inst, <span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>PrependUOffsetTRelative(f11_0_val)
+</span></span><span style="display:flex;"><span>    f11_val <span style="color:#ec0000">=</span> inst<span style="color:#ec0000">.</span>EndVector()
+</span></span><span style="display:flex;"><span>    Other<span style="color:#ec0000">.</span>Start(inst)
+</span></span><span style="display:flex;"><span>    Other<span style="color:#ec0000">.</span>AddF11(inst, f11_val)
+</span></span><span style="display:flex;"><span>    f10_val <span style="color:#ec0000">=</span> Other<span style="color:#ec0000">.</span>End(inst)
+</span></span><span style="display:flex;"><span>    inst_inst <span style="color:#ec0000">=</span> flatbuffers<span style="color:#ec0000">.</span>Builder(<span style="color:#008900">0</span>)
+</span></span><span style="display:flex;"><span>    SearchRequest<span style="color:#ec0000">.</span>Start(inst)
+</span></span><span style="display:flex;"><span>    SearchRequest<span style="color:#ec0000">.</span>AddF01(inst, <span style="color:#008900">0.1</span>)
+</span></span><span style="display:flex;"><span>    SearchRequest<span style="color:#ec0000">.</span>AddF02(inst, <span style="color:#008900">0.1</span>)
+</span></span><span style="display:flex;"><span>    SearchRequest<span style="color:#ec0000">.</span>AddF03(inst, <span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>    SearchRequest<span style="color:#ec0000">.</span>AddF04(inst, <span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>    SearchRequest<span style="color:#ec0000">.</span>AddF05(inst, <span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>    SearchRequest<span style="color:#ec0000">.</span>AddF06(inst, <span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>    SearchRequest<span style="color:#ec0000">.</span>AddF07(inst, <span style="color:#ec0000">True</span>)
+</span></span><span style="display:flex;"><span>    SearchRequest<span style="color:#ec0000">.</span>AddF08(inst, f08_val)
+</span></span><span style="display:flex;"><span>    SearchRequest<span style="color:#ec0000">.</span>AddF09(inst, f09_val)
+</span></span><span style="display:flex;"><span>    SearchRequest<span style="color:#ec0000">.</span>AddF10(inst, f10_val)
+</span></span><span style="display:flex;"><span>    end <span style="color:#ec0000">=</span> SearchRequest<span style="color:#ec0000">.</span>End(inst)
+</span></span><span style="display:flex;"><span>    inst<span style="color:#ec0000">.</span>Finish(end)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> inst<span style="color:#ec0000">.</span>Bytes, inst<span style="color:#ec0000">.</span>Head()
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">def</span> <span style="color:#5f5fff">test_flatbuf</span>():
+</span></span><span style="display:flex;"><span>    inst <span style="color:#ec0000">=</span> flatbuffers<span style="color:#ec0000">.</span>Builder(<span style="color:#008900">0</span>)
+</span></span><span style="display:flex;"><span>    data, l <span style="color:#ec0000">=</span> dump_flatbuf_inst(inst)
+</span></span><span style="display:flex;"><span>    t1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time()<span style="color:#ec0000">*</span><span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> i <span style="color:#ec0000">in</span> <span style="color:#ec0000">range</span>(<span style="color:#008900">10000</span>):
+</span></span><span style="display:flex;"><span>        encode, l <span style="color:#ec0000">=</span> dump_flatbuf_inst(inst)
+</span></span><span style="display:flex;"><span>        out <span style="color:#ec0000">=</span> SearchRequest<span style="color:#ec0000">.</span>SearchRequest<span style="color:#ec0000">.</span>GetRootAs(encode, l)
+</span></span><span style="display:flex;"><span>    t2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time()<span style="color:#ec0000">*</span><span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">print</span>(<span style="color:#008900">&#34;data len:</span><span style="color:#008900">%d</span><span style="color:#008900">, time elapsed:</span><span style="color:#008900">%d</span><span style="color:#008900">ms&#34;</span> <span style="color:#ec0000">%</span> (<span style="color:#ec0000">len</span>(data), t2 <span style="color:#ec0000">-</span> t1))
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">print</span>(data<span style="color:#ec0000">.</span>hex())
+</span></span></code></pre></div><ul>
+<li>结果<br>
+由于flatbuf目前没有优秀的python wrapper,都是使用python模拟底层实现,因此效率极低,这里不做展示.
+flatbuf效率应该高于上述几种方式,但是操作起来较复杂</li>
+</ul>
+<h2 id="性能对比">性能对比</h2>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">prop</th>
+          <th style="text-align: left">json</th>
+          <th style="text-align: left">protobuf</th>
+          <th style="text-align: left">flatbuf</th>
+          <th style="text-align: left">capnproto</th>
+          <th style="text-align: left">msgpack</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: left">speed(ms)</td>
+          <td style="text-align: left">1118</td>
+          <td style="text-align: left">498</td>
+          <td style="text-align: left">-</td>
+          <td style="text-align: left">250</td>
+          <td style="text-align: left">354</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">size</td>
+          <td style="text-align: left">124</td>
+          <td style="text-align: left">36</td>
+          <td style="text-align: left">256</td>
+          <td style="text-align: left">49</td>
+          <td style="text-align: left">76</td>
+      </tr>
+  </tbody>
+</table>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/py_posts/20210904_http_lib_benchmark/">
+                        Python的几个http库性能测试
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/py_posts/20230319_pybind_tinyaes/">
+                        Python封装TinyAES
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

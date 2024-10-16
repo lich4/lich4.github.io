@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    常见反越狱检测插件实现原理 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/ios_posts/20190511_jb_detect/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/ios_posts/">Ios_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/ios_posts/20190511_jb_detect/">常见反越狱检测插件实现原理</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">常见反越狱检测插件实现原理</h1>
+    
+    <p class="single-summary">常见反越狱检测插件实现原理</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2019-05-11T00:00:00&#43;00:00">May 11, 2019</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E8%B6%8A%E7%8B%B1%E6%A3%80%E6%B5%8B/">#越狱检测</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#libjailprotect分析">libjailprotect分析</a>
+      <ul>
+        <li><a href="#目录结构">目录结构</a></li>
+        <li><a href="#加载原理">加载原理</a></li>
+        <li><a href="#hook操作">hook操作</a></li>
+      </ul>
+    </li>
+    <li><a href="#liberty分析">liberty分析</a>
+      <ul>
+        <li><a href="#目录结构-1">目录结构</a></li>
+        <li><a href="#加载原理-1">加载原理</a></li>
+        <li><a href="#hook操作-1">hook操作</a></li>
+      </ul>
+    </li>
+    <li><a href="#tsprotector8分析">tsprotector8分析</a>
+      <ul>
+        <li><a href="#目录结构-2">目录结构</a></li>
+        <li><a href="#加载原理-2">加载原理</a></li>
+        <li><a href="#hook操作-2">hook操作</a></li>
+      </ul>
+    </li>
+    <li><a href="#xcon分析">xcon分析</a>
+      <ul>
+        <li><a href="#目录结构-3">目录结构</a></li>
+        <li><a href="#加载原理-3">加载原理</a></li>
+        <li><a href="#hook操作-3">hook操作</a></li>
+      </ul>
+    </li>
+    <li><a href="#breakthrough分析">breakthrough分析</a>
+      <ul>
+        <li><a href="#目录结构-4">目录结构</a></li>
+        <li><a href="#加载原理-4">加载原理</a></li>
+        <li><a href="#hook操作-4">hook操作</a></li>
+      </ul>
+    </li>
+    <li><a href="#awz分析">AWZ分析</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="libjailprotect分析">libjailprotect分析</h2>
+<h3 id="目录结构">目录结构</h3>
+<pre tabindex="0"><code>├─Library
+│  ├─MobileSubstrate
+│  │  └─DynamicLibraries
+│  │          JailProtect.dylib
+│  │          JailProtect.plist
+│  └─PreferenceLoader
+│      └─Preferences
+│              JailProtect.plist
+└─usr
+    └─lib
+            libJailProtect.dylib
+</code></pre><h3 id="加载原理">加载原理</h3>
+<ul>
+<li>JailProtect.dylib中对com.apple.springboard模块的[FBApplicationInfo environmentVariables]函数做hook，将环境变量DYLD_INSERT_LIBRARIES设置为真正执行anti-jailbreak的模块/usr/lib/libJailProtect.dylib</li>
+<li>libJailProtect.dylib中通过增加_interpose段的方式，对以下c函数执行hook：open,fopen,creat,access,smlink,forkdladdr, dyld_get_image_name,dyld_get_image_header,task_for_pid,strstr,dlopen,lstat,fstatat,uname,,sysct,system,sysctlbyname,realpath$DARWIN_EXTSN,dlsym；</li>
+<li>通过MSHookMessageEx对以下objc函数执行hook：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-objc" data-lang="objc"><span style="display:flex;"><span>[UIDevice systemVersion]
+</span></span><span style="display:flex;"><span>[NSProcessInfo operatingSystemVersionString]
+</span></span><span style="display:flex;"><span>[_LSCanOpenURLManager <span style="color:#ec0000">queryForApplicationsAvailableForOpeningURL</span>:legacySPI]
+</span></span><span style="display:flex;"><span>[_LSCanOpenURLManager <span style="color:#ec0000">canOpenURL</span>:<span style="color:#ec0000">publicSchemes</span>:<span style="color:#ec0000">privateSchemes</span>:<span style="color:#ec0000">XPCConnection</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span>[_LSCanOpenURLManager <span style="color:#ec0000">internalCanOpenURL</span>:<span style="color:#ec0000">publicSchemes</span>:<span style="color:#ec0000">privateSchemes</span>:<span style="color:#ec0000">XPCConnection</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span>[UIApplication <span style="color:#ec0000">canOpenURL</span>:]
+</span></span><span style="display:flex;"><span>[NSFileManager <span style="color:#ec0000">fileExistsAtPath</span>:]
+</span></span><span style="display:flex;"><span>[NSFileManager <span style="color:#ec0000">fileExistsAtPath</span>:<span style="color:#ec0000">isDirectory</span>:]
+</span></span><span style="display:flex;"><span>[NSFileManager <span style="color:#ec0000">URLForDirectory</span>:<span style="color:#ec0000">inDomain</span>:<span style="color:#ec0000">appropriateForURL</span>:<span style="color:#ec0000">create</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span>[NSFileManager <span style="color:#ec0000">containerURLForSecurityApplicationGroupIdentifier</span>:]
+</span></span><span style="display:flex;"><span>[NSString <span style="color:#ec0000">writeToFile</span>:<span style="color:#ec0000">atomically</span>:]
+</span></span><span style="display:flex;"><span>[NSString <span style="color:#ec0000">writeToFile</span>:<span style="color:#ec0000">atomically</span>:<span style="color:#ec0000">encoding</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span>[NSString <span style="color:#ec0000">writeToURL</span>:<span style="color:#ec0000">atomically</span>:]
+</span></span><span style="display:flex;"><span>[NSString <span style="color:#ec0000">writeToURL</span>:<span style="color:#ec0000">atomically</span>:<span style="color:#ec0000">encoding</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span>[NSData <span style="color:#ec0000">writeToFile</span>:<span style="color:#ec0000">atomically</span>:]
+</span></span><span style="display:flex;"><span>[NSData <span style="color:#ec0000">writeToFile</span>:<span style="color:#ec0000">atomically</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span>[NSData <span style="color:#ec0000">writeToFile</span>:<span style="color:#ec0000">options</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span>[NSData <span style="color:#ec0000">writeToURL</span>:<span style="color:#ec0000">atomically</span>:]
+</span></span><span style="display:flex;"><span>[NSData <span style="color:#ec0000">writeToURL</span>:<span style="color:#ec0000">options</span>:<span style="color:#ec0000">error</span>:]
+</span></span></code></pre></div><h3 id="hook操作">hook操作</h3>
+<p>前缀黑名单：</p>
+<pre tabindex="0"><code>/-
+/.
+/Applications
+/Library
+/System/Library/Caches/com.apple.dyld
+/System/Library/Caches/com.apple.xpcd
+/System/Library/LaunchDaemons/com.evad3rs
+/System/Library/LaunchDaemons/com.saurik
+/System/Library/LaunchDaemons/io.pangu
+/User
+/bin/bash
+/bin/sh
+/etc/apt
+/etc/ssh
+/evasi0n7
+/panguaxe
+/pguntether
+/private
+/taig
+/tmp
+/usr/arm-apple-darwin9
+/usr/bin
+/usr/include
+/usr/lib
+/usr/local
+/usr/sbin
+/usr/share/bigboss
+/usr/share/dpkg
+/var/cache/apt
+/var/lib/apt
+/var/lib/cydia
+/var/lib/dpkg
+/var/log/syslog
+/var/mobile/Applications
+/var/mobile/Containers
+/var/mobile/Media/pangu
+/var/root
+/var/stash
+/var/tmp
+/xuanyuansword
+</code></pre><p>路径白名单：</p>
+<pre tabindex="0"><code>[ NSFileManager URLsForDirectory:NSDocument DirectoyinDomains:NSUserDomainMask]
+[NSBundle resourcePath]
+/Library/Preferences/Logging
+/Library/Preferences
+/Library/Managed Preferences/mobile
+/private/var/Managed Preferences/mobile
+/var/mobile/Library/ConfigurationProfiles
+/var/mobile/Library/UserConfigurationProfiles
+/var/mobile/Library/AddressBook
+/var/mobile/Library/Caches/com.apple.MobileGestalt.plist
+/usr/share/icu
+[NSFileManager URLForDirectory:inDomain:]返回的路径
+[NSFileManager containerURLForSecurityApplicationGroupIdentifier:]返回的路径
+</code></pre><p>以下hook函数中检测以黑名单为前缀，且不在白名单中的路径，遇到这些路径会直接返回失败</p>
+<pre tabindex="0"><code>open/fopen/creat/access/symlink/lstat/fstatat/realpath
+[NSFileManager fileExistsAtPath:]
+[NSFileManager fileExistsAtPath:isDirectory:]
+[NSString writeToFile:atomically:]
+[NSString writeToFile:atomically:encoding:error:]
+[NSString writeToURL:atomically:]
+[NSString writeToURL:atomically:encoding:error:]
+[NSData writeToFile:atomically:]
+[NSData writeToFile:atomically:error:]
+[NSData writeToFile:options:error:]
+[NSData writeToURL:atomically:]
+[NSData writeToURL:options:error:]
+</code></pre><p>以下的hook函数中检测路径如果包含Substrate/Cydia/substrate/stash，则返回系统模块</p>
+<pre tabindex="0"><code>dladdr/dyld_get_image_name/dyld_get_image_header
+</code></pre><p>以下的hook函数检测字符串包含Substrate/Cydia/substrate/stash，则返回失败</p>
+<pre tabindex="0"><code>strstr/dlopen
+</code></pre><ul>
+<li>hook的dlsym中如果函数名为fstatat则返回hook的fstatat</li>
+<li>hook的fork回调直接返回失败</li>
+<li>hook的system回调直接返回0</li>
+<li>hook的task_for_pid中检测pid为0时返回失败5</li>
+<li>hook的uname替换version中的&quot;Marijuan&quot;为&quot;RELEASE_&quot;</li>
+<li>hook的sysctl/sysctlbyname中如果请求kern.version则替换version中的&quot;Marijuan&quot;为&quot;RELEASE_&quot;</li>
+</ul>
+<p>以下的hook函数检测scheme字符串为cydia，则返回失败</p>
+<pre tabindex="0"><code>[_LSCanOpenURLManager queryForApplicationsAvailableForOpeningURL:legacySPI]
+[_LSCanOpenURLManager canOpenURL:publicSchemes:privateSchemes:XPCConnection:error:]
+[_LSCanOpenURLManager internalCanOpenURL:publicSchemes:privateSchemes:XPCConnection:error:]
+[UIApplication canOpenURL:]
+</code></pre><p>如下操作在初始化阶段删除cydia注册的环境变量</p>
+<pre tabindex="0"><code>unsetenv(&#34;_MSSafeMode&#34;)
+unsetenv(&#34;DYLD_INSERT_LIBRARIES&#34;)
+</code></pre><h2 id="liberty分析">liberty分析</h2>
+<h3 id="目录结构-1">目录结构</h3>
+<pre tabindex="0"><code>├─Library
+│  ├─MobileSubstrate
+│  │  └─DynamicLibraries
+│  │          LibertySB.dylib
+│  │          LibertySB.plist
+│  ├─PreferenceBundles
+│  └─PreferenceLoader
+│      └─Preferences
+│              LibertyPref.plist
+└─usr
+    └─lib
+            Liberty.dylib
+</code></pre><h3 id="加载原理-1">加载原理</h3>
+<ul>
+<li>LibertySB.dylib中对com.apple.springboard模块的[FBApplicationInfo environmentVariables]函数做hook，将环境变量DYLD_INSERT_LIBRARIES设置为真正执行anti-jailbreak的模块/usr/lib/Liberty.dylib</li>
+<li>Liberty.dylib中通过fish hook和dlsymhook的方式，对以下c函数执行hook：access/dlopen/dlsym/fopen/fork/getenv/lstat/open/opendir/stat/statfs/symlink/sysctl/sysctlbyname/vfork/system/_dyld_image_count/CFBundleGetAllBundle/CFNotificationCenterPostNotification;</li>
+<li>使用MSHookFunction对以下c函数（App内部函数）进行hook：_TasDraRecalcRiskAssessment/_TasDraGetRiskItemCount/_TasDraGetRiskAssessmentItemByName;同时通过method_setImplementation对以下objc函数执行hook：</li>
+</ul>
+<pre tabindex="0"><code>（系统API）
+[NSString writeToFile:atomically:encoding:error:]
+[UIApplication openURL:]
+[UIApplication canOpenURL:]
+[NSJSONSerialization JSONObjectWithData:options:error:]
+（APP内部函数）
+[QPLibraryConfiguration runtimeConfigurationValueForKey:]
+[ShieldCallbackManager setObserver:]
+[HSBCRASPServices jailbreakStatus:]
+[HSBCRASPServices handleLibraryInjectionDetected]
+[HSBCRASPServices libraryInjectionDetected]
+[HSBCRASPServices debuggerStatus:]
+[HSBCRASPServices repackagingStatus:]
+[HSBCRASPServices postNotification:value:]
+[ShieldObserver libraryInjectionDetected]
+[ShieldObserver debuggerStatus:]
+[ShieldObserver repackagingStatus:]
+[ShieldObserver jailbreakStatus:]
+[Citibank.CBMSecurityCheck libraryInjectionDetected]
+[Citibank.CBMSecurityCheck debuggerStatus:]
+[Citibank.CBMSecurityCheck jailbreakStatus:]
+[IPDKBAppDelegate shieldDelegateDidDetectLibraryInjection:]
+[IPDKBAppDelegate shieldDelegateDidDetectJailbreak:]
+[SFBShieldDelegate jailbreakAction]
+[SFBShieldDelegate libraryInjectionDetected]
+[SFBShieldDelegate debuggerStatus:]
+[SFBShieldDelegate jailbreakStatus:]
+[GLMOBUtilities getJailBrokenDeviceInfoDict]
+</code></pre><p>在初始化的时期遍历environ数组并抹去DYLD_INSERT_LIBRARIES指向的substrate模块</p>
+<h3 id="hook操作-1">hook操作</h3>
+<p>黑名单：</p>
+<pre tabindex="0"><code>/Applications
+/Applications/
+/Applications/Cydia.app
+/Applications/Cydia.app/
+/Applications/Cydia.app/Cydia
+/Applications/Cydia.app/Info.plist
+/Applications/Cydia.app/../Cydia.app
+/Applications/Cydia.app/../Cydia.app/
+/Applications/Cydia.app/../Cydia.app/In
+/Applications/FakeCarrier.app
+/Applications/Icy.app
+/Applications/Iny.app
+/Applications/iFile.app
+/Applications/Activator.app
+/Applications/IntelliScreen.app
+/Applications/MxTube.app
+/Applications/RockApp.app
+/Applications/SBSettings.app
+/Applications/WinterBoard.app
+/Applications/blackra1n.app
+/Library/Activator
+/Library/Flipswitch
+/Library/Frameworks/CydiaSubstrate.fram
+/Library/MobileSubstrate
+/Library/MobileSubstrate/DynamicLibrari
+/Library/MobileSubstrate/DynamicLibrari
+/Library/MobileSubstrate/DynamicLibrari
+/Library/MobileSubstrate/MobileSubstrat
+/Library/MobileSubstrateMobileSubstrate
+/Library/Ringtones
+/Library/Switchs
+/Library/Wallpaper
+/System/Library/LaunchDaemons/com.ikey.
+/System/Library/LaunchDaemons/com.sauri
+/bin/bash
+/bin/sh
+/bin
+/bin/su
+/etc/apt
+/etc/apt/
+/etc/clutch.conf
+/etc/clutch_cracked.plist
+/etc/ssh/sshd_config
+/private/
+/private
+/private/vstb_writable_check
+/private/etc/fstab
+/private/Miitomo
+/private/var/lib/apt
+/private/var/lib/apt/
+/private/var/lib/cydia
+/private/var/lib/cydia/
+/private/var/tmp/cydia.log
+/private/var/mobile/Library/SBSettings/
+/private/var/mobileLibrary/SBSettingsTh
+/private/var/stash
+/private/var/stash/
+/private/var/tmp/cydia.log
+/private/var/tmp/Cydia.log
+/usr/arm-apple-darwin9
+/usr/bin/ssh
+/usr/bin/sshd
+/usr/binsshd
+/usr/sbin
+/usr/sbinsshd
+/usr/include
+/usr/lib/pam
+/usr/lib/python2.5
+/usr/libexec
+/usr/libexec/cydia
+/usr/libexec/cydia/
+/usr/libexec/sftp-server
+/usr/libexec/ssh-keysign
+/usr/sbin/sshd
+/usr/share
+/var/cache/apt
+/var/cache/apt/
+/var/cache/clutch.plist
+/var/cache/clutch_cracked.plist
+/var/lib/apt
+/var/lib/apt/
+/var/lib/clutch/overdrive.dylib
+/var/lib/cydia
+/var/lib/cydia/
+/var/lib/dpkg/info
+/var/log/syslog
+/var/root/Documents/Cracked/
+/var/tmp/cydia.log
+/var/stash/Library/Ringstones
+/var/stash/Library/Wallpaper
+/var/stash/usr/include
+/var/stash/usr/libexec
+/var/stash/usr/share
+/Systetem/Library/LaunchDaemons/com.ik
+/System/Library/LaunchDaemons/com.saur
+/Library/MobileSubstrate/MobileSubstra
+/var/cache/apt/
+/var/lib/apt/
+/var/lib/cydia/
+/var/log/syslog
+/bin/bash
+/bin/sh
+/etc/apt/
+/etc/ssh/sshd_config
+/usr/libexec/ssh-keysign
+/Library/MobileSubstrate/MobileSubstrate
+/Applications/Cydia.app
+/var/cache/apt
+/var/lib/cydia
+/var/log/syslog
+/var/tmp/cydia.log
+/bin/bash
+/bin/sh
+/usr/sbin/sshd
+/usr/libexec/ssh-keysign
+/etc/ssh/sshd_config
+/etc/apt
+/var/root/.tastest
+/Library/Managed Preferences/mobile/.Gl
+/Library/Preferences/com.apple.security
+/private/var/mobile/home/duh
+/etc/rel
+/System/Library/LaunchDaemons/com.apple
+/System/Library/LaunchDaemons/com.apple
+/private/var/mobile/home/syslog
+/private/var/mobile/home/sshd
+/Library/MobileSubstrate/DynamicLibrari
+/usr/lib/libsubstrate.dylib
+/usr/bin
+/bin
+/boot
+/var/root
+/private/var/stash
+/Applications/Cydia.app
+/Library/MobileSubstrate
+/private/etc/fstab
+/var
+/private/var
+/private
+/library/MobileSubstrate/MobileSubstrat
+/mnt
+/lib
+/panguaxe
+/panguaxe.installed
+/private/var/mobile/Media/panguaxe.inst
+/private/var/lib/dpkg/info/io.pangu.axe
+/private/var/lib/dpkg/info/io.pangu.axe
+/System/Library/LaunchDaemons/io.pangu.
+/private/var/lib/dpkg/info/taiguntether
+/private/var/lib/dpkg/info/taiguntether
+/private/var/lib/dpkg/info/taiguntether
+/private/var/lib/dpkg/info/taiguntether
+/taig/
+/taig/taig
+/private/var/lib/dpkg/info/io.pangu.fux
+/private/var/lib/dpkg/info/io.pangu.fux
+/pguntether
+/private/Miitomo
+/var/stash/
+/var/stash
+/private/var/cache/apt/
+/private/var/log/syslog
+/private/etc/apt/
+/private/etc/ssh/sshd_config
+/var/mobile/Library/Application Support
+/private/etc/dpkg/origins/debian
+/bin/gunzip
+/bin/gzip
+/bin/tar
+/Library/MobileSubstrate/DynamicLibrari
+/usr
+/private/var/cache/apt
+/etc/fstab
+/bin/ps
+/Systetem/Library/LaunchDaemons/com.ike
+/Library/MobileSubstrate/DynamicLibrari
+/usr/lib/TsProtePass.dylib
+/var/stash/Library/Ringtones
+/var/stash/usr/arm-apple-darwin9
+/private/masbog.txt
+usr/bin/cycript
+usr/bin/cynject
+usr/sbin/frida-server
+/private/var/db/stash/
+/var/tmp//ct.shutdown
+/var/tmp/ct.shutdown
+/var/tmp//cydia.log
+/var/tmp//pgloader
+/var/tmp/pgloader
+/var/tmp/
+/var/tmp//.pangu93loaded
+/var/tmp/.pangu93loaded
+/var/tmp//RestoreFromBackupLock
+/var/tmp/RestoreFromBackupLock
+/Library/LaunchDaemons/com.openssh.sshd
+/private/var/db/stash
+/bin/mv
+/private/jailbreak.txt
+/Library/MobileSubstrate/
+var/lib/apt
+/private/var/TestPB16.file
+/etc/TestPB16.file
+/Applications/TestPB16.file
+/System/Library/Caches/com.apple.dyld/e
+/usr/lib/libmis.dylib
+/usr/lib/pangu_xpcd.dylib
+/System/Library/LaunchDaemons/io.pangu.
+/xuanyuansword
+/xuanyuansword.installed
+/evasi0n7
+/System/Library/LaunchDaemons/com.evad3
+/System/Library/Caches/com.apple.xpcd/x
+/usr/lib/libpatcyh.dylib
+/usr/share/bigboss/icons/bigboss.png
+/Library/MobileSubstrate/DynamicLibrari
+/Library/PreferenceBundles/tsProtectorS
+/Library/PreferenceLoader/Preferences/t
+/private/var/lib/xcon
+/Library/MobileSubstrate/DynamicLibrari
+/Library/MobileSubstrate/DynamicLibrari
+/.cydia_no_stash
+/private/etc/dpkg/origins/debian
+/private/var/log/apt/term.log
+/Library/LaunchDaemons/re.frida.server.
+/usr/sbin/frida-server
+/sbin/reboot
+/Library/Frameworks/CydiaSubstrate.fram
+/etc/ssh
+Applications
+Library/MobileSubstrate
+Library/MobileSubstrate/DynamicLibrarie
+System/Library/LaunchDaemons
+private/var/lib
+private/var/mobile/Library/SBSettings
+private/var/tmp
+var/cache
+var/lib
+bin
+usr/sbin
+usr/bin
+usr/libexec
+etc/ssh
+etc
+var/tmp
+var/log
+Library/Frameworks
+.
+/private/var/evasi0n
+</code></pre><p>以下的hook函数中检测到路径在黑名单中则返回失败：</p>
+<pre tabindex="0"><code>access/fopen/lstat/open/opendir/stat/statfs/symlink/readlink/realpath
+</code></pre><ul>
+<li>hook的[NSString writeToFile:atomically:encoding:error:]在检测到路径为/private,/private/var/mobile/Containers, /private/var/mobile/Applications时返回失败</li>
+<li>hook的[UIApplication canOpenURL:]和[UIApplication openURL:]在检测到scheme为cydia/ifile/activator/filza时，返回失败</li>
+<li>hook的CFBundleGetAllBundles在返回结果中删除包含Cydia的元素</li>
+<li>hook的dlopen在检测到路径包含MobileSubstrate.dylib时返回失败</li>
+<li>hook的dyld_get_image_name在检测到返回路径包含ubstrate时返回失败</li>
+<li>hook的dyld_image_count在返回数大于80时返回80</li>
+<li>hook的fopen/lstat/open/stat/statfs在检测到路径包含/etc/fstab,/private,/var/mobile/,/private/var时返回失败</li>
+<li>hook的fork/vfork返回失败</li>
+<li>hook的getenv在检测到字符串包含DYLD_INSERT_LIBRARIES时返回失败</li>
+<li>hook的sysctl在检测到mib[0]=CTL_KERN,mib[1]=KERN_PROC,mib[3]!=getpid()时返回失败</li>
+<li>hook的system返回0</li>
+</ul>
+<h2 id="tsprotector8分析">tsprotector8分析</h2>
+<h3 id="目录结构-2">目录结构</h3>
+<pre tabindex="0"><code>└─Library
+    └─MobileSubstrate
+        └─DynamicLibraries
+                ~~tsProtector 8.dylib
+                ~~tsProtector 8.plist
+</code></pre><h3 id="加载原理-2">加载原理</h3>
+<ul>
+<li>JailProtect.dylib中对com.apple.springboard模块的[FBApplicationInfo environmentVariables]函数做hook，将环境变量DYLD_INSERT_LIBRARIES设置为真正执行anti-jailbreak的模块/usr/lib/libJailProtect.dylib</li>
+<li>libJailProtect.dylib中通过MSHookFunction对以下c函数执行hook：access/popen/open/lstat/statfs/fopen/fork/__opendir2/connect/system/posix_spawn/UIApplicationMain</li>
+<li>通过MSHookMessageEx对以下objc函数执行hook：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-objc" data-lang="objc"><span style="display:flex;"><span>[UIApplication <span style="color:#ec0000">canOpenURL</span>:]
+</span></span><span style="display:flex;"><span>[NMSystemInfo <span style="color:#ec0000">getProcessInfo</span>:] 
+</span></span><span style="display:flex;"><span>[NSData <span style="color:#ec0000">initWithContentsOfFile</span>:<span style="color:#ec0000">options</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span>[NSString <span style="color:#ec0000">stringWithContentsOfFile</span>:<span style="color:#ec0000">usedEncoding</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span>[NSString <span style="color:#ec0000">initWithContentsOfFile</span>:]
+</span></span><span style="display:flex;"><span>[NSString <span style="color:#ec0000">writeToFile</span>:<span style="color:#ec0000">atomically</span>:<span style="color:#ec0000">encoding</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span>[NSFileManager <span style="color:#ec0000">instanceMethodForSelector</span>:]
+</span></span><span style="display:flex;"><span>[NSFileManager <span style="color:#ec0000">fileExistsAtPath</span>:<span style="color:#ec0000">isDirectory</span>:]
+</span></span><span style="display:flex;"><span>[NSFileManager <span style="color:#ec0000">changeCurrentDirectoryPath</span>:]
+</span></span><span style="display:flex;"><span>[NSFileManager <span style="color:#ec0000">contentsAtPath</span>:]
+</span></span><span style="display:flex;"><span>[NSFileManager <span style="color:#ec0000">contentsOfDirectoryAtPath</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span>[UIAlertView show]
+</span></span></code></pre></div><h3 id="hook操作-2">hook操作</h3>
+<p>白名单(包含或不包含/private)：</p>
+<pre tabindex="0"><code>/var
+/var/mobile
+/var/mobile/Containers/Bundle/Applications
+/usr
+/usr/lib
+/System
+/System/Library
+/etc/passwd
+/usr/lib/libAXSpeechManager.dylib
+/usr/lib/libmecabra.dylib
+/Databases.db
+</code></pre><p>白名单(前缀)：</p>
+<pre tabindex="0"><code>/var/mobile/Containers
+/var/mobile/Containers
+/var/mobile/Library/AddressBook
+/var/mobile/Library/Caches
+/var/mobile/Library/Keyboard
+/var/mobile/Library/Preferences/.
+/var/mobile/Library/Preferences/com.apple.
+/dev
+/System/Library/AccessibilityBundles
+/System/Library/Audio
+/System/Library/Fonts
+/System/Library/Frameworks
+/System/Library/PrivateFrameworks
+/System/Library/TextInput
+/System/Library/Internet Plug-Ins
+/usr/local/lib/icu/
+/usr/share/icu
+/var/db/timezone
+/System/Library/CoreServices
+/AppleInternal/Library
+/Library/Managed Preferences
+/usr/share/langid
+/Library/Preferences/SystemConfiguration
+</code></pre><p>黑名单：</p>
+<pre tabindex="0"><code>/boot
+/etc/fstab
+/etc/fstb
+/etc/hosts
+/lib
+/Library/MobileSubstrate
+/Library/MobileSubstrate/DynamicLibraries
+/Library/Ringtones
+/Library/Themes
+/Library/Wallpaper
+/Library/WeeLoader
+/Library/Zeppelin
+/User
+/mnt
+/System/Library/KeyboardDictionaries
+/tmp
+/usr/arm-apple-darwin9
+/usr/include
+/usr/lib/hacktivate.dylib
+/usr/libexec
+/usr/libexec/sftp-server
+/usr/libexec/ssh-keysign
+/usr/share
+
+黑名单(前缀)：
+/Applications
+/Applications/YooKey.app
+/etc/ssh
+/Library/MobileSubstrate/MobileSubstrate.dylib
+/System/Library/LaunchDaemons
+/var/lib
+/var/log
+/xuanyuansword
+/Library/MobileSubstrate/DynamicLibraries
+/var/mobile/Library/Cydia
+/var/mobile/Library/Pangu
+/bin
+/sbin
+/usr/bin
+/usr/sbin
+</code></pre><p>黑名单(后缀)：</p>
+<pre tabindex="0"><code>.plist
+/apt
+/cydia
+/cache
+/dpkg
+/etc
+/lib
+/log
+/stash
+SBSettings/Themes
+term.log
+cydia.log
+</code></pre><p>以下hook函数检测路径存在于白名单后返回成功，存在于黑名单后返回失败</p>
+<pre tabindex="0"><code>access/popen/open/lstat/stat/statfs/fopen/__opendir2
+[NSData initWithContentsOfFile:options:error:]
+[NSString stringWithContentOfFile:usedEncoding:error:]
+[NSString initWithContentsOfFile:]
+[NSString writeToFile:atomically:encoding:error:]
+[NSFileManager fileExistsAtPath:]
+[NSFileManager fileExistsAtPath:isDirectory:]
+[NSFileManager changeCurrentDirectoryPath:]
+[NSFileManager contentsAtPath:]
+[NSFileManager contentsOfDirectoryPath:error:]
+</code></pre><ul>
+<li>hook的[UIApplication canOpenURL:]检测scheme包含cydia时返回失败</li>
+<li>hook的[NSFileManager instanceMethodForSelector:]检测selector为fileExistsAtPath:时返回失败</li>
+<li>hook的fork返回失败</li>
+<li>hook的connect检测ip为127.0.0.1且port为22的ssh连接时返回失败</li>
+<li>hook的system返回失败</li>
+</ul>
+<h2 id="xcon分析">xcon分析</h2>
+<h3 id="目录结构-3">目录结构</h3>
+<pre tabindex="0"><code>├── Library
+│   └── MobileSubstrate
+│       └── DynamicLibraries
+│           ├── xCon.dylib
+│           ├── xCon.plist
+└── var
+    └── lib
+        └── xcon
+            ├── dlsym-deny
+            ├── fstab
+            ├── paths-allow
+            └── paths-deny
+</code></pre><h3 id="加载原理-3">加载原理</h3>
+<ul>
+<li>xCon.dylib直接加载。使用MSHookFunction对以下系统c函数进行hook：fork/ptrace/access/connect/chdir/chflags/dlopen/dlopen_preflight/dyld_image_count/dyld_get_image_name/dlsym/execl/execle/execlp/execv/execve/execvp/execvP/fopen/fopen$DARWIN_EXTSN/fsctl/getattrlist/getenv/getxattr/link/listxattr/lstat/open/__opendir2/closedir/pathconf/popen/_proc_pidpath/readdir/readdir_r/readlink/setxattr/stat/statfs/symlink/sysctl/sysctlbyname/system</li>
+<li>使用MSHookFunction对以下第三方sdk的c函数进行hook：_Z26IsAppCheckerPolicyViolatedv/_Z18partitionsModifiedv/_Z16servicesModifiedv/_Z10canUseForkv/_Z19kernelStateModifiedv/_Z25devReadPermissionModifiedP8NSString/_Z15UnObfuscateTextP8NSString/_Z25checkRootPermissionAtPathPKc。</li>
+<li>使用MSHookMessageEx对以下系统objc函数进行hook：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-objc" data-lang="objc"><span style="display:flex;"><span><span style="color:#ec0000">+</span>[NSDictionary <span style="color:#ec0000">dictionaryWithContentsOfFile</span>:]
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">-</span>[NSDictionary <span style="color:#ec0000">initWithContentsOfFile</span>:]
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">-</span>[NSFileManager <span style="color:#ec0000">contentsAtPath</span>:]
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">-</span>[NSFileManager <span style="color:#ec0000">contentsOfDirectoryAtPath</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">-</span>[NSFileManager <span style="color:#ec0000">createDirectoryAtPath</span>:<span style="color:#ec0000">withIntermediateDirectories</span>:<span style="color:#ec0000">attributes</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">-</span>[NSFileManager <span style="color:#ec0000">fileExistsAtPath</span>:<span style="color:#ec0000">isDirectory</span>:]
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">-</span>[NSFileManager <span style="color:#ec0000">attributesOfItemAtPath</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">-</span>[NSProcessInfo environment]
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">-</span>[NSString <span style="color:#ec0000">initWithContentsOfFile</span>:<span style="color:#ec0000">usedEncoding</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">-</span>[NSString <span style="color:#ec0000">initWithContentsOfFile</span>:<span style="color:#ec0000">encoding</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">-</span>[NSString <span style="color:#ec0000">writeToFile</span>:<span style="color:#ec0000">atomically</span>:<span style="color:#ec0000">encoding</span>:<span style="color:#ec0000">error</span>:]
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">-</span>[UIApplication <span style="color:#ec0000">canOpenURL</span>:]
+</span></span></code></pre></div><p>使用MSHookMessageEx对以下第三方sdk的objc函数进行hook</p>
+<pre tabindex="0"><code>com.good.gmmiphone   -[GmmDefaults boolForKey:]
+com.good.gmmiphone
++[JailbreakEnhacement init]
+-[JailbreakEnhacement partitionsModified]
+-[JailbreakEnhacement servicesModified]
+-[JailbreakEnhacement checkFileSystemWithPath:forPermissions:]
+-[JailbreakEnhacement canUseFork]
+-[JailbreakEnhacement kernelStateModified]
+-[JailbreakEnhacement devReadPermissionModified:]
+-[JailbreakEnhacement filePermission:]
+-[GmmAppCore checkCompilianceEarlyViolated]
+-[GmmAppCore checkComplianceNewlyViolated]
+-[GmmAppCore processJailbreakPolicy]
+-[ReminderManager doComplianceCheckFailed]
+-[SecurityCore dispatchOnCompilianceFail]
++[GmmDefaults secureUserDefaults]
++[GmmDefaults insecureUserDefaults]
+-[GmmDefaults obfuscatedUserDefaults]
+-[GmmDefaults initWithSyncEngineState:]
+-[GmmDefaults initObfuscatedUserDefaults]
+-[GmmDefaults objectForKey:]
+-[GmmDefaults setObject:forKey:]
+-[GmmDefaults setBool:forKey:]
+-[GmmDefaults setInteger:forKey:]
+-[GmmDefaults removeObjectForKey:]
+-[GmmDefaults loadFromPath:]
+-[GmmDefaults key]
+-[GmmDefaults synchronize]
+-[GmmDefaults resetSecureDefaults]
+-[GmmDefaults storeChecksum:]
+-[GmmDefaults verifyChecksum]
+-[GmmDefaults lockDown]
+-[GmmDefaults copyFromNSDefaults]
+-[GmmDefaults upgradeContainersFromVersion:]
+-[GmmDefaults syncEngineInitialized:]
+</code></pre><h3 id="hook操作-3">hook操作</h3>
+<p>路径黑名单：</p>
+<pre tabindex="0"><code>/.fseventsd
+/.cydia_no_stash
+/etc/clutch.conf
+/usr/bin/codesign_allocate
+/var/apt
+/var/log/syslog
+/var/stash
+/var/run/syslog
+/var/run/syslog.pid
+/var/tmp/cydia.log
+/var/tmp/pgloader
+/evasi0n7
+/evasi0n7-installed
+/usr/lib/pangu_xpcd.dylib
+/usr/lib/pangu_xpcd.ipod.dylib
+/xuanyuansword
+/tmp/cydia.log
+/tmp/FlipSwitchCache
+/tmp/.pange93loaded
+/tmp/pgloader
+/tmp/pgii
+</code></pre><p>路径白名单</p>
+<pre tabindex="0"><code>/.
+/.Trashes
+/Applications
+/System
+/System/Library
+/System/Library/Frameworks
+/System/Library/LaunchDaemons
+/Library
+/Library/Ringtones
+/Library/Wallpaper
+/bin
+/bin/launchctl
+/dev
+/dev/aes_0
+/dev/null
+/dev/urandom
+/dev/random
+/dev/zero
+/mnt
+/var
+/var/mobile
+/var/mobile/Library
+/var/mobile/Library/Keyboard
+/var/lib
+/var/root
+/var/run
+/var/tmp
+/var/spool
+/var/vm
+/private
+/etc
+/etc/hosts
+/etc/passwd
+/etc/asl
+/etc/ppp
+/etc/racoon
+/etc/racoon/remote
+/var
+/var/mobile
+/var/mobile/Library/AddressBook
+/var/mobile/Library/Keyboard
+/var/mobile/Library/Preferences
+/var/root
+/var/root/Library
+/var/root/Library/Preferences
+/sbin
+/tmp
+/usr
+/usr/bin
+/usr/bin/DumpBasebandCrash
+/usr/bin/powerlog
+/usr/bin/simulatecrash
+/usr/lib
+/usr/lib/system
+/usr/libexec
+/usr/sbin
+/usr/share
+/usr/share/zoneinfo
+/usr/standalone
+</code></pre><p>每个Hook函数中会检测lr寄存器存储的调用者地址所在模块路径若存在于沙盒中则触发anti-jailbreak</p>
+<ul>
+<li>Hook的fork/ptrace/fsctl/函数返回失败</li>
+<li>Hook的以下函数检测到路径在白名单之外，黑名单之内时返回失败：access/chdir/chflags/dlopen/dlopen_preflight/dyld_get_image_name/execl/execle/execlp/execv/execve/execvp/execvP/fopen/getattrlist/getxattr/link/listxattr/lstat/open</li>
+<li>Hook的connect检测端口为22/51022且IP为ifaddr得到的ipv4/ipv6本地环回地址时返回失败</li>
+<li>Hook的getenv函数检测到DYLD_INSERT_LIBRARIES/SHELL/_MSSafeMode时返回失败</li>
+<li>Hook的dlopen/open/函数在检测到如下路径后返回old_dlopen</li>
+</ul>
+<pre tabindex="0"><code>/etc/fstab
+	/private/etc/fstab
+	/var/lib/xcon/fstab
+	/bjn/bbsh
+</code></pre><p>Hook的dlsym在检测到以下路径后返回失败</p>
+<pre tabindex="0"><code>MSFindSymbol
+MSGetImageByName
+MSHookFunction
+MSHookMessage
+MSHookMessageEx
+SubstrateProcessCreate
+SubstrateProcessRelease
+SubstrateMemoryCreate
+SubstrateHookMemory
+</code></pre><p>Hook的lstat函数检测如下路径后返回失败</p>
+<pre tabindex="0"><code>/usr/include
+/usr/arm-apple-darwin9
+/var/stash/Library/Ringstones
+/var/stash/Library/Wallpaper
+/var/stash/usr/include
+/var/stash/usr/libexec
+/var/stash/usr/share
+</code></pre><p>Hook的open函数检测到如下路径后返回失败</p>
+<pre tabindex="0"><code>/var/tmp/fastc
+/etc/ssh
+/etc/ssh/sshd_config
+/var/mobile/Application/*
+/var/run/utmpx
+/Applications/Cydia.app
+/bin/bash
+/bin/cat
+/bin/chown
+/bin/curl
+/bin/diff
+/bin/kill
+/bin/less
+/bin/su
+/etc/profile
+/Library/MobileSubstrate
+/Library/MobileSubstrate/MobileSubstrate.dylib
+/private/etc/profile
+/private/var/lib
+/private/var/lib/cydia
+/private/var/stash
+/sbin/dump
+/sbin/ping
+/sbin/route
+/usr/bin/curl
+/usr/bin/diff
+/usr/bin/ftp
+/usr/bin/gdb
+/usr/bin/less
+/usr/bin/say
+/usr/bin/scp
+/usr/bin/tty
+/usr/bin/rar
+/usr/bin/wget
+/usr/lib/apt
+/usr/lib/libform.dylib
+/usr/lib/libcurl.la
+/usr/lib/libmenu.dylib
+/usr/lib/libopcodes.a
+/usr/lib/libuuid.la
+/usr/lib/libxml2.la
+/usr/lib/ssl
+/usr/local
+/usr/local/lib/libtop.a
+/usr/local/lib
+/var/evasi0n
+/var/lib
+/var/lib/apt
+/var/lib/cache
+/var/lib/mobile
+</code></pre><p>Hook的dlopen函数在检测到如下bundleid后返回失败</p>
+<pre tabindex="0"><code>jp.co.appdisco.AdLatte
+com.pv.TWBB
+com.digion.DiXiM-Digital-TV
+jp.sammy-net.
+com.ichikaku.
+jp.naver.
+com.linecorp.
+de.j-gessner.
+</code></pre><h2 id="breakthrough分析">breakthrough分析</h2>
+<h3 id="目录结构-4">目录结构</h3>
+<pre tabindex="0"><code>├── Library
+│   └── BreakThrough
+│       └── SupportFiles
+│           ├── %empty
+│           ├── etc%fstab
+│           ├── etc%fpasswd
+└── MobileSubstrate
+    └── DynamicLibraries
+        ├── !!!!_BreakThrough.dylib
+        ├── !!!!_BreakThrough.plist
+        ├── zzzz_BreakThrough.dylib
+        └── zzzz_BreakThrough.plist
+</code></pre><h3 id="加载原理-4">加载原理</h3>
+<p>!!!!_BreakThrough.dylib加载起来zzzz_BreakThrough.dylib，zzzz_BreakThrough.dylib中实现hook逻辑，使用
+MSHookMessageEx/MSHookFunction</p>
+<h3 id="hook操作-4">hook操作</h3>
+<p>白名单：</p>
+<pre tabindex="0"><code>/Applications
+/Library/Ringtones
+/Library/Wallpaper
+/usr/libexec
+/usr/share
+/usr/include
+/usr/arm-apple-darwin9
+</code></pre><p>黑名单前缀：</p>
+<pre tabindex="0"><code>/etc/fstab
+/var/tmp/fastc
+/etc/ssh
+/etc/ssh/sshd_config
+/var/mobile/Applications
+/var/run/utmpx
+/Applications
+/Applications/Absinthe.app
+/Applications/AdSheet.app
+/Applications/Activator.app
+/Applications/blackra1n.app
+/Applications/blacksn0w.app
+/Applications/Cycorder.app
+/Applications/Cydia.app
+/Applications/Cydia.app/Info.plist
+/Applications/Cydia.app/../Cydia.app
+/Applications/Cydia.app/../Cydia.app/Info.plist
+/Applications/FakeCarrier.app
+/Applications/greenpois0n.app
+/Applications/iProtect.app
+/Applications/iRealSMS.app
+/Applications/Jailbreakme.app
+/Applications/Icy.app
+/Applications/Installous.app
+/Applications/IntelliScreen.app
+/Applications/Iny.app
+/Applications/limera1n.app
+/Applications/MxTube.app
+/Application/Preferences.app/General.plist
+/Applications/RockApp.app
+/Applications/SBSettings.app
+/Applications/Seas0nPass.app
+/Applications/ultrasn0w.app
+/Applications/urus.app
+/Applications/WinterBoard.app
+/bin/apt
+/bin/bash
+/bin/bunzip2
+/bin/cat
+/bin/chown
+/bin/curl
+/bin/diff
+/bin/kill
+/bin/less
+/bin/ls
+/bin/sh
+/bin/su
+/etc/apt
+/etc/profile
+/etc/ssh
+/etc/ssh/sshd_config
+/etc/fstab  伪造
+/etc/passwd伪造
+/Library/Activator
+/Library/BreakThrough
+/Library/BreakThrough/SupportFiles
+/Library/LaunchDaemons/com.openssh.sshd.plist
+/Library/LaunchDaemons/com.saurik.Cydia.Startup.plist
+/Library/MobileSubstrate
+/Library/MobileSubstrate/MobileSubstrate.dylib
+/Library/MobileSubstrate/DynamicLibraries/!!!!_BreakThrough.dylib
+/Library/MobileSubstrate/DynamicLibraries/!!!!_BreakThrough.plist
+/Library/MobileSubstrate/DynamicLibraries/xCon.dylib
+/Library/MobileSubstrate/DynamicLibraries/xCon.plist
+/Library/MobileSubstrate/DynamicLibraries/zzzz_BreakThrough.dylib
+/Library/MobileSubstrate/MobileSubstrate.dylib
+/Library/MobileSubstrate/DynamicLibraries/Activator.plist
+/Library/MobileSubstrate/DynamicLibraries/LiveClock.plist&#34;
+/Library/MobileSubstrate/DynamicLibraries/SBSettings.dylib
+/Library/MobileSubstrate/DynamicLibraries/SBSettings.plist
+/Library/MobileSubstrate/DynamicLibraries/Veency.plist
+/Library/MobileSubstrate/DynamicLibraries/xCon.dylib
+/Library/MobileSubstrate/DynamicLibraries/!!!!_BreakThrough.dylib
+/Library/MobileSubstrate/DynamicLibraries/zzzz_BreakThrough.dylib
+/Library/PreferenceLoader/Preferences/LibActivator.plist
+/private/etc/profile
+/private/var/lib
+/private/var/lib/apt
+/private/var/lib/cydia
+/private/var/lib/dpkg/info/net.sident.rio.ios.breakthrough.list
+/private/var/lib/dpkg/info/net.sident.rio.ios.breakthrough.postinst
+/private/var/lib/dpkg/info/net.sident.rio.ios.breakthrough.postrm
+/private/var/lib/dpkg/info/io.pangu.axe7.list
+/private/var/lib/dpkg/info/io.pangu.axe7.prerm
+/private/var/lib/dpkg/info/io.pangu.fuxiqin9.list
+/private/var/lib/dpkg/info/io.pangu.fuxiqin9.prerm
+/private/var/lib/dpkg/info/taiguntether83x.extrainst_
+/private/var/lib/dpkg/info/taiguntether83x.list
+/private/var/lib/dpkg/info/taiguntether83x.preinst
+/private/var/lib/dpkg/info/taiguntether83x.prerm
+/private/var/mobile/Library/SBSettings/Themes
+/private/var/mobile/Media/panguaxe.installed
+/private/var/root/Media
+/private/var/stash
+/private/var/tmp/cydia.log
+/sbin/dump
+/sbin/ping
+/sbin/route
+/usr/arm-apple-darwin9
+/usr/bin/curl
+/usr/bin/diff
+/usr/bin/ftp
+/usr/bin/gdb
+/usr/bin/less
+/usr/bin/say
+/usr/bin/scp
+/usr/bin/sshd
+/usr/bin/tty
+/usr/bin/xar
+/usr/bin/wget
+/usr/include
+/usr/sbin/sshd
+/usr/lib/apt
+/usr/lib/libactivator.dylib
+/usr/lib/libform.dylib
+/usr/lib/libcurl.la
+/usr/lib/libmenu.dylib
+/usr/lib/libopcodes.a
+/usr/lib/libuuid.la
+/usr/lib/libxml2.la
+/usr/lib/ssl
+/usr/libexec/cydia
+/usr/libexec/sftp-server
+/usr/libexec/ssh-keysign
+/usr/local
+/usr/local/lib/libtopo.a
+/usr/local/lib
+/var/cache/apt
+/var/evasi0n
+/var/lib
+/var/lib/apt
+/var/lib/cache
+/var/lib/cydia
+/var/lib/mobile
+/var/lib/xcon
+/var/log/syslog
+/User
+/boot
+/lib
+/mnt
+/panguaxe
+/panguaxe.installed
+/guntether
+/taig
+/taig/taig
+/System/Library/LaunchDaemons/com.saurik.Cydia.Startup.plist
+/System/Library/LaunchDaemons/com.ikey.bbot.plist
+/System/Library/LaunchDaemons/io.pangu.axe.untether.plist
+</code></pre><p>hook的以下函数检查url为file://localhost/Library/MobileSubstrate/DynamicLibraries/xCon.dylib后失败</p>
+<pre tabindex="0"><code>[NSData dataWithContentsOfURL:]
+[NSString dataWithContentsOfURL:]
+</code></pre><p>hook的以下函数]检查file为/Library/MobileSubstrate/DynamicLibraries/xCon.dylib后失败</p>
+<pre tabindex="0"><code>[NSData initWithContentsOfFile:]
+[NSSting initWithContentsOfFile:]
+</code></pre><p>hook的[NSFileManager contentsOfDirectoryAtPath:error:]路径处理如下：</p>
+<p>/Applications下白名单为</p>
+<pre tabindex="0"><code>./
+../
+AdSheet.app/
+AppStore.app/
+Calculator.app/
+Camera.app/
+Compass.app/
+Contacts~iphone.app/
+MobileCal.app/
+DDActionsService.app/
+DemoApp.app/
+FacebookAccountMigrationDialog.app/
+FieldTest.app/MobileMail.app/
+Game Center~iphone.app/
+GameCenterUIService.app/
+MailCompositionService.app/
+Maps.app/MobileNotes.app/
+MessagesViewService.app/
+MobilePhone.app/
+MobileSMS.app/
+MobileSafari.app/
+MobileSlideShow.app/
+Nike.app/
+MobileStore.app/
+MobileTimer.app/
+Music~iphone.app/
+Preferences.app/
+Reminders.app/
+Setup.ap/
+Shoebox.app/
+ShoeboxUIService.app/
+SocialUIService.app/
+Stocks.app/
+StoreKitUIService.app/
+TrustMe.app/
+Utilities/
+Videos.app/
+VoiceMemos.app/
+Weather.app/
+Web.app/
+WebSheet.app/
+WebViewService.app/
+WhatsNew.app/
+iAdOptOut.app/
+iOS Diagnostics.app/
+iPodOut.app/
+kbd.app/
+quicklookd.app
+</code></pre><pre tabindex="0"><code>/var/mobile/Applications/下正常访问，子目录且非容器目录返回空
+黑名单返回空
+/private/var/root和/var/root强制结果为 Library
+/usr/bin强制结果为DumpBasebandCrash/powerlog/simulatecrash
+/usr/lib强制结果为dyld/libexslt.dylib/libIOKit.A.dylib/libIOKit.dylib/libMatch.dylib/StandardDMCFiles/system
+/System/Library强制结果为AccessibilityBundles/AccessoryUpdaterBundles/Accounts/ApplePTP/AppleUSBDevice/Audio/Backup/BulletinBoardPlugins/Caches/Carrier Bundles/CoreServices/DataClassMigrators/DeviceOMatic/Extensions/Filessystems/Fonts/fps/Frameworks/HIDPlugins/Internet Plug-Ins/KeyboardLayouts/LaunchDaemons/
+LinguisticData/LocationBundles/Lockdown/MediaCapture/Messages/Obliteration/PreferenceBundles/
+PreinstalledAssets/PrivateFrameworks/PublishingBundles/RegionFeatures/ScreenReader/SearchBundles/
+SetupAssistantBundles/SocialServices/Spotlight/SpringBoardPlugins/SyncBundles/SystemConfiguration/TextInput/
+UserEventPlugins/VideoDecoders/VideoProcessors/VoiceServices/Watchdog/WeeAppPlugins
+    /tmp下白名单为
+		./../L65ancd.sock/L65d.sock/MediaCache/RestoreFromBackupLock/SpringBoard_reboot_flag/abm_csd/
+		com.apple.audio.hogmode.plist/com.apple.tccd/com.apple.timed.plist/csilock/launchd/libETL.log/log-bb-
+</code></pre><ul>
+<li>hook的 [UIApplication canOpenURL:]检查scheme为cydia/ifile/Cydia/Icy/</li>
+<li>hook的open/symlink/stat/opendir/realpath$DARWIN_EXTSN/fopen/access及以下Objective-C函数会检查以上检测点</li>
+</ul>
+<pre tabindex="0"><code>[NSFileManager fileExistsAtPath:]
+[NSFIleManager fileExistsAtPath:isDirectory:]
+[NSFileManager destinationOfSymbolickLinkAtPath:error:]
+[NSFileManager isReadableFileAtPath:]
+[NSFileManager subpathsOfDirectoryAtPath:error:]
+</code></pre><ul>
+<li>hook的connect检查ip为127.0.0.1时返回失败</li>
+<li>hook的readlink检查如下路径后返回失败<code>/Applications  /User</code></li>
+<li>hook的dladdr检测到如下函数时返回正常值</li>
+</ul>
+<pre tabindex="0"><code>[NSFileManager fileExistsAtPath:]
+[NSFileManager isReadableFileAtPath:]
+[NSFileManager fileExistsAtPath:isDirectory:]
+[NSString initWithContentsOfFile:encoding:error:]
+[NSData initWithContentsOfURL:options:error:]
+</code></pre><ul>
+<li>hook的getenv/[NSProcessInfo environment]检测DYLD_INSERT_LIBRARIES/DYLD_PRINT_LIBRARIES/_MSSafeMode时返回失败</li>
+<li>hook的readdir检测当前目录为’/’且子目录为./../.Trashes/.file/Applications/Developer/Library/System/bin/cores/dev/etc/private/sbin/tmp/usr/var时放行，检测当前目录为/private/var/stash/Applications,private/var/stash/,/Applications,/private/var/db/stash/，检测当前目录为/Library且子目录不是以下目录时返回失败, 子目录不是以下目录时返回失败：</li>
+</ul>
+<pre tabindex="0"><code>./
+../
+AdSheet.app/
+AppStore.app/
+Calculator.app/
+Camera.app/
+Compass.app/
+Contacts~iphone.app/
+MobileCal.app/
+DDActionsService.app/
+DemoApp.app/
+FacebookAccountMigrationDialog.app/
+FieldTest.app/MobileMail.app/
+Game Center~iphone.app/
+GameCenterUIService.app/
+MailCompositionService.app/
+Maps.app/MobileNotes.app/
+MessagesViewService.app/
+MobilePhone.app/
+MobileSMS.app/
+MobileSafari.app/
+MobileSlideShow.app/
+Nike.app/
+MobileStore.app/
+MobileTimer.app/Music~iphone.app/
+Preferences.app/Reminders.app/
+Setup.ap/
+Shoebox.app/
+ShoeboxUIService.app/
+SocialUIService.app/
+Stocks.app/
+StoreKitUIService.app/
+TrustMe.app/
+Utilities/
+Videos.app/
+VoiceMemos.app/
+Weather.app/
+Web.app/
+WebSheet.app/
+WebViewService.app/
+WhatsNew.app/
+iAdOptOut.app/
+iOS Diagnostics.app/
+iPodOut.app/
+kbd.app/
+quicklookd.app
+</code></pre><ul>
+<li>hook的system返回0</li>
+<li>hook的fork返回-1</li>
+<li>hook的dlopen检查如下路径：</li>
+</ul>
+<pre tabindex="0"><code>/Library/MobileSubstrate/DynamicLibraries/~~tsProtector.dylib
+/Library/MobileSubstrate/DynamicLibraries/~~tsProtector 8.dylib
+/Library/MobileSubstrate/MobileSubstrate.dylib
+/Library/MobileSubstrate/DynamicLibraries/xCon.dylib
+</code></pre><ul>
+<li>hook的dlsym检查MSHookFunction</li>
+<li>hook的_dyld_register_func_for_add_image在回调函数中检查</li>
+</ul>
+<pre tabindex="0"><code>/Library/MobileSubstrate/MobileSubstrate.dylib
+/private/var/mobile/Containers/Bundle/Application/
+/Library/MobileSubstrate/
+/Library/Frameworks/CydiaSubstrate.framework/
+/usr/lib/libsubstrate.dylib
+</code></pre><p>hook的_dyld_image_count检查如下路径：</p>
+<pre tabindex="0"><code>/Library/MobileSubstrate/DynamicLibraries/xCon.dylib
+/Library/Frameworks/CydiaSubstrate.framework/Libraries/SubstrateLoader.dylib
+/usr/lib/libsubstrate.dylib
+/Library/MobileSubstrate/MobileSubstrate.dylib
+/usr/lib/libobjc.A.dylib
+/Library/MobileSubstrate/DynamicLibraries/~~~~~~~~Stakeout.dylib
+/MobileSubstrate.dylib
+/Multifl0w.dylib
+/SubstrateLoader.dylib
+/DreamBoard.dylib
+/Unrestrictor3G.dylib
+/fakecarrier.dylib
+/WinterBoard.dylib
+/xCon.dylib
+/SBSettings.dylib
+/SubstrateLoader.dylib
+</code></pre><p>hook的dyld_get_image_name检查如下路径：</p>
+<pre tabindex="0"><code>BreakThrough.dylib
+DreamBoard.dylib
+fakecarrier.dylib
+/Library/Frameworks/CydiaSubstrate.framework/
+/Library/MobileSubstrate/
+/Library/MobileSubstrate/MobileSubstrate.dylib
+MobileSafety.dylib
+MobileSubstrate.dylib
+Multifl0w.dylib
+SBSettings.dylib
+SubstrateLoader.dylib
+tsProtector.dylib
+Unrestrictor3G.dylib
+WinterBoard.dylib
+xCon.dylib
+!!!!_BreakThrough_8.dylib
+zzzz_BreakThrough_8.dylib
+</code></pre><p>hook的syscall如下处理：</p>
+<pre tabindex="0"><code>number=open 返回－1
+number=symlink 路径为/etc/ssh /etc/ssh/sshd_config则返回失败
+number=sysctl 命令为KERN_PROC时处理同sysctl
+</code></pre><p>hook的sysctl如下处理：</p>
+<pre tabindex="0"><code>KERN_PROC_PID 去除p_flag的P_TRACE/P_DISABLE_ASLR，反反调试
+KERN_PROC_ALL 遇到进程名p_comm为以下名字分别处理
+p_pid==getpid()  去除p_flag的P_TRACED/P_DISABLE_ASLR/P_NOREMOTEHANG
+AlphaPlayer	去除p_flag的P_TRACED/P_DISABLE_ASLR/P_NOREMOTEHANG
+sshd			跳过
+sandboxd/MobileStorageMou/CommCenterMobile/MobilePhone/MobileMail/spd/timed/lsd/vsassetd/security/
+itunesstored/misd/lockbot/installd/SpringBoard/xxxx-launchproxy/notification_pro/syslog_relay/DTPower/ptpd/
+CommCenterClassi/geod/softwareupdatese/networkd/notifyd/aosnotifyd/BTServer/aggregated/apsd/configd/
+dataaccessd/fairplayd.N90/fseventsd/iapd/imagent/location/mDNSResponder/mediaremoted/mediaserverd/
+lockdownd/powerd/wifid/UserEventAgent/launchd/kernel_task/TVSideView				正常处理
+</code></pre><p>hook的 以下函数返回失败</p>
+<pre tabindex="0"><code>[LineGameSDK checkJailBreak]
+[JBDetection isJailbroken]
+[AlpsPlayerRootedCheckUtil isJailbreak]
+[AccessPrivilege_objc checkMe]
+[AccessPrivilege_objc checkMe2:]
+[AccessPrivilege_objc checkMe3:]
+[CARCheck isJailbreak]
+[CZDevice isJailbroken]
+[DeviceUtil isJeilBroken]
+[Litmus CheckJailBreak]
+[AdChecker isJailBroken]
+[ANSMetadata isJailbroken]
+[DeckFlag SET_Flag:]
+[CMNSecurityManager isRootDetected]
+[CMNSecurityManager setRootDetected]
+[MobileAPI isJailbroken]
+[JBBuster cydiaDiscovery]
+[JBBuster cydiaschemeDiscovery]
+[JBBuster env]
+[JBBuster icon]
+[JBBuster identifier]
+[JBBuster ls]
+[JBBuster mkfile]
+[JBBuster shtest]
+[JBBuster isJailBreak]
+</code></pre><p>hook的[NSString writeToFile:atomically:encoding_error]检测到以下路径时返回失败：</p>
+<pre tabindex="0"><code>/private/var/mobile/Application
+/private/var/mobile/Containers	
+</code></pre><p>app类型：</p>
+<pre tabindex="0"><code>00   jp.sammy-net.appstore.ip0002
+02   com.ibm.
+03   com.exys2008.    *
+04   jp.co.caadv.
+05   jp.sammy-net.
+06   net.appbank.
+07   jp.uula.
+08   jp.wowow.
+09   com.squareup.square
+0A   com.panasonic.jp.wisdomviewer
+0B   com.paypal.here
+0D   jp.co.capcom.
+0E   com.ichikaku.
+0F   jp.co.nttdocomo.danimestore
+10   com.PIXELA.
+11   com.digion.
+12   com.wb.
+13   xcom.stampgetter.
+14   com.chuchucoin
+15   jp.flup.
+16   jp.co.appdisco.
+17   jp.co.dpcorp.
+18   Presentnow
+19   com.entrust.
+1A   com.air-watch.
+1B   com.zenprise.
+1D   jp.co.delight.
+1E   com.glu.
+1F   com.rovio.
+20   com.unigame.iphone.
+21   jp.co.cybird.
+22   com.skype.
+23   jp.co.alpha.
+24   jp.co.craftegg.monpuz
+25   com.enterproid.
+26   jp.co.rakuten.
+27   jp.co.dcgl.
+28   jp.chance-bunny
+29   jp.co.d2cr.
+2A   cm.mucho
+2B   jp.co.bandainamcogames.
+2C   jp.co.cyberagent.
+2D   jp.yomecolle
+2E   kr.co.lockjoy.
+2F   com.mjack
+31   V5CQX55X69.jp.co.jcom.xvie.live
+32   jp.co.fukuokabank.securestarter
+33   jp.co.mizuhobank.
+34   jp.aeria.
+35   Yournet.
+36   com.panasonic.
+37   net.oratta.
+38   com.gamevil.
+39   jp.co.tmemo.
+3A   jp.colopl.
+3B   com.gameloft.
+3C   com.nagasebros.
+3D   jp.co.sony.
+3E   jp.lifemaker.
+3F   com.google.ingres    com.nianticlabs.
+40   net.adways.    
+41   aprich.sakura.ne.jp
+42   jp.co.cygames.OreillyCollection
+43   jp.co.smbc.smotp
+44   com.nhnent.
+45   kr.co.vcnc
+46   com.google.Movies
+47   jp.gungho.
+48   de.j-gessner.
+49   com.aniplex.
+4B   com.kddi.
+4C   jp.mufg.bk.mymoney.01
+4E   com.cachatto.
+4F   com.dazn.
+50   com.nintendo.
+51   us.zoom.
+</code></pre><h2 id="awz分析">AWZ分析</h2>
+<p>黑名单：</p>
+<pre tabindex="0"><code>/Applications/Cydia.app
+/private/var/stash
+/Applications/blackra1n.app
+/Applications/FakeCarrier.app
+/Applications/Icy.app
+/Applications/IntelliScreen.app
+/Applications/MxTube.app
+/Applications/RockApp.app
+/Applications/SBSetttings.app
+/Applications/WinterBoard.app
+/private/var/tmp/cydia.log
+/usr/bin/sshd
+/usr/sbin/sshd
+/usr/libexec/sftp-server
+/Systetem/Library/LaunchDaemons/com.ikey.bbot.plist
+/System/Library/LaunchDaemons/com.saurik.Cy@dia.Startup.plist
+/Library/MobileSubstrate/MobileSubstrate.dylib
+/var/log/syslog
+/bin/bash
+/bin/sh
+/etc/ssh/sshd_config
+/usr/libexec/ssh-keysign
+/private/var/lib/apt/
+/private/var/lib/cydia/
+/private/var/mobileLibrary/SBSettingsThemes/
+/private/var/stash/
+/usr/libexec/cydia/
+/var/cache/apt/
+/var/lib/apt/
+/var/lib/cydia/
+/var/log/syslog
+/bin/bash
+/bin/sh
+/etc/apt/
+/etc/ssh/sshd_config
+/usr/libexec/ssh-keysign
+/var/stash/Library/Ringtones
+/var/stash/Library/Wallpaper
+/var/stash/usr/include
+/var/stash/usr/libexec
+/var/stash/usr/share
+/var/stash/usr/arm-apple-darwin9
+/etc/apt
+/usr/bin/ssh
+/usr/bin/sh
+/System/Library
+/private/var/mobile
+/usr/share/langid
+</code></pre><p>hook的以下函数在检测到路径为黑名单时返回失败：</p>
+<pre tabindex="0"><code>lstat/fopen/stat/access
+[NSFileManager fileExistsAtPath:]
+[NSFileManager fileExistsAtPath:isDirectory:]
+[NSFileManager isReadableFileAtPath:]
+[NSFileManager isWritableFileAtPath:]
+[NSFileManager isExecutableFileAtPath:]
+[NSFileManager isDeleteableFileAtPath:]
+</code></pre>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20190328_syscall/">
+                        系统调用号
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20190516_theos/">
+                        Theos环境搭建
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

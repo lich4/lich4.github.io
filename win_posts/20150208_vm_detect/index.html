@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    虚拟机检测程序的分析 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/win_posts/20150208_vm_detect/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/win_posts/">Win_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/win_posts/20150208_vm_detect/">虚拟机检测程序的分析</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">虚拟机检测程序的分析</h1>
+    
+    <p class="single-summary">虚拟机检测程序的分析</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2015-02-08T00:00:00&#43;00:00">February 8, 2015</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E9%80%86%E5%90%91/">#逆向</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#跟踪">跟踪</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="背景">背景</h2>
+<p>  前几个礼拜在网上下了个视频exe(5.exe)，win7下运行直接异常，因此想放到xp虚拟机里看看，结果直接检测出虚拟机，弹窗后直接关闭，很好奇想知道怎么检测的。用windbg加载该exe，运行到弹窗后暂停，“Play请不要在虚拟机中播放！！”。查看调用栈，发现空空如也，感觉不太妙，试着移动窗体，发现居然可以移动！那么这一定是另一个进程的，也就是说5.exe启动了另一个进程。用process explorer查看进程，发现进程树中5.exe居然开启了<code>C:\WINDOWS\system32\winver.exe</code>，命令行参数传的是<br>
+<code>F238FF10FB00F72CD46CD727B402EC259151C620E00AEC26C25EE230F90AEC28C276D135E00CF01D66C260B2C817E732C55E967AF11BE7</code><br>
+  之后我在真正的(非虚拟机)win7系统里运行了一下，这个串变成了<br>
+<code>F238FF01E706F032ED6ECA37FC02ED1DF567D03FE00CF21D842CC62CF1</code><br>
+  现在奇怪的事情来了，自己手动执行winver.exe，参数是后面那个长串，预期会弹上面那个窗口，结果却只是winver自己的界面。后来搞了很长时间没有什么进展，无意间我看到5.exe资源(DEL_FD1)里有个pe文件(记为DEL_FD1.exe)，把它dump出来，加上那个参数运行了一下，居然弹窗了，也就说5.exe吧资源在内存dump下来直接运行了，没有通过生成文件这一步。。。而虚拟机检测和参数解析都是DEL_FD1.exe做的，5.exe仅仅用于产生另一个进程。详细看了字符串引用还会有更多发现，原来5.exe用到了BoxedApp SDK来实现资源直接生成进程这一步。如果将资源DEL_FD1替换成其他exe，会发现运行的恰好是替换的这个文件！！！</p>
+<h2 id="跟踪">跟踪</h2>
+<p>  现在目标明确了，用Windbg分析该del_fd1.exe，当然要加上会弹窗的那个参数，再弹窗时，暂停下来看调用栈：</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">0012F67C  77D19418   包含ntdll.KiFastSystemCallRet           USER32.77D19416               0012F6AC
+0012F680  00469032  &lt;JMP.&amp;user32.WaitMessage&gt;             DEL_FD1.0046902D              0012F6AC
+0012F6B0  004684AC   ? DEL_FD1.00468F00                    DEL_FD1.004684A7              0012F6AC
+0012F6D4  00464C28   DEL_FD1.00468490                      DEL_FD1.00464C23              0012F730
+</code></pre><p>  这次仍然不是很明显(调Dephi程序好难受，各种奇怪的库函数)，后几个函数跟进去以后可能是窗口回调之类的。没办法，搜字符串吧，0x4a9eb0处可以搜到结果，之后在这里下访问断点，再看调用栈：</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">0012F61C  77D1AE26  ntdll.RtlMultiByteToUnicodeN         USER32.77D1AE20              0012F618
+0012F644  77D3C76E   USER32.MBToWCSEx                      USER32.77D3C769               0012F640
+0012F674  77D3C730   USER32.DrawTextExA                    USER32.77D3C72B               0012F670
+0012F678  01010054     hDC = 01010054
+0012F67C  004A9EB0     Text = &#34;请不要在虚拟机中播放!!&#34;
+0012F680  00000017     Count = 17 (23.)
+0012F684  0012F6E8     pRect = 0012F6E8{0.,0.,960.,0.}
+0012F688  00000450     Flags =DT_LEFT|DT_TOP|DT_WORDBREA
+0012F68C  00000000     pDrawTextParams =NULL
+0012F6A8  0043B898  &lt;JMP.&amp;user32.DrawTextA&gt;               DEL_FD1.0043B893              0012F6A4
+0012F6AC  01010054     hDC = 01010054
+0012F6B0  004A9EB0     Text = &#34;请不要在虚拟机中播放!!&#34;
+0012F6B4  00000017     Count = 17 (23.)
+0012F6B8  0012F6E8     pRect = 0012F6E8{0.,0.,960.,0.}
+0012F6BC  00000450     Flags =DT_LEFT|DT_TOP|DT_WORDBREA
+0012F74C  0043BC52   ? DEL_FD1.0043B68C                    DEL_FD1.0043BC4D              0012F748
+0012F758  0043BD9B   ? DEL_FD1.0043BC2C                    DEL_FD1.0043BD96
+0012F778  0043BC93   ? DEL_FD1.0043BD34                    DEL_FD1.0043BC8E
+0012F77C  00000000     Arg1 = 00000000
+0012F780  FFFFFFFF     Arg2 = FFFFFFFF
+0012F784  FFFFFFFF     Arg3 = FFFFFFFF
+0012F788  00000000     Arg4 = 00000000
+0012F794  0043BDCE   DEL_FD1.0043BC74                      DEL_FD1.0043BDC9              0012F790
+0012F798  FFFFFFFF     Arg1 = FFFFFFFF
+0012F79C  FFFFFFFF     Arg2 = FFFFFFFF
+0012F7A0  00000000     Arg3 = 00000000
+0012F7A4  0043BDBB   DEL_FD1.0043BDBC                      DEL_FD1.0043BDB6              0012FB78
+0012F7A8  004A94F7   DEL_FD1.0043BDB0                      DEL_FD1.004A94F2              0012FB78
+</code></pre><p>  可以发现窗口是DrawTextA产生的，怪不得MessageBox断不下呢！输入at 004A94F7转到反汇编，跟到最后终于快得到结果了，可以得到如下关键逻辑：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span><span style="color:#ec0000">if</span>(sub_4A866C() <span style="color:#ec0000">||</span> sub_4A871C() <span style="color:#ec0000">||</span>sub_4A86CC())
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	ShowMessage(<span style="color:#ec0000">“请不要在虚拟机中播放”</span>);
+</span></span><span style="display:flex;"><span>	TcustomForm.Close();
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">bool</span> <span style="color:#5f5fff">IsUnderVM1</span>()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">bool</span> flag<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">__try</span>
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		_asm
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			mov eax,<span style="color:#ec0000">’</span>VMXh<span style="color:#ec0000">’</span>;
+</span></span><span style="display:flex;"><span>			mov ebx,<span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>			mov ecx,<span style="color:#008900">0</span>Ah;
+</span></span><span style="display:flex;"><span>			mov edx,<span style="color:#ec0000">’</span>VX<span style="color:#ec0000">’</span>;
+</span></span><span style="display:flex;"><span>			in eax,dx;
+</span></span><span style="display:flex;"><span>			cmp ebx,<span style="color:#ec0000">’</span>VMXh<span style="color:#ec0000">’</span>;
+</span></span><span style="display:flex;"><span>			jnz RESULT;
+</span></span><span style="display:flex;"><span>			mov flag,<span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>			<span style="color:#ec0000">RESULT</span>:   ;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">__except</span>(<span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		flag<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span>;
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">return</span> flag;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">bool</span> <span style="color:#5f5fff">IsUnderVM2</span>()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">bool</span> flag<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">__try</span>
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		_asm
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			mov eax,<span style="color:#ec0000">’</span>VMXh<span style="color:#ec0000">’</span>;
+</span></span><span style="display:flex;"><span>			mov ecx,<span style="color:#008900">0</span>Ah;//注意和IsUnderVM1不同
+</span></span><span style="display:flex;"><span>			mov edx,<span style="color:#ec0000">’</span>VX<span style="color:#ec0000">’</span>;
+</span></span><span style="display:flex;"><span>			in eax,dx;
+</span></span><span style="display:flex;"><span>			cmp ebx,<span style="color:#ec0000">’</span>VMXh<span style="color:#ec0000">’</span>
+</span></span><span style="display:flex;"><span>			setz flag;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">__except</span>(<span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		flag<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span>;
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">return</span> flag;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>/*
+</span></span><span style="display:flex;"><span>.text:004A86CC loc_4A86CC:                             ; CODE XREF:sub_4A8A1C+AEEp
+</span></span><span style="display:flex;"><span>.text:004A86CC                                         ;sub_4A8A1C+B38p
+</span></span><span style="display:flex;"><span>.text:004A86CC                 push    ebp
+</span></span><span style="display:flex;"><span>.text:004A86CD                 mov     ebp, esp
+</span></span><span style="display:flex;"><span>.text:004A86CF                 push    ecx
+</span></span><span style="display:flex;"><span>.text:004A86D0                 push    ebx
+</span></span><span style="display:flex;"><span>.text:004A86D1                 push    esi
+</span></span><span style="display:flex;"><span>.text:004A86D2                 push    edi
+</span></span><span style="display:flex;"><span>.text:004A86D3                 mov     byte ptr [ebp-1], 0
+</span></span><span style="display:flex;"><span>.text:004A86D7                 xor     eax,eax
+</span></span><span style="display:flex;"><span>.text:004A86D9                 push    ebp
+</span></span><span style="display:flex;"><span>.text:004A86DA                 push    offset loc_4A8705//注册异常回调
+</span></span><span style="display:flex;"><span>.text:004A86DF                 push    dword ptr fs:[eax]
+</span></span><span style="display:flex;"><span>.text:004A86E2                 mov     fs:[eax], esp
+</span></span><span style="display:flex;"><span>.text:004A86E5                 push    ebx
+</span></span><span style="display:flex;"><span>.text:004A86E6                 mov     ebx, 0
+</span></span><span style="display:flex;"><span>.text:004A86EB                 mov     eax, 1
+</span></span><span style="display:flex;"><span>.text:004A86EB ;---------------------------------------------------------------------------
+</span></span><span style="display:flex;"><span>.text:004A86F0                 db 0Fh
+</span></span><span style="display:flex;"><span>.text:004A86F1                 db 3Fh
+</span></span><span style="display:flex;"><span>.text:004A86F2                 db 7
+</span></span><span style="display:flex;"><span>.text:004A86F3                 db 0Bh
+</span></span><span style="display:flex;"><span>.text:004A86F4 ;---------------------------------------------------------------------------
+</span></span><span style="display:flex;"><span>.text:004A86F4                 test    ebx, ebx//ZF位为1
+</span></span><span style="display:flex;"><span>.text:004A86F6                 setz    byte ptr [ebp-1]//ebp[-1]=1;
+</span></span><span style="display:flex;"><span>.text:004A86FA                 pop     ebx
+</span></span><span style="display:flex;"><span>.text:004A86FB                 xor     eax, eax
+</span></span><span style="display:flex;"><span>.text:004A86FD                 pop     edx
+</span></span><span style="display:flex;"><span>.text:004A86FE                 pop     ecx
+</span></span><span style="display:flex;"><span>.text:004A86FF                 pop    ecx
+</span></span><span style="display:flex;"><span>.text:004A8700                 mov     fs:[eax], edx
+</span></span><span style="display:flex;"><span>.text:004A8703                 jmp     short loc_4A870F
+</span></span><span style="display:flex;"><span>.text:004A8705 ;---------------------------------------------------------------------------
+</span></span><span style="display:flex;"><span>.text:004A8705
+</span></span><span style="display:flex;"><span>.text:004A8705 loc_4A8705:                             ; DATA XREF:.text:004A86DAo
+</span></span><span style="display:flex;"><span>.text:004A8705                 jmp     @@HandleAnyException ; __linkproc__HandleAnyException
+</span></span><span style="display:flex;"><span>.text:004A870A ;---------------------------------------------------------------------------
+</span></span><span style="display:flex;"><span>.text:004A870A                 call    @@DoneExcept    ; __linkproc__ DoneExcept
+</span></span><span style="display:flex;"><span>.text:004A870F
+</span></span><span style="display:flex;"><span>.text:004A870F loc_4A870F:                             ; CODE XREF:.text:004A8703j
+</span></span><span style="display:flex;"><span>.text:004A870F                 movzx   eax, byte ptr [ebp-1]
+</span></span><span style="display:flex;"><span>.text:004A8713                 pop     edi
+</span></span><span style="display:flex;"><span>.text:004A8714                 pop     esi
+</span></span><span style="display:flex;"><span>.text:004A8715                 pop     ebx
+</span></span><span style="display:flex;"><span>.text:004A8716                 pop     ecx
+</span></span><span style="display:flex;"><span>.text:004A8717                 pop     ebp
+</span></span><span style="display:flex;"><span>.text:004A8718                 retn
+</span></span><span style="display:flex;"><span>*/
+</span></span></code></pre></div><p>  中间的0F3F070B是什么，我也不知道于是百度到了这个网站http://hp.vector.co.jp/authors/VA028184/OllyDbgQA.htm，原来是Virtual PC自造的一个指令(不过具体是什么指令我没查到，知道的可以说下)，在其他架构下(如x86)为非法指令会产生异常(情况1)，而Virutal PC下能正常执行(情况2)。下面分别讨论：</p>
+<ul>
+<li>函数公共部分：ebp[-1]=0,eax=0;004A86D9~ 004A86E2为异常初始化，004A8705为发生异常的回调地址;ebx=0;eax=1</li>
+<li>情况1：走到004A86F0处，由于不识别指令因此引发异常，直接到004A8705，后面走到004A870F，eax=ebp[-1]=0。</li>
+<li>情况2：004A86F0处指令正常执行，test指令置ZF位为1，setz的结果是ebp[-1]=1,eax=0,接下来几个pop抵销前面注册异常处理的push，edx刚好对应004A86DF代码处原先入栈的异常帧，movfs:[eax], edx恢复了原始异常链，之后运行到004A870F，eax=ebp[-1]=1。</li>
+</ul>
+<p>原始代码是Delphi写的，这里用MSVC的C代码表示：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span><span style="color:#5f5fff">bool</span> <span style="color:#5f5fff">IsUnderVM3</span>()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">bool</span> flag<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">__try</span>
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		_asm
+</span></span><span style="display:flex;"><span>		{
+</span></span><span style="display:flex;"><span>			_EMIT <span style="color:#008900">0x0F</span>;
+</span></span><span style="display:flex;"><span>			_EMIT <span style="color:#008900">0x3F</span>;
+</span></span><span style="display:flex;"><span>			_EMIT <span style="color:#008900">0x07</span>;
+</span></span><span style="display:flex;"><span>			_EMIT <span style="color:#008900">0x0B</span>;
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>		flag<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">__except</span>(<span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">return</span> flag;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150117_pwd_viewer/">
+                        星号密码查看器逆向分析
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150208_gearnt/">
+                        变速齿轮原理浅析
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

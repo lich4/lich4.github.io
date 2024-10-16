@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    佐罗(Zorro)改机改串一键新机原理分析 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/re_posts/20200516_zorro/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/re_posts/">Re_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/re_posts/20200516_zorro/">佐罗(Zorro)改机改串一键新机原理分析</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">佐罗(Zorro)改机改串一键新机原理分析</h1>
+    
+    <p class="single-summary">佐罗(Zorro)改机改串一键新机原理分析</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2020-05-16T00:00:00&#43;00:00">May 16, 2020</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E8%B6%8A%E7%8B%B1%E6%A3%80%E6%B5%8B/">#越狱检测</a>
+    </span>
+    
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E6%94%B9%E6%9C%BA/">#改机</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#简介">简介</a></li>
+    <li><a href="#分析">分析</a>
+      <ul>
+        <li><a href="#一键新机过程">一键新机过程</a></li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a>
+      <ul>
+        <li><a href="#存在的缺陷">存在的缺陷</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="简介">简介</h2>
+<p>由于没找到佐罗官网，这里从贴吧找了一段:</p>
+<pre tabindex="0"><code>1、 支持多语言
+2、 手机型号：支持 5 到 iPhone XS Max，并且提供不同地区版本的机型选择，如美版、日版、国行
+3、 系统版本：支持 8.0~12.2
+4、 运营商：常见国家和地区运营商，新版本会不断增加，有需求的可以反馈
+5、 网络类型：2G、3G、4G、WiFi
+6、 反越狱检测：跳过 APP 的越狱检测
+7、 网络模拟：包含网络状态和运营商相关信息
+8、 定位模拟：模拟定位，根据当前 IP 所在城市进行经纬度模拟
+9、 屏幕模拟：此项一般情况不建议开启。小屏幕模拟为大屏幕时，可能因 APP开发方式问题，会发生显示不全的现象，在 Plus 手机上模拟小屏幕可以得到较好的结果
+10、 模拟高版本防闪退：此项一般情况不建议开启。此功能主要用于游戏，当某款游戏在低版本手机上模拟为高版本发生闪退时，可尝试选中此项看看能否得到解决。（应用类 APP 勾选此项成功率不高）
+11、 硬件信息全面模拟
+12、 电量、音量、信号强度仿真：电量自动仿真，会自动模拟掉电，隐藏充电状态等
+13、 系统启动时间跟随：会依每一次新机随时系统启动时间
+14、 APP 安装时间跟随
+15、 境外 IP 辅助经纬度定位：使用收费接口根据 IP 随机设置所在城市经纬度，支持境外 IP 的解析，不勾选此项，将使用免费接口解析，只能解析中国大陆的 IP 定位。
+16、HTTP API调试
+</code></pre><p>源:</p>
+<pre tabindex="0"><code>apt.zorrovip.com
+</code></pre><h2 id="分析">分析</h2>
+<p>文件系统</p>
+<pre tabindex="0"><code>/Applications/zorro.app/zorro 用户UI
+/Applications/zorro.app/setting.dat  伪装到/usr/libexec/cydiabash，为后台daemon进程
+/usr/bin/zorrodaemon 为后台daemon进程
+/Library/MobileSubstrate/DynamicLibraries/zorro.dylib 实际改机模块
+/private/var/mobile/Library/Preferences/com.zorro.adv.plist 新机参数
+/private/var/mobile/Library/Preferences/com.zorro_enc.plist 新机参数
+</code></pre><p>保护方式</p>
+<ul>
+<li>简单的反调试+SVC(exit)</li>
+<li>防抓包([NSURLSessionConfiguration setConnectionProxyDictionary:])</li>
+<li>Hikari全功能混淆</li>
+<li>通信数据使用RSA加密json：</li>
+</ul>
+<h3 id="一键新机过程">一键新机过程</h3>
+<pre tabindex="0"><code>/usr/bin/zorrodo cp -f /private/var/mobile/Library/Preferences/com.zorro_enc.plist /var/mobile/Media/ZORRO/20200502-20-31-24_enc.igri
+/usr/bin/zorrodo mkdir /var/mobile/Media/ZORRO/20200502-20-31-24
+/usr/bin/zorrodo /bin/cp -fp /var/mobile/Media/ZORRO/20200502-20-31-24_enc.igri /var/mobile/Media/ZORRO/20200502-20-31-24/record_enc.plist
+/usr/bin/zorrodo /usr/bin/killall -9 MobileSafari
+/usr/bin/zorrodo /usr/bin/killall -9 test223
+/usr/bin/zorrodo /usr/bin/killall -9 MobileSafari
+/usr/bin/zorrodo launchctl unload -w /System/Library/LaunchDaemons/com.apple.cfprefsd.xpc.daemon.plist
+/usr/bin/zorrodo launchctl load -w /System/Library/LaunchDaemons/com.apple.cfprefsd.xpc.daemon.plist
+/usr/bin/zorrodo mkdir /var/mobile/Media/ZORRO/20200502-20-31-24/Keychains
+/usr/bin/zorrodo /bin/cp -fp /var/Keychains/keychain-2.db /var/mobile/Media/ZORRO/20200502-20-31-24/Keychains/keychain-2.db
+/usr/bin/zorrodo /bin/cp -fp /var/Keychains/keychain-2.db-shm /var/mobile/Media/ZORRO/20200502-20-31-24/Keychains/keychain-2.db-shm
+/usr/bin/zorrodo /bin/cp -fp /var/Keychains/keychain-2.db-wal /var/mobile/Media/ZORRO/20200502-20-31-24/Keychains/keychain-2.db-wal
+/usr/bin/zorrodo cleanKeychains
+/usr/bin/zorrodo /bin/cp -RTfp /var/mobile/Library/Caches/com.apple.Pasteboard /var/mobile/Media/ZORRO/20200502-20-31-24/com.apple.Pasteboard
+sh -c rm -Rf /var/mobile/Library/Caches/com.apple.Pasteboard/*
+sh -c rm -Rf /var/mobile/Library/Caches/com.apple.Pasteboard/*
+sh -c rm -Rf /var/mobile/Library/Caches/com.apple.mobilesafari/*
+sh -c rm -Rf /var/mobile/Library/Caches/Safari/*
+sh -c rm -Rf /var/mobile/Library/WebKit/*
+sh -c rm -Rf /var/mobile/Library/Safari/*
+/usr/bin/zorrodo /bin/rm -rf /var/mobile/Library/Cookies/Cookies.binarycookies
+/usr/bin/zorrodo /bin/rm -rf /private/var/root/Library/Cookies/Cookies.binarycookies
+/usr/bin/zorrodo /bin/rm -rf /private/var/mobile/Containers/Data/Application/35797810-4509-4D40-9CA0-2D9895BD8293/CloudKit
+/usr/bin/zorrodo /bin/rm -rf /private/var/mobile/Containers/Data/Application/35797810-4509-4D40-9CA0-2D9895BD8293/Documents
+/usr/bin/zorrodo /bin/rm -rf /private/var/mobile/Containers/Data/Application/35797810-4509-4D40-9CA0-2D9895BD8293/Library
+/usr/bin/zorrodo /bin/rm -rf /private/var/mobile/Containers/Data/Application/35797810-4509-4D40-9CA0-2D9895BD8293/tmp
+/usr/bin/zorrodo mkdir /private/var/mobile/Containers/Data/Application/35797810-4509-4D40-9CA0-2D9895BD8293/Documents
+/usr/bin/zorrodo mkdir /private/var/mobile/Containers/Data/Application/35797810-4509-4D40-9CA0-2D9895BD8293/Library/Preferences
+/usr/bin/zorrodo mkdir /private/var/mobile/Containers/Data/Application/35797810-4509-4D40-9CA0-2D9895BD8293/Library/Caches
+/usr/bin/zorrodo mkdir /private/var/mobile/Containers/Data/Application/35797810-4509-4D40-9CA0-2D9895BD8293/tmp
+/usr/bin/zorrodo /bin/rm -rf /private/var/mobile/Containers/Data/Application/4C3E7DAE-EF81-43CF-BD94-E956605C6330/Documents
+/usr/bin/zorrodo /bin/rm -rf /private/var/mobile/Containers/Data/Application/4C3E7DAE-EF81-43CF-BD94-E956605C6330/Library
+/usr/bin/zorrodo /bin/rm -rf /private/var/mobile/Containers/Data/Application/4C3E7DAE-EF81-43CF-BD94-E956605C6330/tmp
+/usr/bin/zorrodo mkdir /private/var/mobile/Containers/Data/Application/4C3E7DAE-EF81-43CF-BD94-E956605C6330/Documents
+/usr/bin/zorrodo mkdir /private/var/mobile/Containers/Data/Application/4C3E7DAE-EF81-43CF-BD94-E956605C6330/Library/Preferences
+/usr/bin/zorrodo mkdir /private/var/mobile/Containers/Data/Application/4C3E7DAE-EF81-43CF-BD94-E956605C6330/Library/Caches
+/usr/bin/zorrodo mkdir /private/var/mobile/Containers/Data/Application/4C3E7DAE-EF81-43CF-BD94-E956605C6330/tmp
+/usr/bin/zorrodo cleanKeychains
+/usr/bin/zorrodo /bin/chown mobile:mobile /private/var/mobile/Library/Preferences/com.zorro_enc.plist
+/usr/bin/zorrodo /bin/mv /var/mobile/Documents/ls.igri /var/mobile/Media/ZORRO/20200502-20-35-14_enc.igri
+/usr/bin/zorrodo /bin/cp -f /var/mobile/Media/ZORRO/20200502-20-35-14_enc.igri /private/var/mobile/Library/Preferences/com.zorro_enc.plist
+</code></pre><p>修改参数:</p>
+<pre tabindex="0"><code>fork/dladdr/dyld_get_image_name/getenv/fopen/__opendir2/stat/lstat/access     屏蔽越狱检测
+NSFileManager/NSString/UIApplication/NSArray/WXOMTAHelper   屏蔽越狱检测
+UIScreen                                  修改分辨率
+sysctl                                    修改设备名，设备型号，iOS版本，启动时间，CPU核心数等
+sysctlbyname                              修改设备名，设备型号，iOS版本，启动时间，CPU核心数等
+uname                                     修改设备名，设备型号，iOS版本等
+UIDevice                                  修改设备型号，iOS版本，设备名，IDFV, 电池信息
+ASIdentifierManager                       修改IDFA
+LSApplicationWorkspace/LSApplicationProxy 修改IDFA/IDFV
+UIApplication                             修改apns
+NSProcessInfo                             修改设备名，iOS版本，环境变量，cpu核心数
+MFMessageComposeViewController            修改系统发短信配置
+AVAudioSession                            修改音量
+IORegistryEntrySearchCFProperty           设备名，设备串号，IMEI，蓝牙地址，区域码，芯片码，MAC地址等
+IORegistryEntryCreateCFProperty           设备名，设备串号，IMEI，蓝牙地址，区域码，芯片码，MAC地址等
+IORegistryEntryCreateCFProperties         设备名，设备串号，IMEI，蓝牙地址，区域码，芯片码，MAC地址等
+_CTServerConnectionCopyMobileIdentity     设备名，设备串号，IMEI，蓝牙地址，区域码，芯片码，MAC地址等
+_CTServerConnectionCopyMobileEquipmentInfo设备名，设备串号，IMEI，蓝牙地址，区域码，芯片码，MAC地址等
+MGCopyAnswer                              设备名，设备串号，IMEI，蓝牙地址，区域码，芯片码，MAC地址等
+SCNetworkReachabilityGetFlags             修改网络类型，WIFI/2G/3G/4G
+CNCopySupportedInterfaces                 修改WIFI名和BSSID
+CNCopyCurrentNetworkInfo                  修改WIFI名和BSSID
+getifaddrs                                修改内网IPv4/IPv6/MAC地址
+SCNetworkReachabilityGetFlags             修改网络信息
+NSFileManager/NSProcessInfo               修改存储容量，内存大小
+SCNetworkInterfaceGetInterfaceType/kSCNetworkInterfaceTypeIEEE80211/SCNetworkInterfaceGetBSDName
+                                          修改网卡信息
+CTCarrier                                 修改运营商信息，包括运营商名，MCC，MNC，ICC，TECH，VOIP
+CTTelephonyNetworkInfo                    修改运营商信息，包括运营商名，MCC，MNC，ICC，TECH，VOIP
+CLLocation/CLLocationManager              修改定位参数
+</code></pre><p>配置文件</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span>&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;
+</span></span><span style="display:flex;"><span>&lt;!DOCTYPE plist PUBLIC &#34;-//Apple//DTD PLIST 1.0//EN&#34; &#34;http://www.apple.com/DTDs/PropertyList-1.0.dtd&#34;&gt;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">&lt;plist</span> <span style="color:#5f5fff">version=</span><span style="color:#008900">&#34;1.0&#34;</span><span style="color:#ec0000">&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>AdvertisingIdentifier<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>...........<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>BluetoothAddress<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>.............<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>Build<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>31000<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>Carrier<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;array&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;string&gt;</span>13<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;/array&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>CarrierName<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>遠傳電信<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>CarrierVersionString<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;real&gt;</span>14<span style="color:#ec0000">&lt;/real&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>CountryCode<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>466<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>CpuCount<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;integer&gt;</span>2<span style="color:#ec0000">&lt;/integer&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>CurrentMobileId<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>CurrentSubscriberId<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>DeviceBatteryLeave<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;real&gt;</span>0.56000000000000005<span style="color:#ec0000">&lt;/real&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>DeviceBatteryState<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;integer&gt;</span>1<span style="color:#ec0000">&lt;/integer&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>DeviceBoottime<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>1499429965<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>DeviceCategory<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>iPhone<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>DeviceFreeSize<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;integer&gt;</span>10781809186<span style="color:#ec0000">&lt;/integer&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>DeviceName<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>iPhone<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>DeviceToken<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>...............<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>DeviceTotalSize<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;integer&gt;</span>30808743955<span style="color:#ec0000">&lt;/integer&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>Enabled<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>EthernetBSSID<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>............<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>EthernetIPv4Address<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>192.168.123.43<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>EthernetIPv6Address<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>.....................<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>EthernetMacAddress<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>cf:d0:6d:dc:9e:34<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>EthernetRSSID<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>EthernetSSID<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>TP-Link_35FA58<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>GeoRadius<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;real&gt;</span>10<span style="color:#ec0000">&lt;/real&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>Heading<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;real&gt;</span>63.170999999999999<span style="color:#ec0000">&lt;/real&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>ICCID<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>...............<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>IMSI<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>...................<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>ISOCountryCode<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>tw<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>IdentifierForVendor<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>......................<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>InternationalMobileEquipmentIdentity<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>330563646423620<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>InverseDeviceID<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>...................<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>KernVersion<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>Darwin Kernel Version 18.7.0: Mon Aug 19 22:24:08 PDT 2019; root:xnu-4903.272.1~1/RELEASE_ARM64_S8000<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>LicenseAccepted<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>MEID<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>..............<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>MLBSerialNumber<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>..............<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>NetType<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;array&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;string&gt;</span>5<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;/array&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>NetworkCode<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>01<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>NetworkInterfaces<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;dict/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>NetworkType<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;integer&gt;</span>5<span style="color:#ec0000">&lt;/integer&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>OSRelease<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>18.7.0<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>OSVersions<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;array&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;string&gt;</span>13.3.1<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;/array&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>OpenUDIDValue<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>.......................<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>Phones<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;array&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;string&gt;</span>iPhone8,4<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;/array&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>PhysicalMemory<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;integer&gt;</span>1919350728<span style="color:#ec0000">&lt;/integer&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>ProductHWModel<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>N69AP<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>ProductModel<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>MP9E2<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>ProductType<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>iPhone8,4<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>RegionCode<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>TW<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>RegionInfo<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>TW/A<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>ReplaceApplicationIdentifierList<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;array&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;string&gt;</span>kjc.loader<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;string&gt;</span>com.saurik.Cydia<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;string&gt;</span>com.643d.08cab7<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;string&gt;</span>zorro<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;/array&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>ReplaceIOKitProperties<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;dict/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>ReplaceMGCopyAnswer<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;dict/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SafariBuild<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>15E148<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SafariCv<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>605.1.15<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SafariMv<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>604.1<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>ScreenBrightness<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;real&gt;</span>0.5853419303894043<span style="color:#ec0000">&lt;/real&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>ScreenType<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;key&gt;</span>height<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;integer&gt;</span>1334<span style="color:#ec0000">&lt;/integer&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;key&gt;</span>scale<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;integer&gt;</span>2<span style="color:#ec0000">&lt;/integer&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;key&gt;</span>width<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;integer&gt;</span>750<span style="color:#ec0000">&lt;/integer&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SerialNumber<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>............<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>ServiceString<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>遠傳電信<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchAutoBackup<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchFakeAppInstall<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchFakeCarrierInfo<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchFakeDeviceAdv<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchFakeDeviceStartup<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchFakeHigh<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;false/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchFakeJailbreak<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchFakeLocation<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchFakeNetworkInfo<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchFakeSafari<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchFakeScreen<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;false/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchFakeSignal<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchFakeVPN<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchLocationAutoAdjust<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchLocationByIP<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SwitchSmartAirplane<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;false/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SystemBuildVersion<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>17D50<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SystemName<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>iPhone OS<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SystemUpdatetime<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;integer&gt;</span>75441<span style="color:#ec0000">&lt;/integer&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>SystemVersion<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>13.3.1<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>UniqueChipID<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>31856195358517356<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>UniqueDeviceID<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>..........<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>UniqueIdentifier<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>.............<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>Volume<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;real&gt;</span>0.875<span style="color:#ec0000">&lt;/real&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>ZorroKey<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>1500000000<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>appLanguage<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>zh-Hant<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>applist<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;array&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;string&gt;</span>com.test<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;/array&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>excludeapplist<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;array&gt;</span>
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">&lt;string&gt;</span>com.test<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;/array&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>iOSVer<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>12.400000<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>zorropath<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;string&gt;</span>20170714-10-40-00<span style="color:#ec0000">&lt;/string&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">&lt;/plist&gt;</span>
+</span></span></code></pre></div><h2 id="总结">总结</h2>
+<h3 id="存在的缺陷">存在的缺陷</h3>
+<ul>
+<li>数据不匹配</li>
+</ul>
+<pre tabindex="0"><code>如sysctlbyname/sysctl/uname/NSProcess对同一参数获取的结果不同，包括如下字段:
+kern.version hw.model hw.ncpu
+kern.boottime(由于作者使用strcpy拷贝整形值，导致其值没有清高32位，导致该时间到2100以后)
+</code></pre><p>  总体来说zorro修改的参数较其他软件全，且针对剪贴板有备份恢复功能，应该是公开的同类软件软件中质量最高的一款App。本文只做技术研究，切勿用作商业用途和非法目的。</p>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/re_posts/20191212_361/">
+                        361改机改串一键新机原理分析
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

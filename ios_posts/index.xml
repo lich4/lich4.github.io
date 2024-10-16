@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Ios_posts on 超哥的博客</title>
+    <link>https://lich4.github.io/ios_posts/</link>
+    <description>Recent content in Ios_posts on 超哥的博客</description>
+    <generator>Hugo</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Sat, 15 Jul 2023 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://lich4.github.io/ios_posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>XCode调试越狱iOS任意进程</title>
+      <link>https://lich4.github.io/ios_posts/20230715_debug_ios_with_xcode/</link>
+      <pubDate>Sat, 15 Jul 2023 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20230715_debug_ios_with_xcode/</guid>
+      <description>XCode调试越狱iOS任意进程</description>
+    </item>
+    <item>
+      <title>iOS一种隐式调用svc的方式</title>
+      <link>https://lich4.github.io/ios_posts/20220705_svc_call/</link>
+      <pubDate>Tue, 05 Jul 2022 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20220705_svc_call/</guid>
+      <description>iOS一种隐式调用svc的方式</description>
+    </item>
+    <item>
+      <title>使用IDA&#43;LLDB&#43;RetSync调试iOS</title>
+      <link>https://lich4.github.io/ios_posts/20211002_retsync/</link>
+      <pubDate>Sat, 02 Oct 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20211002_retsync/</guid>
+      <description>使用IDA+LLDB+RetSync调试iOS</description>
+    </item>
+    <item>
+      <title>C/ObjC调用Swift函数</title>
+      <link>https://lich4.github.io/ios_posts/20210806_objc_call_swift/</link>
+      <pubDate>Fri, 06 Aug 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20210806_objc_call_swift/</guid>
+      <description>C/ObjC调用Swift函数</description>
+    </item>
+    <item>
+      <title>搭建简单Cydia源</title>
+      <link>https://lich4.github.io/ios_posts/20210805_cydia_repo/</link>
+      <pubDate>Thu, 05 Aug 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20210805_cydia_repo/</guid>
+      <description>搭建简单Cydia源</description>
+    </item>
+    <item>
+      <title>Swift逆向</title>
+      <link>https://lich4.github.io/ios_posts/20210804_swift_re/</link>
+      <pubDate>Wed, 04 Aug 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20210804_swift_re/</guid>
+      <description>Swift逆向</description>
+    </item>
+    <item>
+      <title>UUID简介</title>
+      <link>https://lich4.github.io/ios_posts/20210804_uuid/</link>
+      <pubDate>Wed, 04 Aug 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20210804_uuid/</guid>
+      <description>UUID简介</description>
+    </item>
+    <item>
+      <title>iOS越狱</title>
+      <link>https://lich4.github.io/ios_posts/20210731_howto_jb/</link>
+      <pubDate>Sat, 31 Jul 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20210731_howto_jb/</guid>
+      <description>iOS越狱</description>
+    </item>
+    <item>
+      <title>IDFA生成过程分析</title>
+      <link>https://lich4.github.io/ios_posts/20200517_idfa_re/</link>
+      <pubDate>Sun, 17 May 2020 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20200517_idfa_re/</guid>
+      <description>IDFA生成过程分析</description>
+    </item>
+    <item>
+      <title>iOS11上使用lldb调试App</title>
+      <link>https://lich4.github.io/ios_posts/20190830_ios11_debug/</link>
+      <pubDate>Fri, 30 Aug 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20190830_ios11_debug/</guid>
+      <description>iOS11上使用lldb调试App</description>
+    </item>
+    <item>
+      <title>某缘App越狱检测分析</title>
+      <link>https://lich4.github.io/ios_posts/20190717_jb_detect/</link>
+      <pubDate>Wed, 17 Jul 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20190717_jb_detect/</guid>
+      <description>某缘App越狱检测分析</description>
+    </item>
+    <item>
+      <title>动态修改iOS网络配置</title>
+      <link>https://lich4.github.io/ios_posts/20170903_net_conf/</link>
+      <pubDate>Wed, 03 Jul 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20170903_net_conf/</guid>
+      <description>动态修改iOS网络配置</description>
+    </item>
+    <item>
+      <title>Theos环境搭建</title>
+      <link>https://lich4.github.io/ios_posts/20190516_theos/</link>
+      <pubDate>Thu, 16 May 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20190516_theos/</guid>
+      <description>Theos环境搭建</description>
+    </item>
+    <item>
+      <title>常见反越狱检测插件实现原理</title>
+      <link>https://lich4.github.io/ios_posts/20190511_jb_detect/</link>
+      <pubDate>Sat, 11 May 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20190511_jb_detect/</guid>
+      <description>常见反越狱检测插件实现原理</description>
+    </item>
+    <item>
+      <title>系统调用号</title>
+      <link>https://lich4.github.io/ios_posts/20190328_syscall/</link>
+      <pubDate>Thu, 28 Mar 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20190328_syscall/</guid>
+      <description>系统调用号</description>
+    </item>
+    <item>
+      <title>编译iOS可用lsof</title>
+      <link>https://lich4.github.io/ios_posts/20181227_fix_lsof/</link>
+      <pubDate>Thu, 27 Dec 2018 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20181227_fix_lsof/</guid>
+      <description>编译iOS可用lsof</description>
+    </item>
+    <item>
+      <title>LLDB&amp;GDB通信协议分析</title>
+      <link>https://lich4.github.io/ios_posts/20161227_lldb_proto/</link>
+      <pubDate>Tue, 27 Dec 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20161227_lldb_proto/</guid>
+      <description>LLDB&amp;amp;GDB通信协议分析</description>
+    </item>
+  </channel>
+</rss>

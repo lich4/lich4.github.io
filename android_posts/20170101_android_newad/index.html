@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    Android新攻防技术研究与应用 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/android_posts/20170101_android_newad/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/android_posts/">Android_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/android_posts/20170101_android_newad/">Android新攻防技术研究与应用</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">Android新攻防技术研究与应用</h1>
+    
+    <p class="single-summary">Android新攻防技术研究与应用</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2017-01-01T00:00:00&#43;00:00">January 1, 2017</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#通用软件保护手段">通用软件保护手段</a></li>
+    <li><a href="#c模板元常量字符串混淆">C++模板元常量字符串混淆</a></li>
+    <li><a href="#调试检测">调试检测</a>
+      <ul>
+        <li><a href="#常用调试器进程名检测二进制匹配">常用调试器进程名检测/二进制匹配</a></li>
+        <li><a href="#常用调试器端口检测">常用调试器端口检测</a></li>
+        <li><a href="#硬件可调试性检测">硬件可调试性检测</a></li>
+        <li><a href="#进程调试状态检测">进程调试状态检测</a></li>
+        <li><a href="#断点检测">断点检测</a></li>
+        <li><a href="#文件系统监控检测">文件系统监控检测</a></li>
+      </ul>
+    </li>
+    <li><a href="#反调试">反调试</a>
+      <ul>
+        <li><a href="#java虚拟机反调试">Java虚拟机反调试</a></li>
+        <li><a href="#jni层反调试">JNI层反调试</a></li>
+      </ul>
+    </li>
+    <li><a href="#挂钩检测">挂钩检测</a>
+      <ul>
+        <li><a href="#常用hook工具包名检测">常用HOOK工具包名检测</a></li>
+        <li><a href="#系统文件改动检测">系统文件改动检测</a></li>
+        <li><a href="#进程模块检测">进程模块检测</a></li>
+        <li><a href="#java层调用栈检测">Java层调用栈检测</a></li>
+        <li><a href="#java类成员函数属性校验">Java类成员函数属性校验</a></li>
+        <li><a href="#加载模块内存校验">加载模块内存校验</a></li>
+      </ul>
+    </li>
+    <li><a href="#注入检测">注入检测</a>
+      <ul>
+        <li><a href="#常用注入工具进程名检测二进制匹配">常用注入工具进程名检测/二进制匹配</a></li>
+        <li><a href="#检测环境变量注入">检测环境变量注入</a></li>
+        <li><a href="#加载模块名检测二进制匹配">加载模块名检测/二进制匹配</a></li>
+        <li><a href="#常用注入工具端口检测">常用注入工具端口检测</a></li>
+      </ul>
+    </li>
+    <li><a href="#root检测">ROOT检测</a>
+      <ul>
+        <li><a href="#常用root工具路径包名检测">常用ROOT工具路径包名检测</a></li>
+        <li><a href="#常见su文件路径检测">常见su文件路径检测</a></li>
+        <li><a href="#常见系统目录权限修改检测">常见系统目录权限修改检测</a></li>
+      </ul>
+    </li>
+    <li><a href="#虚拟机检测">虚拟机检测</a>
+      <ul>
+        <li><a href="#检测设备特征">检测设备特征</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="通用软件保护手段">通用软件保护手段</h2>
+<ul>
+<li>源码层级保护：在编码过程中实现的攻防手段</li>
+<li>
+<ul>
+<li>① 增加分析复杂度：多线程、虚函数、模板、静态STL库、回调等</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>② 常规攻防能力：AntiHook/AntiDebug/AntiInject/RootDetect/EmulatorDetect/&hellip;</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>混淆技术：</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>③ 代码混淆：如OLLVM</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>
+<ul>
+<li>④ 常量混淆：主要是字符串混淆</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>⑤ 二进制层级保护：在生成软件后，对二进制进行处理进行加固的手段</li>
+</ul>
+<p>本文着重介绍①和③，其他方式网上资料较多这里不再赘述。对于②提供如下参考资料：
+<a href="https://github.com/obfuscator-llvm/obfuscator">https://github.com/obfuscator-llvm/obfuscator</a><br>
+Android常规攻防能力表：</p>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">调试检测(Debug)</th>
+          <th style="text-align: left">反调试(AntiDebug)</th>
+          <th style="text-align: left">注入检测(Inject)</th>
+          <th style="text-align: left">反注入(AntiInject)</th>
+          <th style="text-align: left">Hook检测(Hook))</th>
+          <th style="text-align: left">反Hook(AntiHook)</th>
+          <th style="text-align: left">Root检测(RootDetect)</th>
+          <th style="text-align: left">模拟器检测(EmulatorDetect)</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: left">进程名检测<br>默认调试端口检测<br>进程调试状态检测<br>内存断点检测<br>内存读写检测<br><strong><font color=#FF0000  bgcolor=orange>调试协议测试</font></strong><br>进程文件二进制匹配</td>
+          <td style="text-align: left">ptrace保护<br><strong><font color=#FF0000  bgcolor=orange>JDWP握手信号拦截</font></strong><br><strong><font color=#FF0000  bgcolor=orange>JDWP调试模型破坏</font></strong><br>Jni层反调试</td>
+          <td style="text-align: left">常见注入工具检测<br>环境变量检测<br>加载模块检测<br>注入端口检测</td>
+          <td style="text-align: left">检测加载模块</td>
+          <td style="text-align: left">常见Hook框架检测<br>系统文件修改检测<br>进程模块检测<br><strong><font color=#FF0000  bgcolor=orange>Java native hook检测</font></strong></td>
+          <td style="text-align: left">内存模块恢复</td>
+          <td style="text-align: left">常见su文件检测<br>系统目录权限检测<br>Root工具检测</td>
+          <td style="text-align: left">系统属性检测<br>特殊文件检测<br>手机号、硬件ID检测<br>……</td>
+      </tr>
+  </tbody>
+</table>
+<p>注：加红为我们自己新增的高级功能</p>
+<h2 id="c模板元常量字符串混淆">C++模板元常量字符串混淆</h2>
+<p>  模板元是C++ 11引入的新概念，用于将一些简单函数执行流程(分支/循环)放在编译期完成，以提高运行期性能甚至完成一些特殊功能。在展示一个完整的模板元编程实现字符串加密函数前，这里先提供一些准备知识：</p>
+<ul>
+<li>C++ 11提供constexpr关键字用于定义编译期常量</li>
+<li>inline关键字是向编译器请求内联；force_inline关键字是强制编译器内联</li>
+<li>__TIME__用于在编译期获取时间</li>
+</ul>
+<pre tabindex="0"><code>line01 #define force_inline __attribute__((always_inline))
+line02 #define naked __attribute__ ((naked))
+line03
+line04 #ifndef vxSEED
+line05 // If you don&#39;t specify the seed for algorithms, the time when compilation
+line06 // started will be used, seed actually changes the results of algorithms...
+line07 #define vxSEED ((__TIME__[7] - &#39;0&#39;) * 1  + (__TIME__[6] - &#39;0&#39;) * 10  + \
+line08                            (__TIME__[4] - &#39;0&#39;) * 60   + (__TIME__[3] - &#39;0&#39;) * 600 + \
+line09                            (__TIME__[1] - &#39;0&#39;) * 3600 + (__TIME__[0] - &#39;0&#39;) * 36000)
+line0A #endif
+line0B // The constantify template is used to make sure that the result of constexpr
+line0C // function will be computed at compile-time instead of run-time
+line0D template&lt;uint32_t Const&gt;
+line0E struct vxConstantify {
+line0F     enum {
+line10         VALUE = Const
+line11     };
+line12 };
+line13
+line14 // Compile-time mod of a linear congruential pseudorandom number generator,
+line15 // the actual algorithm was taken from &#34;Numerical Recipes&#34; book
+line16 constexpr uint32_t vxRandom(uint32_t Id) {
+line17     return (1013904223 + 1664525 * ((Id &gt; 0) ? (vxRandom(Id - 1)) : (vxSEED))) &amp;
+line18            0xFFFFFFFF;
+line19 }
+line1A
+line1B // Compile-time random macros, can be used to randomize execution
+line1C // path for separate builds, or compile-time trash code generation
+line1D #define vxRANDOM(Min, Max) (Min + (vxRAND() % (Max - Min + 1)))
+line1E #define vxRAND()           (vxConstantify&lt;vxRandom(__COUNTER__ + 1)&gt;::VALUE)
+line1F
+line20 // Compile-time recursive mod of string hashing algorithm,
+line21 // the actual algorithm was taken from Qt library (this
+line22 // function isn&#39;t case sensitive due to vxTolower)
+line23 constexpr char vxTolower(char Ch) {
+line24     return (Ch &gt;= &#39;A&#39; &amp;&amp; Ch &lt;= &#39;Z&#39;) ? (Ch - &#39;A&#39; + &#39;a&#39;) : (Ch);
+line25 }
+line26
+line27 constexpr uint32_t vxHashPart3(char Ch, uint32_t Hash) {
+line28     return ((Hash &lt;&lt; 4) + vxTolower(Ch));
+line29 }
+line2A
+line2B constexpr uint32_t vxHashPart2(char Ch, uint32_t Hash) {
+line2C     return (vxHashPart3(Ch, Hash) ^ ((vxHashPart3(Ch, Hash) &amp; 0xF0000000) &gt;&gt; 23));
+line2D }
+line2E
+line2F constexpr uint32_t vxHashPart1(char Ch, uint32_t Hash) {
+line30     return (vxHashPart2(Ch, Hash) &amp; 0x0FFFFFFF);
+line31 }
+line32
+line33 constexpr uint32_t vxHash(const char *Str) {
+line34     return (*Str) ? (vxHashPart1(*Str, vxHash(Str + 1))) : (0);
+line35 }
+line36
+line37 // Compile-time generator for list of indexes (0, 1, 2, ...)
+line38 template&lt;uint32_t...&gt;
+line39 struct vxIndexList {
+line3A };
+line3B template&lt;typename IndexList, uint32_t Right&gt;
+line3C struct vxAppend;
+line3D template&lt;uint32_t... Left, uint32_t Right&gt;
+line3E struct vxAppend&lt;vxIndexList&lt;Left...&gt;, Right&gt; {
+line3F     typedef vxIndexList&lt;Left..., Right&gt; Result;
+line40 };
+line41 template&lt;uint32_t N&gt;
+line42 struct vxIndexes {
+line43     typedef typename vxAppend&lt;typename vxIndexes&lt;N - 1&gt;::Result, N - 1&gt;::Result Result;
+line44 };
+line45 template&lt;&gt;
+line46 struct vxIndexes&lt;0&gt; {
+line47     typedef vxIndexList&lt;&gt; Result;
+line48 };
+line49
+line4A template&lt;uint8_t XorKey, uint8_t BitShiftKey, typename IndexList&gt;
+line4B struct vxEncStr;
+line4C
+line4D template&lt;uint8_t XorKey, uint8_t BitShiftKey, uint32_t... Idx&gt;
+line4E struct vxEncStr&lt;XorKey, BitShiftKey, vxIndexList&lt;Idx...&gt; &gt; {
+line4F     uint8_t Value[sizeof...(Idx) + 1]; // Buffer for a string
+line50     // 这里若不设置alinline则最大加密50字节
+line51
+line52     constexpr force_inline uint8_t vxEncCh(const char Ch, uint32_t Idx_) const {
+line53         // do XOR
+line54         return (uint8_t)((((Ch &amp; 0xFF) ^ ((XorKey + Idx_) &amp; 0xFF)) &gt;&gt; BitShiftKey) |
+line55                (((Ch &amp; 0xFF) ^ ((XorKey + Idx_) &amp; 0xFF)) &lt;&lt; (CHAR_BIT - BitShiftKey)));
+line56     }
+line57
+line58
+line59     // Compile-time constructor  有的编译器数组初始化使用&#39;{&#39;，有的使用&#39;(&#39;
+line5A     constexpr force_inline vxEncStr(const char *const Str) : Value{vxEncCh(Str[Idx], Idx)...} {
+line5B         static_assert(BitShiftKey &lt; 8 &amp;&amp; BitShiftKey &gt;= 0, &#34;Invalild BitShiftKey&#34;);
+line5C         static_assert(XorKey &lt; 0x100 &amp;&amp; XorKey &gt;= 0, &#34;Invalild XorKey&#34;);
+line5D     }
+line5E
+line5F     // Run-time decryption
+line60     char *decrypt() {
+line61         for (uint32_t Idx_ = 0; Idx_ &lt; sizeof...(Idx); Idx_++) {
+line62             // do XoR         XorKey + Idx_ may exceed 255
+line63             Value[Idx_] = (uint8_t)((((Value[Idx_] &amp; 0xFF) &lt;&lt; BitShiftKey) |
+line64                 ((Value[Idx_] &amp; 0xFF) &gt;&gt; (CHAR_BIT - BitShiftKey))) ^ ((XorKey + Idx_) &amp; 0xFF));
+line65         }
+line66         Value[sizeof...(Idx)] = &#39;\0&#39;;
+line67         return (char*)Value;
+line68     }
+line69 };
+line6A
+line6B // Compile-time hashing macro, hash values changes using the first pseudorandom number in sequence
+line6C #define vxHASH(Str) (uint32_t)(vxConstantify&lt;vxHash(Str)&gt;::VALUE ^ vxConstantify&lt;vxRandom(1)&gt;::VALUE)
+line6D // Compile-time string encryption macro
+line6E #define vxStrEnc_(Size, Str) (vxEncStr&lt;vxRANDOM(0, 0xFF), vxRANDOM(0, CHAR_BIT - 1), \
+line6F     vxIndexes&lt;Size - 1&gt;::Result&gt;(Str).decrypt())
+line70 #define vxStrEnc(Str) vxStrEnc_(sizeof(Str), Str)
+line71 #define vxStrEncDbl(Str) vxStrEnc_(sizeof(Str), vxStrEnc_(sizeof(Str), Str))
+line72 #define vxStrEncTri(Str) vxStrEnc_(sizeof(Str), vxStrEnc_(sizeof(Str), vxStrEnc_(sizeof(Str), Str)))
+</code></pre><p>说明如下：</p>
+<ul>
+<li>vxRandom为模板元函数，用于在编译期生成随机数，(模拟rand实现)，每次调用该函数以获取不同随机数</li>
+<li>vxHASH为模板元函数，用于在编译期对静态字符串生成散列值</li>
+<li>vxStrEnc为模板元函数，用于在编译期对静态字符串实施加密，这样在编译生成的二进制中只会存在经过加密的16进制序列，该序列在运行期在vxStrEnc调用点使用decrypt解密。注意decrypt需要在运行期执行因此不能是模板元函数</li>
+<li>vxStrEncDbl和vxStrEncTri是进行多次加密，增强复杂度</li>
+<li>模板元函数对于静态字符串或静态数组的处理，是通过模板迭代成单个元素，这一过程较为复杂，上述代码借助vxIndexList生成一个静态索引数组来实现迭代字符串元素
+  综上，模板元编程是将运行时的某些操作放到编译期来做，提高了程序运行效率，也会略微增加生成二进制大小；而上述代码的加密极大增强了分析复杂度，结合OLLVM效果更好</li>
+</ul>
+<h2 id="调试检测">调试检测</h2>
+<h3 id="常用调试器进程名检测二进制匹配">常用调试器进程名检测/二进制匹配</h3>
+<ul>
+<li>对于C调试器采用进程检测<br>
+  如果当前进程被调试则必然存在调试器进程，因此可以通过进程名方式检测，存在下面是常见调试器对应的进程名及二进制中特征字符串</li>
+</ul>
+<pre tabindex="0"><code>IDA  -&gt; android_server / android_server_pie -&gt; “IDA Android 32-bit remote”
+GDB  -&gt; gdb / gdbserver -&gt; “GNU gdbserver”
+LLDB -&gt; lldbserver
+</code></pre><ul>
+<li>Adbwifi类APP进程检测<br>
+  adbwifi是在Root权限下，使用wifi进行Java/C层调试的工具，因此若存在这种进程有可能设备已经Root或正在进行调试，我收集了一些常用包名用于检测这类调试器：</li>
+</ul>
+<pre tabindex="0"><code>com.gikir.gikdbg      com.soynerdito.adbnetworkenabler   
+adb.wifi.woaiwhz.wifiadbandroid  com.twiceyuan.devmode      
+chendx.wifiadb.main     com.vn.tooa.adbwireless      
+cn.com.wxtech.adbwireless   com.wmendez.adbovertcp      
+com.adam.adbWifi     com.youzi.adbwifi       
+com.adb       com.zhoupeng.adbwireless     
+com.androidfree.adbwifi    fr.ydelouis.yrelessadb      
+com.eboy.adbwireless     hcursor.adbcontrol       
+com.fly.wifiadb      info.nakajimadevnakajima.adboverlanswitcher
+com.ilovn.app.wifi_adb    jps.android.adbtcp        
+com.liam_w.networkadb    me.meowo.adb        
+com.palmcrust.yawadb    moe.haruue.wadb        
+com.rair.adbwifi      net.wiagames.adbon       
+com.rockolabs.adbkonnect    rfo.mougino.waf        
+com.ryosoftware.adbw          ru.bartwell.easyremoteadb
+com.scopionstudio.adbwifi            vn.android.adbwireless
+                                  za.co.henry.hsu.adbwirelessbyhenry
+</code></pre><p>二进制匹配和进程名检测技术总结：<br>
+优点：二进制文件比对这种检测方式可以弥补进程名检测的不足。<br>
+缺点：始终是最简单的调试检测方式，也最容易被绕过</p>
+<h3 id="常用调试器端口检测">常用调试器端口检测</h3>
+<p>  移动端采用远程调试器的调试方式很常见，其结构是远程调试服务器+本地调试器，通过调试协议进行通信，其中远程调试器server端安装在移动设备上，完成如下断点等所有实际操作，而本地调试器位于主机上，接受用户指令转化成调试协议数据发送给服务端。作为服务器就要在设备端绑定端口，因此可以检测某些默认端口号来检测调试器的存在，如：IDA默认调试端=23946。(同理还有注入服务器、Hook服务器)
+  本地端口开放状态可以通过读取/proc/net/tcp和/proc/net/udp解析。Android基于linux系统，存在特殊的unix文件句柄用于socket通信，Android Studio使用lldb调试采用这种方式调试，可以在/proc/net/unix发现踪迹。
+  由于采用默认端口的服务端很少，因此对处于ESTABLISHED状态的服务端，这里提供协议测试方式分辨调试服务器(对于已连接状态的服务端无法检测)(该方式由于与服务器进行通信，有一定可能使本地服务器崩溃)，目的如下：</p>
+<ul>
+<li>检测调试器
+  在本地调试器连接到该远程调试服务器之前，通过发送特定bit请求，观察服务器响应，如果响应匹配调试器的响应bit，则判定为调试器</li>
+<li>反调试
+  若判定为调试器，则不进行释放socket句柄操作，这样对于只接受单连接的服务器，本地调试器无法再连接该服务器，也就无法继续调试，如GDB的gdbserver、IDA的android_server。某些特殊调试器甚至存在允许关闭自身的指令，因此可以通过发送特定bit请求使服务器关闭。这种方式对于接受多链接的服务器无效。</li>
+</ul>
+<p>一次典型的gdb协议通信如下：</p>
+<pre tabindex="0"><code>Send               Rreceive
++               =&gt; qSupported:multiprocess+;swbreak+;hwbreak+;
+QStartNoAckMode =&gt; +$OK
+</code></pre><p>调试器端口检测技术总结：
+优点：端口协议测试这种检测方式，对于尚未发起调试攻击过程有一定阻碍作用
+缺点：无法对已经建立的调试过程产生影响</p>
+<h3 id="硬件可调试性检测">硬件可调试性检测</h3>
+<p>  这部分是对设备是否开启调试功能及APP自身是否开启调试功能的这类环境变量进行检测，包括如下字段：</p>
+<pre tabindex="0"><code>init.svc.adbd      adbd是否运行
+persis.sys.usb.config    usb是否连接
+sys.usb.config      。。。。
+sys.usb.state      。。。。
+ro.debuggable      设备是否可调试
+development_settings_enabled   是否开启开发者模式
+FLAG_DEBUGGABLE    app是否可调试
+isDebuggerConnected    JDWP调试器是否连接(dalvik/art)
+</code></pre><p>  其中ro.debuggable需要设备拥有Root权限才可修改，开启后所有App均处于可调试状态，无论App本身的设置，FLAG_DEBUGGABLE则是App自身对Java层可调试性的配置，Release版会自动设为False</p>
+<h3 id="进程调试状态检测">进程调试状态检测</h3>
+<p>  C层调试器在连接后，调用到系统调用ptrace，这个过程会留下一些痕迹，最明显的是/proc/pid/status中的TracerPid字段，该处存放调试器的进程ID。该标记可由本进程、父进程、子进程读取。同理/proc/pid/stat第二个字段会在本进程在调试器中暂停时被系统置为T/t，但由于本进程已经暂停，该标记只能由父进程或子进程读取。类似的还有/proc/pid/wchan的ptrace_stop标志。
+  上面这些仅仅是针对子进程，然而linux支持只对某个线程做调试，这样就可以绕过上面的检测，因此这里需要遍历所有子进程并检测标志位，由于调试器附加进程后会写进程和所有子线程的标志位，因此无需对/proc/pid/做单独检测，目前计划采用fork子进程方式监测如下位置</p>
+<pre tabindex="0"><code>/proc/[pid]/task/[tid]/status TracerPid: [pid]
+/proc/[pid]/task/[tid]/stat T/t
+/proc/[pid]/task/[tid]/wchan ptrace_stop
+</code></pre><p>  另一个检测点是ptrace的PTRACE_TRACEME，对于App进程该语句会让zygote附加调试自身，由于只能被一个调试器调试，因此其他调试器无法继续调试本进程。而如果该语句执行失败说明有调试器优先zygote附加本进程。
+作为辅助检测点，检测isDebuggerConnected及 jni层的dalvik/art实现<code>dvmDbgIsDebuggerConnected/Dbg::IsDebuggerActive</code></p>
+<h3 id="断点检测">断点检测</h3>
+<p>  在进行调试时攻击者经常下断点以便拦截到代码执行或数据抓取，因此对通过断点检测到调试器存在，断点类型如下</p>
+<ul>
+<li>C层软件断点
+  软件断点是通过修改特定指令所在的内存数据为特殊指令，使进程在执行到该处时因为断点指令或异常而中断在调试器中。因此可以通过比对代码与文件的数据比较检测到断点的存在(也可能是hook或其他情况)。为了提高速度，先暂存文件数据的哈希值，每次检测将该哈希与内存哈希进行比较，若不同再检测是否存在断点。下面是常见的软件断点机器码模式(参照GDB/LLDB/IDA等调试器的实现)</li>
+</ul>
+<pre tabindex="0"><code>ARCH  SWBP(little-endian)
+Arm   01 00 9f ef
+arm-eabi  f0 01 f0 e7
+thumb  01 de
+thumb2  f0 f7 00 a0
+mips   0d 00 05 00
+arm64  00 00 20 d4        (aarch64)
+x86/x64  cc
+</code></pre><p>  这里特殊的一点是软件断点可以通过异常实现，因此理论上写入无效指令触发异常即可，无需一定匹配上述模式</p>
+<ul>
+<li>C层硬件(观察)断点
+  硬件断点是处理器提供的用于调试的一组寄存器功能，通过设置寄存器实现在内存处读、写、执行时中断到调试器。因此通过检测特定寄存器的数据，可以检测是否被调试。(暂不实现)</li>
+</ul>
+<h3 id="文件系统监控检测">文件系统监控检测</h3>
+<p>  调试器在附加进程后会读取该进程/proc/pid下的一些数据，其中一些行为可明显区分出调试器行为</p>
+<pre tabindex="0"><code>Gdbserver  读取/proc/pid/mem 读写内存
+Android_server 读取/proc/pid/maps 获取模块信息
+</code></pre><h2 id="反调试">反调试</h2>
+<h3 id="java虚拟机反调试">Java虚拟机反调试</h3>
+<p>  原理：Android Java层调试采用JDWP调试协议，而该协议实现于libart.so/libdvm.so中，远程调试过程是一个网络通信过程，从源码分析可以发现JdwpState是一个函数指针数组，部分结构如下：</p>
+<pre tabindex="0"><code>    void *accept;   // 服务端接收远端调试连接
+    void *establish;  // 建立调试器服务端
+    void *shutdown;  // 结束进程
+    void *processIncoming; // 处理远端发来的调试消息
+</code></pre><p>  调试过程：establish-&gt;accept-&gt;processIncoming-&gt;processIncoming-&gt;…-&gt;shutdown；每当用户下断点时，主机上客户端(jdb)会将该请求发到移动端的调试器服务端(libdvm)，调用processIncoming处理该消息。因此只要将processIncoming指向自定义回调即可检测到JDWP调试过程，而使其指向shutdown则会在下次调试事件时退出进程。JDWP调试分为adb和socket两种方式，因此有2套JdwpState对象，分别处理通过socket直接进行JDWP调试和通过adb桥进行JDWP调试的通信逻辑
+  实现：dalvik虚拟机实现在libdvm.so中，而art虚拟机实现在libart.so中；libdvm.so导出dvmJdwpAndroidAdbTransport/dvmJdwpAndroidSocketTransport函数，可得到getState函数指针，通过调用getState()得到JdwpState结构；libart.so则导出art::JDWP::JdwpAdbState/art::JDWP::JdwpSocketState虚表指针，也是JdwpState类似结构。利用该方式实现Java调试检测：</p>
+<ul>
+<li>将processIncoming设置为自定义回调，可以检测到启动以后adbd尝试连接app jdwp端口的行为，adbd只有打开开发者模式以后才会存在。调试器一旦连接则会经过processIncoming，但经过processIncoming的连接不一定是调试器行为，也可能是adbd的通信</li>
+<li>由于Android7.0增加了系统保护机制，使得dlopen对某些敏感动态库操作失败，因此采用Hook read函数，检测jdwp协议握手字段JDWP-Handshake。若sosafe模块加载晚于jdwp调试过程建立，该法无效
+Java虚拟机反调试技术总结：
+优点：利用Android虚拟机自身原理进行反调试，隐蔽性和实用性较强，使调试器拒绝服务
+缺点：Android7.0开启了系统动态库保护机制，无法使用获取到私有函数，无法利用这种方式</li>
+</ul>
+<h3 id="jni层反调试">JNI层反调试</h3>
+<p>  由于JNI调试器(gdbserver/android_server/…)最终通过内核ptrace与应用程序交互，在检测到调试器直接退出进程是明智的选择，这里检测到调试器后的执行延时退出，使用内联汇编的exit函数或异常机制实现退出，避免被很容易的检测到。后期加入擦除回溯栈之类的保护措施，防止被调试器跟踪到关键代码</p>
+<h2 id="挂钩检测">挂钩检测</h2>
+<h3 id="常用hook工具包名检测">常用HOOK工具包名检测</h3>
+<p>  一般挂钩是通过注入和Hook框架工具，取得目标进程控制权，然后通过inline hook/got hook等方式进行挂钩。因此收集Xposed/Substrate等工具安装信息作为最简单的检测方式，包名分别为de.robv.android.xposed.installer com.saurik.substrate。这里先通过java层获取package那么，如果失败则通过执行pm list package命令从native层直接获取所有安装包名，避免被拦截到</p>
+<h3 id="系统文件改动检测">系统文件改动检测</h3>
+<p>  Xposed/Substrate这类工具通过修改系统文件的方式，尽可能将自身在最早的时机加载：</p>
+<ul>
+<li>Substrate通过替换liblog.so，将自身加载时机提前到app_process运行前，liblog.so加载前的时机</li>
+<li>Xposed通过替换app_process，将自身加载时机提前到app_process执行时
+  通过检测替换后文件特征，确定系统文件是否被修改过，即可得知系统是否安装Hook框架；由于app_process可能有/system/bin/app_process /system/bin/app_process32 /system/bin/app_process64共存的情况，所以取当前进程/proc/self/exe指向的app_process文件为准</li>
+</ul>
+<h3 id="进程模块检测">进程模块检测</h3>
+<p>  Xposed/Frida这类工具通过在zygote中加载模块实现某些功能，由于zygote是所有App进程的孵化器，因此zygote注入的模块自然的被App进程继承。通过检测zygote进程和App进程的加载模块(/proc/self/maps)，可以检测是否被挂钩和注入，已知Android平台挂钩/注入工具模块名如下</p>
+<pre tabindex="0"><code> ProbeDroid  libProbeDroid.so
+ Frida   frida-agent.so frida-gadget.so
+ Cydia Substrate libsubstrate.so libDalvikLoader.so libAndroidCydia.so libAndroidLoader.so *.cy.so
+ Xposed   XposedBridge.jar
+ Dynamorio  libdynamorio.so
+</code></pre><p>  由于某些是开源项目，模块名可以人为修改，因此在模块名检测的基础上增加对二进制模块文件的匹配，其中.cy.so是用于substrate的自定义注入模块</p>
+<h3 id="java层调用栈检测">Java层调用栈检测</h3>
+<p>  在Hook框架生效时，如果当前线程恰好在Hook框架调用范围内，会在线程回溯栈产生Hook框架自身的函数和类名：</p>
+<pre tabindex="0"><code> Xposed   de.robv.android.xposed.XposedBridge
+ Cydia Substarte com.saurik.substrate.MS$2.invoked
+</code></pre><p>  经过分析，这种方式并不可取，因为要求当前线程已经处于被hook框架调用的代码中，检测率极低且结果也不可靠</p>
+<h3 id="java类成员函数属性校验">Java类成员函数属性校验</h3>
+<p>  由于常见的对于Java函数的挂钩方式是修改Java函数为native函数实现，因此通过检测各个Java类成员函数是否为Native属性判断是否存在Java层挂钩。在检测前提前下发一个包含所有非native函数(包括所有系统和app的类成员函数)的数据表，在检测时刻比对当前所有已加载类的native函数存在该表中的情况，即为存在挂钩。(由于App可随时加载dex，且每次检测只能获取到当前已load的class，因此下发非native表比native函数表可靠)。这种方式目前只实现了Dalvik部分，Art由于各版本私有函数存在差异，比较复杂。<br>
+  这种方式利用的是JDWP通信接口，以Dalvik为例，dvmDbgGetClassList函数可以获取当前所有已加载类，dvmDbgOutputAllMethods函数可以获取到所有类成员函数信息，通过这两个函数就可以遍历所有已加载类成员函数。</p>
+<h3 id="加载模块内存校验">加载模块内存校验</h3>
+<p>  由于sosafe模块加载时机可能晚于挂钩时机，因此需要比对文件和内存模块的区别，判断是否存在Jni层挂钩。通常hook框架使用inline hook/got hook，因此会修改elf代码段和got表，这样就会产生和文件不一致的情况。通过检测文件和内存哈希监测是否存在Jni层hook，即使是Java层Hook，仍然会在Native层有Hook行为，因此这种方式可以检测Java/Jni层Hook。具体操作如下：</p>
+<ol>
+<li>启动时初始化模块表，记录elf文件的.text段哈希</li>
+<li>在Hook检测时，获取内存elf的.text段哈希，若不同则判断是否为几种情况之一：软件断点 /Inline Hook/文件修改，若发现inline hook需要判断跳转点是否位于厂商模块/系统自带模块/百度安全组件，不是则记录</li>
+<li>在Hook检测时，枚举所有got表元素，检查指针所属模块，不是厂商模块/系统自带模块/百度安全组件则记录</li>
+</ol>
+<h2 id="注入检测">注入检测</h2>
+<h3 id="常用注入工具进程名检测二进制匹配">常用注入工具进程名检测/二进制匹配</h3>
+<p>检测常见注入工具的服务器进程，如Frida-server adbiserver</p>
+<h3 id="检测环境变量注入">检测环境变量注入</h3>
+<p>检测LD_LIBRARY_PATH LD_PRELOAD是否存在不合法路径</p>
+<h3 id="加载模块名检测二进制匹配">加载模块名检测/二进制匹配</h3>
+<p>与挂钩检测相同</p>
+<h3 id="常用注入工具端口检测">常用注入工具端口检测</h3>
+<p>Frida-server常用27042端口通信</p>
+<h2 id="root检测">ROOT检测</h2>
+<h3 id="常用root工具路径包名检测">常用ROOT工具路径包名检测</h3>
+<ul>
+<li>Root工具：利用漏洞下载su到本地，如360一键root</li>
+<li>刷机工具：通过刷入Root过的系统镜像实现Root，如刷机大师</li>
+<li>权限管理工具：在已获得Root权限的机器上管理Root权限</li>
+<li>其他工具：需要Root权限执行的app，如hook框架</li>
+</ul>
+<h3 id="常见su文件路径检测">常见su文件路径检测</h3>
+<p>  设备Root后，一定在本地存在su文件以便提权，因此可以通过检测su存在判断设备是否root。Su文件路径选择常见路径+环境变量$PATH，su文件名选择收集到的su文件名。后期可能加入检测su文件是否可执行的逻辑，而由于是否成功获取root权限取决于权限管理器，因此可能给用户弹窗或获取失败的情况</p>
+<pre tabindex="0"><code>常见路径        常见su
+/sbin/                      su          
+/vendor/bin/                us          
+/system/sbin/               .su          
+/system/bin/                .suv          
+/system/xbin/               .suo          
+/system/usr/                .uv          
+/system/bin/.ext/            au          
+/system/bin/failsafe/        k.sud          
+/system/sd/sbin/            ku.sud          
+/system/sd/xbin/            .rgs          
+/system/sd/bin/             .tmpsu          
+/system/usr/we-need-root/   daemonsu          
+/system/sd/                 kinguser_su&#34;          
+/system/                    cm_su          
+/data/local/                          
+/data/local/bin/                      
+/data/local/xbin/                     
+/data/local/sbin/   
+</code></pre><h3 id="常见系统目录权限修改检测">常见系统目录权限修改检测</h3>
+<p>  未Root的手机某些文件夹是拥有r&ndash;或&mdash;权限的，如默认情况/data文件夹不可读，而在root后这些文件夹属性会发生变化，利用这个特性可检测是否root，默认只读目录：</p>
+<pre tabindex="0"><code>/data             /vendor/bin   /system/bin       /etc       
+/                 /sys          /system/xbin      /proc      
+/system           /sbin         /system/sbin      /dev       
+</code></pre><h2 id="虚拟机检测">虚拟机检测</h2>
+<h3 id="检测设备特征">检测设备特征</h3>
+<p>某些模拟器会在以下系统属性中存在特征，比如nox，goldfish, ttVM….</p>
+<pre tabindex="0"><code>ro.build.description
+ro.hardware
+ro.product.brand
+ro.product.device
+ro.product.manufacturer
+...
+</code></pre><p>有些模拟器采用默认手机号：</p>
+<pre tabindex="0"><code>15555215554
+15555215556
+15555215558
+...
+</code></pre><p>有些模拟器采用固定hardwareid</p>
+<pre tabindex="0"><code>000000000000000
+e21833235b6eef10
+012345678912345
+...
+</code></pre><p>有些模拟器是基于qemu/virtualBox，因此系统目录存在特殊文件：</p>
+<pre tabindex="0"><code>/dev/socket/genyd
+/dev/socket/baseband_genyd
+/dev/socket/qemud
+/dev/qemu_pipe      
+...
+</code></pre>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/android_posts/20160716_jdb_enhance/">
+                        增强jdb调试功能
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/android_posts/20170102_java_inject/">
+                        动态注入并执行Android代码到进程
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

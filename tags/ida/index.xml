@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>IDA on 超哥的博客</title>
+    <link>https://lich4.github.io/tags/ida/</link>
+    <description>Recent content in IDA on 超哥的博客</description>
+    <generator>Hugo</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Sat, 02 Oct 2021 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://lich4.github.io/tags/ida/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>使用IDA&#43;LLDB&#43;RetSync调试iOS</title>
+      <link>https://lich4.github.io/ios_posts/20211002_retsync/</link>
+      <pubDate>Sat, 02 Oct 2021 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20211002_retsync/</guid>
+      <description>使用IDA+LLDB+RetSync调试iOS</description>
+    </item>
+  </channel>
+</rss>

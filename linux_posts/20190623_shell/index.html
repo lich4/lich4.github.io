@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    Linux Shell参考 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/linux_posts/20190623_shell/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/linux_posts/">Linux_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/linux_posts/20190623_shell/">Linux Shell参考</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">Linux Shell参考</h1>
+    
+    <p class="single-summary">Linux Shell参考</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2019-06-23T00:00:00&#43;00:00">June 23, 2019</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/shell/">#Shell</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#linux常用命令">Linux常用命令</a>
+      <ul>
+        <li><a href="#自动补全">自动补全</a></li>
+        <li><a href="#命令执行方式">命令执行方式</a></li>
+        <li><a href="#echo">echo</a></li>
+        <li><a href="#文件操作">文件操作</a></li>
+        <li><a href="#系统">系统</a></li>
+        <li><a href="#网络">网络</a></li>
+        <li><a href="#awk">awk</a></li>
+        <li><a href="#sed">sed</a></li>
+        <li><a href="#find">find</a></li>
+        <li><a href="#grep">grep</a></li>
+        <li><a href="#vim">vim</a></li>
+      </ul>
+    </li>
+    <li><a href="#shell语法">shell语法</a>
+      <ul>
+        <li><a href="#解释器说明">解释器说明</a></li>
+        <li><a href="#注释">注释</a></li>
+        <li><a href="#重定向">重定向</a></li>
+        <li><a href="#变量">变量</a></li>
+        <li><a href="#条件判断">条件判断</a></li>
+        <li><a href="#表达式">表达式</a></li>
+        <li><a href="#流程">流程</a></li>
+        <li><a href="#函数">函数</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="linux常用命令">Linux常用命令</h2>
+<h3 id="自动补全">自动补全</h3>
+<ul>
+<li>在命令行输入命令首字母后，按两次tab可列出所有以该字母开头的命令</li>
+</ul>
+<pre tabindex="0"><code>[root@870cee8a91f9 /]# l
+l. ld lesskey lgroupmod ln logname lsmod lusermod luserdel
+</code></pre><ul>
+<li>在命令行输入$后，按两次tab可列出环境变量</li>
+</ul>
+<pre tabindex="0"><code>[root@870cee8a91f9 /]# $
+$BASH $BASH_VERSINFO $HISTFILESIZE $MAILCHECK $PWD
+</code></pre><ul>
+<li>在准备输入路径时，按一次tab可补全指定目录的文件</li>
+</ul>
+<pre tabindex="0"><code>[root@870cee8a91f9 /]# ls /bin/bas
+basename  bash
+</code></pre><h3 id="命令执行方式">命令执行方式</h3>
+<ul>
+<li>作为可执行程序或脚本</li>
+</ul>
+<pre tabindex="0"><code>/bin/ls
+./1.sh
+</code></pre><ul>
+<li>脚本作为解释器参数</li>
+</ul>
+<pre tabindex="0"><code>bash 1.sh
+bash /tmp/1.sh
+python 1.py
+</code></pre><ul>
+<li>使用shell命令执行</li>
+</ul>
+<pre tabindex="0"><code>echo $(ls -al /)
+</code></pre><h3 id="echo">echo</h3>
+<ul>
+<li>用于在屏幕上打印字符串</li>
+<li>用于其他命令传参 <code>echo pass | passwd user --stdin</code></li>
+<li>用于写入文件 <code>echo abcd &gt; aaa.txt</code></li>
+<li>用于打印变量 <code>echo $RANDOM</code></li>
+</ul>
+<h3 id="文件操作">文件操作</h3>
+<pre tabindex="0"><code>ls
+find 
+cat
+chmod 修改文件属性
+file 查看文件类型
+grep 正则搜索
+cut  字符串处理
+awk  字符串处理
+sed  文本字符串处理
+sort
+uniq
+du -sh 计算文件夹大小
+mkdir
+rm
+mv
+head
+tail
+which 定位可执行文件
+touch 创建文件
+</code></pre><h3 id="系统">系统</h3>
+<pre tabindex="0"><code>date
+kill
+ps aux
+uname 查看系统版本
+</code></pre><h3 id="网络">网络</h3>
+<pre tabindex="0"><code>curl
+wget
+scp
+ssh
+</code></pre><h4 id="chmod">chmod</h4>
+<p>权限标志</p>
+<pre tabindex="0"><code>4 r read
+2 w write
+1 x execute
+</code></pre><p>常用权限：</p>
+<pre tabindex="0"><code>abc a,b,c分别为三个8进制数字，每个数字对应上面权限标志的读,写,执行组合，a,b,c分别代表文件所属用户,所属用户组,其他用户执行权限
+444 r–r–r–
+600 rw——-
+644 rw-r–r–
+666 rw-rw-rw-
+700 rwx——
+744 rwxr–r–
+755 rwxr-xr-x
+777 rwxrwxrwx
+</code></pre><p>例:</p>
+<pre tabindex="0"><code>chmod 777 /path/to/my/file  赋予读写执行权限
+chmod chmod ug=rwx,o=x file 赋予属主和用户组读写执行权限，其他用户只有执行权限
+chmod +rwx /path/to/my/file  在原始权限上增加user/group/other的读写执行权限
+chmod +x 1.sh 有了执行权限才可以直接运行&#39;./1.sh&#39;
+</code></pre><h3 id="awk">awk</h3>
+<p>截取文本列</p>
+<pre tabindex="0"><code>ps aux | grep -v grep | awk &#39;{print $1}&#39;
+</code></pre><h3 id="sed">sed</h3>
+<p>正则替换</p>
+<pre tabindex="0"><code>echo This is a dog | sed &#39;s/This/aaa/&#39;
+</code></pre><p>截取文本行</p>
+<pre tabindex="0"><code>echo -e &#34;1\n2&#34; | sed -n &#39;2p&#39;
+</code></pre><h3 id="find">find</h3>
+<pre tabindex="0"><code>find .     递归列出当前目录及所有子目录，和ls区别是ls只列当前目录
+find /path -name &#34;1.txt&#34;  在指定目录及所有子目录查找文件
+find /tmp -exec ls {} \; 对所有找到的文件执行ls操作
+</code></pre><h3 id="grep">grep</h3>
+<pre tabindex="0"><code>-E 使用郑泽
+-i 忽略大小写
+-v 反选
+-n 显示行号
+
+echo aabb | grep -E [a-z]{4}
+echo aabb1122 | grep 
+grep -nwr 字符串 目录
+ps aux | grep 进程 | grep -v grep
+</code></pre><h3 id="vim">vim</h3>
+<pre tabindex="0"><code>^ 行首
+$ 行尾
+gg 首行
+G 尾行
+x 删除当前字符
+nx 删除当前n字符
+dd 删除当前行
+ndd 删除当前n行
+/ 查找
+
+a 编辑模式
+
+:命令模式
+:wq 写入文件并退出
+:q! 放弃保存并推出
+</code></pre><h2 id="shell语法">shell语法</h2>
+<h3 id="解释器说明">解释器说明</h3>
+<p>一般shell脚本第一行为<code>#!/bin/bash</code>，这个标记告诉系统，该文件的默认解释器是bash，则效果等同于:<code>./test.sh -&gt; bash ./test.sh</code>，同理如果使用了标记<code>#!/usr/bin/pyhon</code>，则效果等同于:<code>./1.py -&gt; python 1.py</code></p>
+<h3 id="注释">注释</h3>
+<pre tabindex="0"><code>单行注释:&#39;#&#39;符号以后的内容都会被注释
+多行注释:
+:&lt;&lt;EOF
+注释内容...
+注释内容...
+注释内容...
+EOF
+</code></pre><h3 id="重定向">重定向</h3>
+<pre tabindex="0"><code>&gt; 输出重定向  echo hello &gt; test
+echo hello &gt; /dev/null   禁止输出
+&lt; 输入重定向  cat &lt; test
+&gt;&gt; 输出追加重定向
+</code></pre><h3 id="变量">变量</h3>
+<pre tabindex="0"><code>var1=hello # 注意＝前后不能有空格
+echo $var1
+echo ${var1}_world # 注意此时需要帮助解释器识别变量，用花括号
+var1=1
+if [ $var1 -gt 0 ]; then echo ok;fi
+</code></pre><h4 id="字符串">字符串</h4>
+<pre tabindex="0"><code>s=abcd
+echo ${#s} 长度
+echo ${s:1:2} 子串
+</code></pre><h4 id="数组">数组</h4>
+<pre tabindex="0"><code>array_name=(value0 value1 value2 value3)
+array_name[4]=value4 # 赋值
+echo ${#array_name[@]} # 获取长度
+echo ${array_name[4]} # 获取元素
+echo ${array_name[@]}# 获取所有元素
+ # 增加元素
+</code></pre><h3 id="条件判断">条件判断</h3>
+<pre tabindex="0"><code>a=5
+if [ $a == 5 ];then # []内部必须有空格
+    echo a=5
+fi
+if [ $a == 5 ];then echo a=5;fi # 写成一行
+
+if [ $a -gt 0 ];then
+    echo a&gt;0
+else
+    echo a&lt;=0
+fi
+
+if [ $a -lt 0 ];then
+    echo a&lt;0
+elif [ $a -lt 5 ];then
+    echo 0&lt;=a&lt;5
+elif [ $a -lt 10 ];then
+    echo 5&lt;=a&lt;10
+else
+    echo a&gt;10
+fi
+</code></pre><h3 id="表达式">表达式</h3>
+<h4 id="文本测试">文本测试</h4>
+<pre tabindex="0"><code>-d 是否目录    -e 是否存在    -f 是否文件  
+-r 是否可读    -w 是否可写    -x 是否可执行    
+
+if [ -d /usr/bin ];then echo /usr/bin is dir;fi
+</code></pre><h4 id="逻辑测试">逻辑测试</h4>
+<pre tabindex="0"><code>if [ -e /etc/fstab ] &amp;&amp; [ -e /usr/bin ];then echo ok;fi    # 逻辑与
+if [ -e /etc/fstab ] || [ -e /usr/bin ];then echo ok;fi    # 逻辑或
+if [ ! -e /etc/nopath ];then echo ok;fi                    # 逻辑非
+注意 ! 逻辑非适用于所有表达式
+</code></pre><h4 id="整数操作">整数操作</h4>
+<pre tabindex="0"><code>-eq 是否相等    -ne 是否不等    -gt 是否大于    -lt 是否小于    
+-le 是否小于等于    -ge 是否大于等于
+
+[ 10 -eq 15 ]
+echo $?
+
+运算符 + - * / % == != 
+num1=$[1+2]         运算
+num2=$[$num1*3]
+num3=`expr 1 + 2`
+if [ $[1+2] == 3 ];then echo ok;fi
+if [ $[3*1] == 3 ];then echo ok;fi
+if [ $[7%4] == 3 ];then echo ok;fi
+&lt;   &gt;  
+if [[ 10 &lt; 11 ]];then echo ok;fi # 注意两层[]
+</code></pre><h4 id="字符串-1">字符串</h4>
+<pre tabindex="0"><code>-z 是否空    -n 是否非空    ＝ 是否相等    != 是否不等  
+a=xyz
+if [ $a != abc ];then echo ok;fi
+
+== 相等    =~ 正则匹配
+a=aa12345
+if [[ $a =~ ^aa[0-9]{5}$ ]];then echo ok;fi # 注意两层[],检测前缀后缀常用
+</code></pre><h3 id="流程">流程</h3>
+<pre tabindex="0"><code>for i in {1..10};do echo $[$i*$i];done
+
+arr=(1 2 3)
+for i in ${arr[@]};do echo $[$i*$i];done
+arr=(s1 s2 s3)
+for i in ${arr[@]};do echo test_${i};done
+
+for i in `cat /etc/hosts`;do echo line $i; done
+for i in $(cat /etc/hosts);do echo line $i; done
+
+int=1
+while(( $int&lt;=5 ))
+do
+    echo $int
+    let &#34;int++&#34;
+done
+</code></pre><h3 id="函数">函数</h3>
+<pre tabindex="0"><code>1.sh=&gt;
+function test {
+	echo test argc=$#,arg1=$1,arg2=$2,arg3=$3
+}
+function testret1 {
+	echo 123
+}
+function testret2 {
+	return 456
+}
+
+echo main argc=$#,arg1=$1,arg2=$2,arg3=$3
+test 1 2 3
+testret1
+echo test=$? # 打印testret1返回值整数
+echo test=$(testret2) # 取testret2函数输出字符串
+
+./1.sh a b c
+</code></pre>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/linux_posts/20181212_preload_hook/">
+                        Preload Hook原理与实践
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/linux_posts/20190816_nc/">
+                        利用nc分析网络协议
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

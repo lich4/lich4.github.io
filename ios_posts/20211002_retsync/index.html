@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    使用IDA&#43;LLDB&#43;RetSync调试iOS | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/ios_posts/20211002_retsync/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/ios_posts/">Ios_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/ios_posts/20211002_retsync/">使用IDA&#43;LLDB&#43;RetSync调试iOS</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">使用IDA&#43;LLDB&#43;RetSync调试iOS</h1>
+    
+    <p class="single-summary">使用IDA+LLDB+RetSync调试iOS</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2021-10-02T00:00:00&#43;00:00">October 2, 2021</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E8%B0%83%E8%AF%95/">#调试</a>
+    </span>
+    
+    
+    <span>
+      <a href="https://lich4.github.io/tags/ida/">#IDA</a>
+    </span>
+    
+    
+    <span>
+      <a href="https://lich4.github.io/tags/lldb/">#LLDB</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#前言">前言</a></li>
+    <li><a href="#使用">使用</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="前言">前言</h2>
+<p>  安全行业可大致分为网络安全和二进制安全，二进制安全按层次可分为系统安全，软件安全，框架安全和硬件安全，如果按平台分类又可分为Windows安全，Android安全，iOS安全等。网络安全主要是利用已知漏洞进行扫描，依赖于内核漏洞和常用软件漏洞。在二进制分析中，需要用到静态分析工具，动态调试工具，跟踪工具及其他工具。静态分析和动态跟踪是相辅相成的，因为二进制通常比较大，所以要结合动态分析找到关键点，而动态调试可能会因为有反调试反跟踪技术失败，此时需要静态分析去除并修改二进制或进行注入Hook来绕过检测。动态调试是基于指令级别的，一般情况下效率较低，此时需要进行函数级别的跟踪则需要用到跟踪工具或注入Hook</p>
+<ul>
+<li>静态分析. IDAPro, Hopper, Ghidra, BinaryNinja, BinNavi, Radare, Capstone, RetDec等, 这些工具主要针对编译型语言，而解释性语言都有自己专用工具如Jadx, JEB, dnSpy</li>
+<li>动态调试. WinDbg, OllyDbg, X64Dbg, GDB, LLDB, Unicorn等</li>
+<li>跟踪工具. DynamicRIO, IntelPin, Frida等</li>
+</ul>
+<p>  笔者常用工具集组合为IDAPro + LLDB + Frida，这是在MacOS上进行iOS二进制分析的最小工具集。当然很多人因为搞不定IDAPro的&quot;BUG&quot;或者觉得无法显示高级语法或其他奇奇怪怪的原因而转去用Hopper，这是Hopper存在一定用户的原因。而LLDB则是远程调试iOS的唯一选择。为什么iOS要进行远程调试而不是本地调试呢(即直接在iOS上调试)?其实早期确实有iOS版的gdb能进行调试，但因为设备环境的局限性，这种方式比较低效，而MacOS上则有极其丰富的工具可选，所以最佳方案就是在MacOS上远程调试iOS。MacOS上最佳静态分析工具依然是IDA，但IDA的iOS远程调试套件功能较差，但LLDB调试功能较强，如何结合IDA和LLDB呢？这就是ret-sync<a href="https://github.com/bootleg/ret-sync">https://github.com/bootleg/ret-sync</a>，ret-sync通过自建通信协议，将调试器的状态同步给静态分析工具，从而实现联合调试。ret-sync支持:IDA/Ghidra/BinaryNinja/WinDbg/GDB/LLDB/OllyDbg/X64Dbg.</p>
+<h2 id="使用">使用</h2>
+<p>  关于IDA+LLDB+ret-sync联合调试iOS的相关文章，笔者曾在2021年在简书上简略分享过，这里重新详细介绍一下。</p>
+<ol>
+<li>安装ret-sync到IDAPro和LLDB. 需要确定IDAPro/LLDB自带Python的位置，LLDB可以执行<code>script import sys;print(sys.version);print(sys.path)</code>.</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>git clone https://github.com/bootleg/ret-sync.git
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">cd</span> ret-sync
+</span></span><span style="display:flex;"><span>cp -rfp ext_ida/* /Applications/IDAPro/ida.app/Contents/MacOS/plugins/
+</span></span><span style="display:flex;"><span>cp -rfp ext_lldb/* /Applications/Xcode.app/Contents/SharedFrameworks/LLDB.framework/Resources/Python/
+</span></span><span style="display:flex;"><span># 将rsconfig.py中的PY_LINUX_DEFAULTS设置为正确的Python路径
+</span></span></code></pre></div><ol start="2">
+<li>配置ret-sync到IDAPro和LLDB</li>
+</ol>
+<ul>
+<li>LLDB. command script import sync</li>
+<li>IDAPro. Plugins -&gt; ret-sync</li>
+</ul>
+<ol start="3">
+<li>调试</li>
+</ol>
+<ul>
+<li>LLDB启动远程调试，并断在目标模块中，IDA静态分析目标模块</li>
+<li>LLDB执行sync命令</li>
+<li>IDAPro中同步，此时可以看到LLDB将当前指令同步给IDA，同时IDA下断点也同步给LLDB</li>
+</ul>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20210806_objc_call_swift/">
+                        C/ObjC调用Swift函数
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20220705_svc_call/">
+                        iOS一种隐式调用svc的方式
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

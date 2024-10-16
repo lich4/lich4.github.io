@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    iOS11上使用lldb调试App | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/ios_posts/20190830_ios11_debug/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/ios_posts/">Ios_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/ios_posts/20190830_ios11_debug/">iOS11上使用lldb调试App</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">iOS11上使用lldb调试App</h1>
+    
+    <p class="single-summary">iOS11上使用lldb调试App</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2019-08-30T00:00:00&#43;00:00">August 30, 2019</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents"></nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <p>  Electra越狱的iOS11设备，使用平常的方式是无法用debugserver调试的。这是由于Electra本身的原因，使用unc0ver越狱iOS11则没有此问题，通过如下操作解决：</p>
+<ol>
+<li>获取一个签名的debugserver。如果手头没有，可以在iphone连接mac后，在iphone的/Developer/usr/bin/debugserver取到，将其放在/usr/bin/下。后面如果/usr/bin下签名失败，可以换个位置签名，只要出现kill 9，就需要删掉重新来</li>
+<li>将debugserver签名。xml如下</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span>&lt;!DOCTYPE plist PUBLIC &#34;-//Apple//DTD PLIST 1.0//EN&#34; &#34;http://www.apple.com/DTDs/PropertyList-1.0.dtd&#34;&gt;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">&lt;plist</span> <span style="color:#5f5fff">version=</span><span style="color:#008900">&#34;1.0&#34;</span><span style="color:#ec0000">&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&lt;dict&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>platform-application<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>com.apple.backboardd.debugapplications<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>com.apple.backboardd.launchapplications<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>com.apple.diagnosticd.diagnostic<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>com.apple.frontboard.debugapplications<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>com.apple.frontboard.launchapplications<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>com.apple.springboard.debugapplications<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>com.apple.springboard.launchapplications<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>com.apple.security.network.client<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>com.apple.security.network.server<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>com.apple.assertiond.app-state-monitor<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>com.apple.private.network.socket-delegate<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>com.apple.mobileactivationd.network-security-disabled<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>com.apple.networkd_privileged<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>run-unsigned-code<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>get-task-allow<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>task_for_pid-allow<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;key&gt;</span>com.apple.system-task-ports<span style="color:#ec0000">&lt;/key&gt;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">&lt;true/&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">&lt;/dict&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">&lt;/plist&gt;</span>
+</span></span></code></pre></div><p>保存为xml，和debugserver一起传到iphone上，放在同一目录
+在该目录执行  ldid -S1.xml debugserver，如果失败则尝试在其他目录执行，
+签名后debugserver放在/usr/bin/下</p>
+<ol start="3">
+<li>执行debugserver</li>
+</ol>
+<p>IP地址为要运行lldb的mac主机的ip, 执行:</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>debugserver 192.168.1.12:111 -waitfor app
+</span></span></code></pre></div><ol start="4">
+<li>执行jailbreakd_client</li>
+</ol>
+<p>另开一个iphone的ssh，找到debugserver的pid，例如1234，然后执行</p>
+<pre tabindex="0"><code>/electra/jailbreakd_client 1234 1
+</code></pre><ol start="5">
+<li>
+<p>启动app</p>
+</li>
+<li>
+<p>mac上lldb连接</p>
+</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>lldb
+</span></span><span style="display:flex;"><span>proess connect connect://192.168.1.10:111
+</span></span></code></pre></div>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20190717_jb_detect/">
+                        某缘App越狱检测分析
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20200517_idfa_re/">
+                        IDFA生成过程分析
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

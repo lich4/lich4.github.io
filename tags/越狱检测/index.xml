@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>越狱检测 on 超哥的博客</title>
+    <link>https://lich4.github.io/tags/%E8%B6%8A%E7%8B%B1%E6%A3%80%E6%B5%8B/</link>
+    <description>Recent content in 越狱检测 on 超哥的博客</description>
+    <generator>Hugo</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Sat, 16 May 2020 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://lich4.github.io/tags/%E8%B6%8A%E7%8B%B1%E6%A3%80%E6%B5%8B/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>佐罗(Zorro)改机改串一键新机原理分析</title>
+      <link>https://lich4.github.io/re_posts/20200516_zorro/</link>
+      <pubDate>Sat, 16 May 2020 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20200516_zorro/</guid>
+      <description>佐罗(Zorro)改机改串一键新机原理分析</description>
+    </item>
+    <item>
+      <title>361改机改串一键新机原理分析</title>
+      <link>https://lich4.github.io/re_posts/20191212_361/</link>
+      <pubDate>Thu, 12 Dec 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20191212_361/</guid>
+      <description>361改机改串一键新机原理分析</description>
+    </item>
+    <item>
+      <title>抖音越狱检测深度分析</title>
+      <link>https://lich4.github.io/re_posts/20191201_douyin_jb_detect/</link>
+      <pubDate>Sun, 01 Dec 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20191201_douyin_jb_detect/</guid>
+      <description>抖音越狱检测深度分析</description>
+    </item>
+    <item>
+      <title>爱伪装(AWZ)改机改串一键新机原理分析</title>
+      <link>https://lich4.github.io/re_posts/20190827_awz/</link>
+      <pubDate>Tue, 27 Aug 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20190827_awz/</guid>
+      <description>爱伪装(AWZ)改机改串一键新机原理分析</description>
+    </item>
+    <item>
+      <title>常见反越狱检测插件实现原理</title>
+      <link>https://lich4.github.io/ios_posts/20190511_jb_detect/</link>
+      <pubDate>Sat, 11 May 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20190511_jb_detect/</guid>
+      <description>常见反越狱检测插件实现原理</description>
+    </item>
+  </channel>
+</rss>

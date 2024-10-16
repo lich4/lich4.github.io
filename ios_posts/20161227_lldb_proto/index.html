@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    LLDB&amp;GDB通信协议分析 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/ios_posts/20161227_lldb_proto/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/ios_posts/">Ios_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/ios_posts/20161227_lldb_proto/">LLDB&amp;GDB通信协议分析</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">LLDB&amp;GDB通信协议分析</h1>
+    
+    <p class="single-summary">LLDB&amp;GDB通信协议分析</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2016-12-27T00:00:00&#43;00:00">December 27, 2016</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#协议">协议</a>
+      <ul>
+        <li><a href="#packet-format">packet format</a></li>
+        <li><a href="#packet-data-format">packet-data format</a></li>
+        <li><a href="#stop-reply-format">stop reply format</a></li>
+        <li><a href="#query-packet-format">query packet format</a></li>
+        <li><a href="#lldb定义包">lldb定义包</a></li>
+      </ul>
+    </li>
+    <li><a href="#实例">实例</a>
+      <ul>
+        <li><a href="#gdb通信纪录">gdb通信纪录</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="协议">协议</h2>
+<p>参考<a href="https://sourceware.org/gdb/current/onlinedocs/gdb/Remote-Protocol.html">https://sourceware.org/gdb/current/onlinedocs/gdb/Remote-Protocol.html</a></p>
+<p>gdbserver打印数据包：<code>--remote-debug</code><br>
+lldbserver打印数据包：<code>--log-file stdout --log-flags 8388608</code><br>
+call stack是根据各架构指令特点来解析的<br>
+call api是set context方式运行的 <br>
+po指令定义函数，临时编译成shellcode执行</p>
+<h3 id="packet-format">packet format</h3>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>$packet-data#checksum               单个包
+</span></span><span style="display:flex;"><span>$sequence-id:packet-data#checksum   分包
+</span></span><span style="display:flex;"><span>+                                   传输正常
+</span></span><span style="display:flex;"><span>-                                   传输错误
+</span></span><span style="display:flex;"><span>域分隔符    , ; :
+</span></span><span style="display:flex;"><span>需要转义    } $ } *
+</span></span></code></pre></div><h3 id="packet-data-format">packet-data format</h3>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>!                                   扩展模式                           
+</span></span><span style="display:flex;"><span>A arglen,argnum,arg,...             传入参数        
+</span></span><span style="display:flex;"><span>B addr,mode                         设置断点                          
+</span></span><span style="display:flex;"><span>bc                                  Backwardcontinue          
+</span></span><span style="display:flex;"><span>bs                                  Backwardsinglestep       
+</span></span><span style="display:flex;"><span>c [addr]                            Continueat addr              
+</span></span><span style="display:flex;"><span>C sig[;addr]                        Continue with signal sig 
+</span></span><span style="display:flex;"><span>D                                   Detachgdb from system
+</span></span><span style="display:flex;"><span>D;pid                               Detachgdb from process        
+</span></span><span style="display:flex;"><span>F RC,EE,CF;XX                       File I/O Operation
+</span></span><span style="display:flex;"><span>g                                   Readgeneral registers
+</span></span><span style="display:flex;"><span>G XX…                               Writegeneral registers
+</span></span><span style="display:flex;"><span>H op thread-id                      Set thread for subsequent operations
+</span></span><span style="display:flex;"><span>i [addr[,nnn]]                      Step the remote target by nnn clock cycles
+</span></span><span style="display:flex;"><span>I                                   Signalthen cycle step
+</span></span><span style="display:flex;"><span>m addr,length                       Read memory                           
+</span></span><span style="display:flex;"><span>M addr,length:XX...                 Write memory
+</span></span><span style="display:flex;"><span>p n                                 Readthe value of register n
+</span></span><span style="display:flex;"><span>P n...=r...                         Writethe value of register n
+</span></span><span style="display:flex;"><span>q name params...                    General Query Package
+</span></span><span style="display:flex;"><span>Q name params...
+</span></span><span style="display:flex;"><span>r                                   Resetsystem
+</span></span><span style="display:flex;"><span>R XX                                Restartprograme
+</span></span><span style="display:flex;"><span>s [addr]                            Singlestep resuming at addr
+</span></span><span style="display:flex;"><span>S sig[;addr]                        Step with signal
+</span></span><span style="display:flex;"><span>t addr:PP,MM                        Search backwards
+</span></span><span style="display:flex;"><span>T thread-id                         Findout if the thread is alive
+</span></span><span style="display:flex;"><span>vAttach;pid                         Attach to a new process
+</span></span><span style="display:flex;"><span>vCont[;action[:thread-id]]...       Resume inferior
+</span></span><span style="display:flex;"><span>vCont?                              Requesta list of actions
+</span></span><span style="display:flex;"><span>vCtrlC                              Interrupremote target
+</span></span><span style="display:flex;"><span>vFile:operation:parameter...        Perform file operation
+</span></span><span style="display:flex;"><span>vKill;pid                           Killprocess
+</span></span><span style="display:flex;"><span>vRun;filename[;argument]...         Run the program
+</span></span><span style="display:flex;"><span>vStopped
+</span></span><span style="display:flex;"><span>x addr,length                       Read data from memory
+</span></span><span style="display:flex;"><span>X addr,length:XX...                 Write data to memory
+</span></span><span style="display:flex;"><span>z type,addr,kind                    Remove breakpoint or watchpoint
+</span></span><span style="display:flex;"><span>Z type,addr,kind                    Insert breakpoint or watchpoint
+</span></span><span style="display:flex;"><span>z0,addr,kind                        Remove software breakpoint
+</span></span><span style="display:flex;"><span>Z0,addr,kind[;cond_list...][;cmds:persist,cmd_list...]  Insert software breakpoint
+</span></span><span style="display:flex;"><span>z1,addr,kind                        Remove hardware breakpoint
+</span></span><span style="display:flex;"><span>Z1,addr,kind[;cond_list...][;cmds:persist,cmd_list...]  Insert hardware breakpoint
+</span></span><span style="display:flex;"><span>z2,addr,kind                        write watchpoint
+</span></span><span style="display:flex;"><span>Z2,addr,kind                        write watchpoint
+</span></span><span style="display:flex;"><span>z3,addr,kind                        read watchpoint
+</span></span><span style="display:flex;"><span>Z3,addr,kind                        read watchpoint
+</span></span><span style="display:flex;"><span>z4,addr,kind                        access watchpoint
+</span></span><span style="display:flex;"><span>Z4,addr,kind                        access watchpoint
+</span></span><span style="display:flex;"><span>{ARM Z0/Z1     kind=&gt;2=16bitthumb mode bp   kind=&gt;3=32bit Thumb-2mode bp  kind=&gt;4=32bit ARM mode bp}
+</span></span></code></pre></div><h3 id="stop-reply-format">stop reply format</h3>
+<pre tabindex="0"><code>?                           停止原因                           
+S AA                        receivedsignal
+T AA n1:r1;n2:r2;...        received signal
+W AA                        process exited
+W AA ; process:pid
+X AA                        process terminated
+X AA ; process:pid
+w AA ; tid                  thread exited
+N                           nothead dead
+O XX...
+F call-id,parameter...      which host system call shold becalled
+</code></pre><h3 id="query-packet-format">query packet format</h3>
+<pre tabindex="0"><code>QAgent:1                    turnon helper
+QAgent:0                    turnoff helper
+QAllow:op:val...            query operation(op=WriteRe/WriteMem/InsertBreak/InsertTrace/InsertFastTrace/Stopval=0/1)
+qC                          获取当前线程id
+qCRC:addr,length            Compute CRC checksum of block of memory
+QDisableRandomization:value        
+qsThreadInfo
+qfThreadInfo                获取线程id
+qGetTLSAddr:thread-id,offset,lm   
+qGetTIBAddr:thread-id       windows tib
+qL startflag threadcount nextthread     obtain thread info from RTOS
+qOffsets                    
+qThreadExtraInfo
+QNonStop:1
+QNonStop:0
+QCatchSyscalls:1 [;sysno]...
+QCatchSyscalls:0
+QPassSignals: signal [;signal]...
+QProgramSignals: signal [;signal]...
+QThreadEvents:1
+qRcmd,command             
+qSearch:memory:address;length;search-pattern    search hex
+QStartNoAckMode             request remote stub disable ‘+/-‘
+qSupported [:gdbfeature [;gdbfeature]... ]
+qSymbol::
+qSymbol:sym_value:sym_name
+qThreadExtraInfo,thread-id  extra thread description
+</code></pre><h3 id="lldb定义包">lldb定义包</h3>
+<pre tabindex="0"><code>A, // Program arguments packet
+qfProcessInfo,
+qsProcessInfo,
+qC,
+qEcho,                      用于同步
+qGroupName,
+qHostInfo,
+qLaunchGDBServer,
+qQueryGDBServer,
+qKillSpawnedProcess,
+qLaunchSuccess,
+qModuleInfo,
+qProcessInfoPID,            进程信息
+qSpeedTest,
+qUserName,
+qGetWorkingDir,
+qFileLoadAddress,
+QEnvironment,
+QLaunchArch,
+QSetDisableASLR,
+QSetDetachOnError,
+QSetSTDIN,
+QSetSTDOUT,
+QSetSTDERR,
+QSetWorkingDir,
+QStartNoAckMode,
+qPlatform_shell,
+qPlatform_mkdir,
+qPlatform_chmod,
+vFile_open,
+vFile_close,
+vFile_pread,
+vFile_pwrite,
+vFile_size,
+vFile_mode,
+vFile_exists,
+vFile_md5,
+vFile_stat,
+vFile_symlink,
+vFile_unlink,
+ages
+QEnvironmentHexEncoded,
+QListThreadsInStopReply,
+QRestoreRegisterState,
+QSaveRegisterState,
+QSetLogging,
+QSetMaxPacketSize,
+QSetMaxPayloadSize,
+QSetEnableAsyncProfiling,
+QSyncThreadState,
+QThreadSuffixSupported,
+jThreadsInfo,
+qsThreadInfo,
+qfThreadInfo,
+qGetPid,
+qGetProfileData,            proflie
+qGDBServerVersion,          gdb version
+qMemoryRegionInfo,          memory block info
+qMemoryRegionInfoSupported,
+qProcessInfo,               processinfo
+qRcmd,
+qRegisterInfo,
+qShlibInfoAddr,
+qStepPacketSupported,
+qSupported,
+qSyncThreadStateSupported,
+qThreadExtraInfo,
+qThreadStopInfo,
+qVAttachOrWaitSupported,
+qWatchpointSupportInfo,
+qWatchpointSupportInfoSupported,
+qXfer_auxv_read,
+jSignalsInfo,
+vAttach,
+vAttachWait,
+vAttachOrWait,
+vAttachName,
+vCont,
+vCont_actions,              // vCont?
+stop_reason,                // &#39;?&#39;
+c,
+C,
+D,
+g,
+G,
+H,
+I,                          // stdin notification
+k,
+m,
+M,
+p,
+P,
+s,
+S,
+T,
+x,
+X,
+Z,
+z,
+_M,                         mallocmemory
+_m,                         freememory
+notify,                     // &#39;%&#39; notification
+</code></pre><h2 id="实例">实例</h2>
+<p>例:lldb初始化通信记录</p>
+<pre tabindex="0"><code>+  同步
+QStartNoAckMode  无应答模式
+QThreadSuffixSupported
+QListThreadsInStopReply
+qHostInfo                   进程信息
+vCont 类型
+qVAttachOrWaitSupported
+qC                          当前线程
+?                           暂停原因
+qProcessInfo
+qRegisterInfo0-&gt;65          寄存器信息
+p0;thread:557               指定线程指定寄存器值
+qShlibInfoAddr              获取_dyld_all_image_infos基址
+ ...........解析各个macho结构和符号表........
+qThreadStopInfo              
+qMemoryRegionInfo           内存块查询
+</code></pre><h3 id="gdb通信纪录">gdb通信纪录</h3>
+<pre tabindex="0"><code>+                                                   同步
+qSupported:multiprocess+;swbreak+;hwbreak+;qRelocInsn+;fork-events+;vfork-events+;exec-events+;vContSupported+;QThreadEvents+;no-resumed+;xmlRegisters=i386     查询扩展特性
++                                                   同步
+QStartNoAckMode                                     无应答模式
++                                                   同步
+QProgramSignals:   
+Hgp0.0   
+qXfer:features:read:target.xml:0,fff                获取系统信息及寄存器内部数据
+qXfer:features:read:32bit-linux.xml:0,fff           获取特殊寄存器
+qXfer:auxv:read::0,1000
+QNonStop:0
+qTStatus
+qTfV
+qTsV
+?
+qXfer:threads:read::0,fff                           读取线程信息
+qAttached:640                                       读取第I个线程
+qXfer:exec-file:read:640:0,fff
+qXfer:libraries-svr4:read::0,fff                    读取模块
+</code></pre>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20181227_fix_lsof/">
+                        编译iOS可用lsof
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    编译iOS可用lsof | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/ios_posts/20181227_fix_lsof/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/ios_posts/">Ios_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/ios_posts/20181227_fix_lsof/">编译iOS可用lsof</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">编译iOS可用lsof</h1>
+    
+    <p class="single-summary">编译iOS可用lsof</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2018-12-27T00:00:00&#43;00:00">December 27, 2018</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/shell/">#Shell</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#为什么自己编译">为什么自己编译？</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="为什么自己编译">为什么自己编译？</h2>
+<p>目前没发现针对iOS10.x可用的lsof，我用它来查找进程占用的描述符，包括tcp端口</p>
+<ul>
+<li>下载最新版本lsof <a href="https://opensource.apple.com/tarballs/lsof/">https://opensource.apple.com/tarballs/lsof/</a></li>
+<li>Mac上解压后编译</li>
+</ul>
+<p>根目录下有<code>Makefile</code> <code>lsof/</code> <code>lsof.plist</code><br>
+切换到<code>lsof/</code>下执行<code>./Configure darwin</code>（问题都选no），得到以下结果：</p>
+<pre tabindex="0"><code>Configuring libproc-based Darwin lsof
+
+This configuration step (the Inventory script) takes inventory of
+the lsof distribution.  The script runs for a minute or two while
+it checks that all the subdirectories, information files, scripts,
+header files and source files that should be present really are.
+
+It&#39;s not absolutely necessary that you take inventory, but it&#39;s a
+good idea to do it right after the lsof distribution has been
+unpacked.  Once the inventory has been taken, this script creates
+the file ./.ck00MAN as a signal that the inventory step has been
+done.
+
+You can call the Inventory script directly at any time to take
+inventory.  You can inhibit the inventory step permanently by
+creating the file ./.neverInv, and you can tell the Configure script
+to skip the inventory and customization steps with the -n option.
+
+Do you want to take inventory (y|n) [y]? n
+rm -f ddev.c dfile.c dlsof.h dmnt.c dnode*.c dproc.c dproto.h dsock.c dstore.c dzfs.h kernelbase.h machine.h machine.h.old new_machine.h __lseek.s Makefile Makefile.zfs ./tests/config.cflags
+rm -f ./tests/config.cc ./tests/config.xobj ./tests/config.ldflags
+Testing C library for localtime() and strftime(), using cc ... npresent
+ln -s dialects/darwin/libproc/dlsof.h dlsof.h
+ln -s dialects/darwin/libproc/ddev.c ddev.c
+ln -s dialects/darwin/libproc/dfile.c dfile.c
+ln -s dialects/darwin/libproc/dmnt.c dmnt.c
+ln -s dialects/darwin/libproc/dproc.c dproc.c
+ln -s dialects/darwin/libproc/dproto.h dproto.h
+ln -s dialects/darwin/libproc/dsock.c dsock.c
+ln -s dialects/darwin/libproc/dstore.c dstore.c
+ln -s dialects/darwin/libproc/dnetpolicy.c dnetpolicy.c
+ln -s dialects/darwin/libproc/dchannel.c dchannel.c
+ln -s dialects/darwin/libproc/dnexus.c dnexus.c
+ln -s dialects/darwin/libproc/machine.h machine.h
+
+Makefile and lib/Makefile created.
+./tests/config.cc created
+./tests/config.cflags created
+./tests/config.ldflags created
+./tests/config.xobj created
+
+You may now customize the machine.h header file for this UNIX
+dialect.  The customizations will take effect when you compile
+lsof.  You may also choose to skip customization and proceed to
+the compilation of lsof.
+
+If you don&#39;t know if you need to customize or want to know more
+about what you can customize, consult the 00DCACHE, 00FAQ, 00PORTING,
+and 00README files of the lsof distribution.  You might also find
+it helpful to examine the machine.h header file for the dialect
+you&#39;re customizing.
+
+You don&#39;t need to use this procedure to customize lsof; you can
+edit the machine.h header file directly.  If you later decide you
+want to use this procedure to customize machine.h, execute the
+./Customize script.
+Do you want to customize (y|n) [y]? #
+</code></pre><p>执行make得到如下结果：</p>
+<pre tabindex="0"><code>(cd lib; /Applications/Xcode.app/Contents/Developer/usr/bin/make DEBUG=&#34;-O&#34; CFGF=&#34;-DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;&#34;)
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o ckkv.o ckkv.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o cvfs.o cvfs.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o dvch.o dvch.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o fino.o fino.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o isfn.o isfn.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o lkud.o lkud.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o pdvn.o pdvn.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o prfp.o prfp.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o ptti.o ptti.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o rdev.o rdev.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o regex.o regex.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o rmnt.o rmnt.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o rnam.o rnam.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o rnch.o rnch.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o rnmh.o rnmh.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=&#34;16.7.0&#34;  -O   -c -o snpf.o snpf.c
+ar cr liblsof.a ckkv.o cvfs.o dvch.o fino.o isfn.o lkud.o pdvn.o prfp.o ptti.o rdev.o regex.o rmnt.o rnam.o rnch.o rnmh.o snpf.o
+ranlib liblsof.a
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o ddev.o ddev.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o dfile.o dfile.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o dmnt.o dmnt.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o dproc.o dproc.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o dsock.o dsock.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o dstore.o dstore.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o arg.o arg.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o main.o main.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o misc.o misc.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o node.o node.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o print.o print.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o proc.o proc.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o store.o store.c
+Constructing version.h
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o usage.o usage.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o util.o util.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o dnetpolicy.o dnetpolicy.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o dchannel.o dchannel.c
+dchannel.c:52:7: error: use of undeclared identifier &#39;PROC_CHANNEL_TYPE_USER_PIPE&#39;
+        case PROC_CHANNEL_TYPE_USER_PIPE:
+             ^
+dchannel.c:55:7: error: use of undeclared identifier &#39;PROC_CHANNEL_TYPE_KERNEL_PIPE&#39;
+        case PROC_CHANNEL_TYPE_KERNEL_PIPE:
+             ^
+dchannel.c:58:7: error: use of undeclared identifier &#39;PROC_CHANNEL_TYPE_NET_IF&#39;
+        case PROC_CHANNEL_TYPE_NET_IF:
+             ^
+dchannel.c:61:7: error: use of undeclared identifier &#39;PROC_CHANNEL_TYPE_FLOW_SWITCH&#39;
+        case PROC_CHANNEL_TYPE_FLOW_SWITCH:
+             ^
+dchannel.c:78:16: error: use of undeclared identifier &#39;PROC_CHANNEL_FLAGS_MONITOR&#39;
+        if ((flags &amp; (PROC_CHANNEL_FLAGS_MONITOR)) != 0) {
+                      ^
+dchannel.c:80:17: error: use of undeclared identifier &#39;PROC_CHANNEL_FLAGS_MONITOR&#39;
+                if ((flags &amp; (PROC_CHANNEL_FLAGS_MONITOR))
+                              ^
+dchannel.c:81:10: error: use of undeclared identifier &#39;PROC_CHANNEL_FLAGS_MONITOR&#39;
+                    == PROC_CHANNEL_FLAGS_MONITOR) {
+                       ^
+dchannel.c:83:23: error: use of undeclared identifier &#39;PROC_CHANNEL_FLAGS_MONITOR_TX&#39;
+                } else if ((flags &amp; PROC_CHANNEL_FLAGS_MONITOR_TX) != 0) {
+                                    ^
+dchannel.c:88:16: error: use of undeclared identifier &#39;PROC_CHANNEL_FLAGS_MONITOR_NO_COPY&#39;
+                if ((flags &amp; PROC_CHANNEL_FLAGS_MONITOR_NO_COPY) != 0) {
+                             ^
+dchannel.c:93:15: error: use of undeclared identifier &#39;PROC_CHANNEL_FLAGS_EXCLUSIVE&#39;
+        if ((flags &amp; PROC_CHANNEL_FLAGS_EXCLUSIVE) != 0) {
+                     ^
+dchannel.c:102:15: error: use of undeclared identifier &#39;PROC_CHANNEL_FLAGS_USER_PACKET_POOL&#39;
+        if ((flags &amp; PROC_CHANNEL_FLAGS_USER_PACKET_POOL) != 0) {
+                     ^
+dchannel.c:123:24: error: variable has incomplete type &#39;struct channel_fdinfo&#39;
+        struct channel_fdinfo ci;
+                              ^
+dchannel.c:123:9: note: forward declaration of &#39;struct channel_fdinfo&#39;
+        struct channel_fdinfo ci;
+               ^
+dchannel.c:131:31: error: use of undeclared identifier &#39;PROC_PIDFDCHANNELINFO&#39;
+        nb = proc_pidfdinfo(pid, fd, PROC_PIDFDCHANNELINFO, &amp;ci, sizeof(ci));
+</code></pre><p>如上，下面着手解决这些错误，这些错误都是类型和值未定义，其实可以通过逆向mac自带lsof来还原，这里为了简便，直接将dchannel.c这些发生错误语句删掉，最终dchannel.c中的代码如下：</p>
+<pre tabindex="0"><code>#include &#34;lsof.h&#34;
+void process_channel(int pid, int32_t fd){}
+</code></pre><p>再次执行make</p>
+<pre tabindex="0"><code>(cd lib; /Applications/Xcode.app/Contents/Developer/usr/bin/make DEBUG=&#34;-O&#34; CFGF=&#34;-DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;&#34;)
+make[1]: Nothing to be done for `all&#39;.
+Constructing version.h
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o usage.o usage.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o dchannel.o dchannel.c
+cc  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o dnexus.o dnexus.c
+cc -o lsof  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O ddev.o dfile.o dmnt.o dproc.o dsock.o dstore.o arg.o main.o misc.o node.o print.o proc.o store.o usage.o util.o dnetpolicy.o dchannel.o dnexus.o -L./lib -llsof  -lcurses
+</code></pre><p>成功编译lsof的x86_64版本，可以直接在Mac上运行。下面来编译arm/arm64的版本<code>make CC=&quot;$(xcrun --sdk iphoneos --find clang) -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -arch armv7 -arch armv7s -arch arm64&quot;</code>得到如下结果：</p>
+<pre tabindex="0"><code>(cd lib; /Applications/Xcode.app/Contents/Developer/usr/bin/make DEBUG=&#34;-O&#34; CFGF=&#34;-DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;&#34;)
+make[1]: Nothing to be done for `all&#39;.
+Constructing version.h
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS11.0.sdk -arch armv7 -arch armv7s -arch arm64  -DHASIPv6 -mdynamic-no-pic -DHASUTMPX -DDARWINV=1600 -DHAS_STRFTIME -DLSOF_VSTR=\&#34;16.7.0\&#34;  -O   -c -o usage.o usage.c
+In file included from usage.c:39:
+In file included from ./lsof.h:213:
+./dlsof.h:56:10: fatal error: &#39;netinet/tcp_fsm.h&#39; file not found
+#include &lt;netinet/tcp_fsm.h&gt;
+         ^~~~~~~~~~~~~~~~~~~
+1 error generated.
+make: *** [usage.o] Error 1
+</code></pre><p>该错误是iphone对应SDK <code>/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/include/</code>缺少头文件导致，这些缺少的头文件从<code>/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include</code>拷贝即可，这些文件包括：</p>
+<pre tabindex="0"><code>netinet/tcp_fsm.h
+rpc/pmap_prot.h
+libproc.h
+sys/proc_info.h
+sys/kern_control.h
+net/route.h
+</code></pre><p>再次make此时编译成功，执行file命令：</p>
+<pre tabindex="0"><code>lsof: Mach-O universal binary with 3 architectures: [arm_v7: Mach-O executable arm_v7] [arm_v7s: Mach-O executable arm_v7s] [arm64: Mach-O 64-bit executable arm64]
+lsof (for architecture armv7):	Mach-O executable arm_v7
+lsof (for architecture armv7s):	Mach-O executable arm_v7s
+lsof (for architecture arm64):	Mach-O 64-bit executable arm64
+</code></pre><p>拷贝到越狱iphone上执行，会出现<code>killed: 9</code>，需要对lsof进行签名：<br>
+创建文件entitlement.xml</p>
+<pre tabindex="0"><code>&lt;!DOCTYPE plist PUBLIC &#34;-//Apple//DTD PLIST 1.0//EN&#34; &#34;http://www.apple.com/DTDs/PropertyList-1.0.dtd&#34;&gt;
+&lt;plist version=&#34;1.0&#34;&gt;
+&lt;dict&gt;
+     &lt;key&gt;com.apple.springboard.debugapplications&lt;/key&gt;
+     &lt;true/&gt;
+     &lt;key&gt;get-task-allow&lt;/key&gt;
+     &lt;true/&gt;
+     &lt;key&gt;task_for_pid-allow&lt;/key&gt;
+     &lt;true/&gt;
+     &lt;key&gt;run-unsigned-code&lt;/key&gt;
+     &lt;true/&gt;
+&lt;/dict&gt;
+&lt;/plist&gt;
+</code></pre><p>执行签名：<code>ldid -Sentitlement.xml lsof</code><br>
+此时再将lsof拷贝到越狱iphone上，可以执行了！</p>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20161227_lldb_proto/">
+                        LLDB&amp;GDB通信协议分析
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20190328_syscall/">
+                        系统调用号
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

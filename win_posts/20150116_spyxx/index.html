@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    Spy&#43;&#43;如何获取窗口的WndProc回调地址 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/win_posts/20150116_spyxx/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/win_posts/">Win_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/win_posts/20150116_spyxx/">Spy&#43;&#43;如何获取窗口的WndProc回调地址</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">Spy&#43;&#43;如何获取窗口的WndProc回调地址</h1>
+    
+    <p class="single-summary">Spy++如何获取窗口的WndProc回调地址</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2015-01-16T00:00:00&#43;00:00">January 16, 2015</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E9%80%86%E5%90%91/">#逆向</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#源码">源码</a></li>
+    <li><a href="#结论">结论</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="背景">背景</h2>
+<p>  该题目源于网上一段提问，提问者问：每个窗口都有其回调函数WndProc用于处理消息，然而如果获取其他进程的窗口信息，通过GetWindowLong仅能获取到除了WndProc以外的参数，唯独WndProc获取不了，然而为何Spy++可以？是通过HWND对应的内核结构获取到的吗？（内核驱动我不懂，懂得大哥说说）</p>
+<h2 id="源码">源码</h2>
+<p>  经过实验我发现确实不能用GetWindowLong获取到该参数GWL_WNDPROC，于是我决定研究一下Spy++，弄了一天终于研究出来了。分析表明Spy++采取了Windows自带Hook功能获取一些特殊窗口参数，关键代码在spyxxhk.dll的SpyxxGetMsgProc函数中。试验方法是：随便用spy++查找一个窗口，右键查看窗口属性，看常规选项卡中“窗口进程”的结果，例如00417912，之后用WinHex打开Spyxx.exe进程的SPYXXHK.DLL模块，搜索该数据，发现在6D325C44处，使用IDA附加该进程，查看该处地址为一变量，查看引用可知SpyxxGetMsgProc中对其进行了修改。接下来看Spyxx.exe对该函数的调用，可以分析出如下代码：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span>HMODULE spyhkmod;  
+</span></span><span style="display:flex;"><span>HHOOK getmsghook;  
+</span></span><span style="display:flex;"><span>HHOOK callwndprochook;  
+</span></span><span style="display:flex;"><span>HHOOK callwndprocrethook;  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">extern</span> HHOOK _ghhkMsgHook;//dll导出变量，对应getmsghook  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">extern</span> HHOOK _ghhkCallHook;//dll导出变量，对应callwndprochook  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">extern</span> HHOOK _ghhkRetHook;//dll导出变量，对应callwndprocrethook  
+</span></span><span style="display:flex;"><span>   
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">SetMsgHook</span>(BOOL Enable)  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(Enable)//hook  
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>spyhkmod)  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>            spyhkmod<span style="color:#ec0000">=</span>GetModuleHandle(_T(<span style="color:#008900">&#34;SpyxxHk&#34;</span>));  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>spyhkmod)  
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">return</span>;  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>getmsghook)  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>            getmsghook<span style="color:#ec0000">=</span>SetWindowsHookEx(WH_GETMESSAGE,SpyxxGetMsgProc,spyhkmod,<span style="color:#008900">0</span>);  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>getmsghook)  
+</span></span><span style="display:flex;"><span>            {  
+</span></span><span style="display:flex;"><span>                CString text,caption;  
+</span></span><span style="display:flex;"><span>                text.LoadString(<span style="color:#008900">113</span>);//Cannot set the WH_GETMESSAGE hook.  Message logging is inoperable.  
+</span></span><span style="display:flex;"><span>                caption.LoadString(<span style="color:#008900">1</span>);//Microsoft Spy++  
+</span></span><span style="display:flex;"><span>                MessageBox(<span style="color:#ec0000">NULL</span>,text,caption,MB_OK<span style="color:#ec0000">|</span>MB_ICONEXCLAMATION<span style="color:#ec0000">|</span>MB_SYSTEMMODAL);  
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">return</span>;  
+</span></span><span style="display:flex;"><span>            }  
+</span></span><span style="display:flex;"><span>            _ghhkMsgHook<span style="color:#ec0000">=</span>getmsghook;  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>callwndprochook)  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>            callwndprochook<span style="color:#ec0000">=</span>SetWindowsHookEx(WH_CALLWNDPROC,SpyxxCallWndProc,spyhkmod,<span style="color:#008900">0</span>);  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>callwndprochook)  
+</span></span><span style="display:flex;"><span>            {  
+</span></span><span style="display:flex;"><span>                CString text,caption;  
+</span></span><span style="display:flex;"><span>                text.LoadString(<span style="color:#008900">114</span>);//Cannot set the WH_CALLWNDPROC hook.  Message logging is inoperable.  
+</span></span><span style="display:flex;"><span>                caption.LoadString(<span style="color:#008900">1</span>);//Microsoft Spy++  
+</span></span><span style="display:flex;"><span>                MessageBox(<span style="color:#ec0000">NULL</span>,text,caption,MB_OK<span style="color:#ec0000">|</span>MB_ICONEXCLAMATION<span style="color:#ec0000">|</span>MB_SYSTEMMODAL);  
+</span></span><span style="display:flex;"><span>                UnhookWindowsHookEx(getmsghook);  
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">return</span>;  
+</span></span><span style="display:flex;"><span>            }  
+</span></span><span style="display:flex;"><span>            _ghhkCallHook<span style="color:#ec0000">=</span>callwndprochook;  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>callwndprocrethook)  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>            callwndprocrethook<span style="color:#ec0000">=</span>SetWindowsHookEx(WH_CALLWNDPROCRET,SpyxxCallWndRetProc,spyhkmod,<span style="color:#008900">0</span>);  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(<span style="color:#ec0000">!</span>callwndprocrethook)  
+</span></span><span style="display:flex;"><span>            {  
+</span></span><span style="display:flex;"><span>                CString text,caption;  
+</span></span><span style="display:flex;"><span>                text.LoadString(<span style="color:#008900">115</span>);//,Cannot set the WH_CALLWNDPROCRET hook.  Message logging is inoperable.  
+</span></span><span style="display:flex;"><span>                caption.LoadString(<span style="color:#008900">1</span>);//Microsoft Spy++  
+</span></span><span style="display:flex;"><span>                MessageBox(<span style="color:#ec0000">NULL</span>,text,caption,MB_OK<span style="color:#ec0000">|</span>MB_ICONEXCLAMATION<span style="color:#ec0000">|</span>MB_SYSTEMMODAL);  
+</span></span><span style="display:flex;"><span>                UnhookWindowsHookEx(getmsghook);  
+</span></span><span style="display:flex;"><span>                UnhookWindowsHookEx(callwndprochook);  
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">return</span>;  
+</span></span><span style="display:flex;"><span>            }  
+</span></span><span style="display:flex;"><span>            _ghhkRetHook<span style="color:#ec0000">=</span>callwndprocrethook;  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">else</span>//unhook  
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(getmsghook)  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>            UnhookWindowsHookEx(getmsghook);  
+</span></span><span style="display:flex;"><span>            getmsghook<span style="color:#ec0000">=</span><span style="color:#ec0000">NULL</span>;  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(callwndprochook)  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>            UnhookWindowsHookEx(callwndprochook);  
+</span></span><span style="display:flex;"><span>            callwndprochook<span style="color:#ec0000">=</span><span style="color:#ec0000">NULL</span>;  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>        //还有一个没有unhook呢？bug？  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>}  
+</span></span><span style="display:flex;"><span>   
+</span></span><span style="display:flex;"><span>HWND hWnd;  
+</span></span><span style="display:flex;"><span>HANDLE hWriterMutex,hAccessMutex,hReadEvent,hWrittenEvent,hOtherAccessMutex,hOtherDataEvent;  
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">HookMain</span>(<span style="color:#5f5fff">void</span><span style="color:#ec0000">*</span> param)  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>    hWriterMutex <span style="color:#ec0000">=</span> CreateMutexW(<span style="color:#008900">0</span>, <span style="color:#008900">0</span>, <span style="color:#008900">L</span><span style="color:#008900">&#34;Local</span><span style="color:#008900">\\</span><span style="color:#008900">Spy++ Writer Mutex&#34;</span>);  
+</span></span><span style="display:flex;"><span>    hAccessMutex <span style="color:#ec0000">=</span> CreateMutexW(<span style="color:#008900">0</span>, <span style="color:#008900">0</span>, <span style="color:#008900">L</span><span style="color:#008900">&#34;Local</span><span style="color:#008900">\\</span><span style="color:#008900">Spy++ Access Mutex&#34;</span>);  
+</span></span><span style="display:flex;"><span>    hReadEvent <span style="color:#ec0000">=</span> CreateEventW(<span style="color:#008900">0</span>, <span style="color:#008900">0</span>, <span style="color:#008900">1</span>, <span style="color:#008900">L</span><span style="color:#008900">&#34;Local</span><span style="color:#008900">\\</span><span style="color:#008900">Spy++ Read Event&#34;</span>);  
+</span></span><span style="display:flex;"><span>    hWrittenEvent <span style="color:#ec0000">=</span> CreateEventW(<span style="color:#008900">0</span>, <span style="color:#008900">0</span>, <span style="color:#008900">0</span>, <span style="color:#008900">L</span><span style="color:#008900">&#34;Local</span><span style="color:#008900">\\</span><span style="color:#008900">Spy++ Written Event&#34;</span>);  
+</span></span><span style="display:flex;"><span>    hOtherAccessMutex <span style="color:#ec0000">=</span> CreateMutexW(<span style="color:#008900">0</span>, <span style="color:#008900">0</span>, <span style="color:#008900">L</span><span style="color:#008900">&#34;Local</span><span style="color:#008900">\\</span><span style="color:#008900">Spy++ Other Process Access Mutex&#34;</span>);  
+</span></span><span style="display:flex;"><span>    hOtherDataEvent <span style="color:#ec0000">=</span> CreateEventW(<span style="color:#008900">0</span>, <span style="color:#008900">0</span>, <span style="color:#008900">0</span>, <span style="color:#008900">L</span><span style="color:#008900">&#34;Local</span><span style="color:#008900">\\</span><span style="color:#008900">Spy++ Other Process Data Event&#34;</span>);  
+</span></span><span style="display:flex;"><span>    PSECURITY_DESCRIPTOR sd<span style="color:#ec0000">=</span><span style="color:#ec0000">NULL</span>;  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(ConvertStringSecurityDescriptorToSecurityDescriptor(  
+</span></span><span style="display:flex;"><span>        _T(<span style="color:#008900">&#34;D:(A;;GA;;;WD)(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;AN)(A;;GA;;;RC)(A;;GA;;;S-1-15-2-1)&#34;</span>),  
+</span></span><span style="display:flex;"><span>        SDDL_REVISION_1,<span style="color:#ec0000">&amp;</span>sd,<span style="color:#ec0000">NULL</span>))  
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>        PACL pDacl;  
+</span></span><span style="display:flex;"><span>        BOOL bDaclPresent;  
+</span></span><span style="display:flex;"><span>        BOOL bDaclDefaulted;  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(GetSecurityDescriptorDacl(sd,<span style="color:#ec0000">&amp;</span>bDaclPresent,<span style="color:#ec0000">&amp;</span>pDacl,<span style="color:#ec0000">&amp;</span>bDaclDefaulted))  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>            SetSecurityInfo(hWriterMutex,SE_KERNEL_OBJECT,DACL_SECURITY_INFORMATION,<span style="color:#ec0000">NULL</span>,<span style="color:#ec0000">NULL</span>,pDacl,<span style="color:#ec0000">NULL</span>);  
+</span></span><span style="display:flex;"><span>            SetSecurityInfo(hAccessMutex,SE_KERNEL_OBJECT,DACL_SECURITY_INFORMATION,<span style="color:#ec0000">NULL</span>,<span style="color:#ec0000">NULL</span>,pDacl,<span style="color:#ec0000">NULL</span>);  
+</span></span><span style="display:flex;"><span>            SetSecurityInfo(hReadEvent,SE_KERNEL_OBJECT,DACL_SECURITY_INFORMATION,<span style="color:#ec0000">NULL</span>,<span style="color:#ec0000">NULL</span>,pDacl,<span style="color:#ec0000">NULL</span>);  
+</span></span><span style="display:flex;"><span>            SetSecurityInfo(hWrittenEvent,SE_KERNEL_OBJECT,DACL_SECURITY_INFORMATION,<span style="color:#ec0000">NULL</span>,<span style="color:#ec0000">NULL</span>,pDacl,<span style="color:#ec0000">NULL</span>);  
+</span></span><span style="display:flex;"><span>            SetSecurityInfo(hOtherAccessMutex,SE_KERNEL_OBJECT,DACL_SECURITY_INFORMATION,<span style="color:#ec0000">NULL</span>,<span style="color:#ec0000">NULL</span>,pDacl,<span style="color:#ec0000">NULL</span>);  
+</span></span><span style="display:flex;"><span>            SetSecurityInfo(hOtherDataEvent,SE_KERNEL_OBJECT,DACL_SECURITY_INFORMATION,<span style="color:#ec0000">NULL</span>,<span style="color:#ec0000">NULL</span>,pDacl,<span style="color:#ec0000">NULL</span>);  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>        LocalFree(sd);  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(ConvertStringSecurityDescriptorToSecurityDescriptor(_T(<span style="color:#008900">&#34;S:(ML;;NW;;;LW)&#34;</span>),SDDL_REVISION_1,<span style="color:#ec0000">&amp;</span>sd,<span style="color:#ec0000">NULL</span>))  
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>        PACL pSacl;  
+</span></span><span style="display:flex;"><span>        BOOL bDaclPresent;  
+</span></span><span style="display:flex;"><span>        BOOL bDaclDefaulted;  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(GetSecurityDescriptorDacl(sd,<span style="color:#ec0000">&amp;</span>bDaclPresent,<span style="color:#ec0000">&amp;</span>pSacl,<span style="color:#ec0000">&amp;</span>bDaclDefaulted))  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>            SetSecurityInfo(hWriterMutex,SE_KERNEL_OBJECT,LABEL_SECURITY_INFORMATION,<span style="color:#ec0000">NULL</span>,<span style="color:#ec0000">NULL</span>,pSacl,<span style="color:#ec0000">NULL</span>);  
+</span></span><span style="display:flex;"><span>            SetSecurityInfo(hAccessMutex,SE_KERNEL_OBJECT,LABEL_SECURITY_INFORMATION,<span style="color:#ec0000">NULL</span>,<span style="color:#ec0000">NULL</span>,pSacl,<span style="color:#ec0000">NULL</span>);  
+</span></span><span style="display:flex;"><span>            SetSecurityInfo(hReadEvent,SE_KERNEL_OBJECT,LABEL_SECURITY_INFORMATION,<span style="color:#ec0000">NULL</span>,<span style="color:#ec0000">NULL</span>,pSacl,<span style="color:#ec0000">NULL</span>);  
+</span></span><span style="display:flex;"><span>            SetSecurityInfo(hWrittenEvent,SE_KERNEL_OBJECT,LABEL_SECURITY_INFORMATION,<span style="color:#ec0000">NULL</span>,<span style="color:#ec0000">NULL</span>,pSacl,<span style="color:#ec0000">NULL</span>);  
+</span></span><span style="display:flex;"><span>            SetSecurityInfo(hOtherAccessMutex,SE_KERNEL_OBJECT,LABEL_SECURITY_INFORMATION,<span style="color:#ec0000">NULL</span>,<span style="color:#ec0000">NULL</span>,pSacl,<span style="color:#ec0000">NULL</span>);  
+</span></span><span style="display:flex;"><span>            SetSecurityInfo(hOtherDataEvent,SE_KERNEL_OBJECT,LABEL_SECURITY_INFORMATION,<span style="color:#ec0000">NULL</span>,<span style="color:#ec0000">NULL</span>,pSacl,<span style="color:#ec0000">NULL</span>);  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>        LocalFree(sd);  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>    //.........  
+</span></span><span style="display:flex;"><span>    SetMsgHook(TRUE);  
+</span></span><span style="display:flex;"><span>    //........  
+</span></span><span style="display:flex;"><span>}  
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> WINAPI <span style="color:#5f5fff">CreateHookThread</span>()  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>    //.........  
+</span></span><span style="display:flex;"><span>    _beginthread(HookMain,<span style="color:#008900">0x10000</span>,hWnd);  
+</span></span><span style="display:flex;"><span>    //.........  
+</span></span><span style="display:flex;"><span>}  
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> CSpyApp<span style="color:#ec0000">::</span>InitInstance()  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>    //.........  
+</span></span><span style="display:flex;"><span>    CreateHookThread();  
+</span></span><span style="display:flex;"><span>    //.........  
+</span></span><span style="display:flex;"><span>}  
+</span></span><span style="display:flex;"><span>BOOL gfHookEnabled,gfHookDisabled;  
+</span></span><span style="display:flex;"><span>DWORD _gpidSpyxx;  
+</span></span><span style="display:flex;"><span>LRESULT WINAPI <span style="color:#5f5fff">SpyxxCallWndProc</span>(<span style="color:#5f5fff">int</span> nCode, WPARAM wParam, LPARAM lParam)  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>    LRESULT ret<span style="color:#ec0000">=</span>CallNextHookEx(_ghhkCallHook,nCode,wParam,lParam);  
+</span></span><span style="display:flex;"><span>    CWPSTRUCT<span style="color:#ec0000">*</span> cwp<span style="color:#ec0000">=</span>(CWPSTRUCT<span style="color:#ec0000">*</span>)lParam;  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(gfHookEnabled <span style="color:#ec0000">&amp;&amp;</span> <span style="color:#ec0000">!</span>gfHookDisabled <span style="color:#ec0000">&amp;&amp;</span> nCode <span style="color:#ec0000">==</span> HC_ACTION <span style="color:#ec0000">&amp;&amp;</span> cwp <span style="color:#ec0000">&amp;&amp;</span> cwp<span style="color:#ec0000">-&gt;</span>hwnd)  
+</span></span><span style="display:flex;"><span>    {      
+</span></span><span style="display:flex;"><span>         DWORD procid;  
+</span></span><span style="display:flex;"><span>        DWORD id<span style="color:#ec0000">=</span>GetWindowThreadProcessId(cwp<span style="color:#ec0000">-&gt;</span>hwnd,<span style="color:#ec0000">&amp;</span>procid);  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(procid <span style="color:#ec0000">!=</span> _gpidSpyxx <span style="color:#ec0000">&amp;&amp;</span> id <span style="color:#ec0000">!=</span> _gpidSpyxx <span style="color:#ec0000">&amp;&amp;</span> GetCurrentThreadId() <span style="color:#ec0000">!=</span> _gpidSpyxx)  
+</span></span><span style="display:flex;"><span>            func(<span style="color:#008900">1</span>,<span style="color:#008900">0</span>,cwp<span style="color:#ec0000">-&gt;</span>hwnd,cwp<span style="color:#ec0000">-&gt;</span>message,cwp<span style="color:#ec0000">-&gt;</span>wParam,cwp<span style="color:#ec0000">-&gt;</span>lParam,<span style="color:#008900">0</span>,<span style="color:#008900">0</span>,<span style="color:#008900">0</span>);  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> ret;  
+</span></span><span style="display:flex;"><span>}  
+</span></span><span style="display:flex;"><span>LRESULT WINAPI <span style="color:#5f5fff">SpyxxCallWndRetProc</span>(<span style="color:#5f5fff">int</span> nCode, WPARAM wParam, LPARAM lParam)  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>    LRESULT ret<span style="color:#ec0000">=</span>CallNextHookEx(_ghhkRetHook,nCode,wParam,lParam);  
+</span></span><span style="display:flex;"><span>    CWPRETSTRUCT<span style="color:#ec0000">*</span> cwp<span style="color:#ec0000">=</span>(CWPRETSTRUCT<span style="color:#ec0000">*</span>)lParam;  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(gfHookEnabled <span style="color:#ec0000">&amp;&amp;</span> <span style="color:#ec0000">!</span>gfHookDisabled <span style="color:#ec0000">&amp;&amp;</span> nCode <span style="color:#ec0000">==</span> HC_ACTION <span style="color:#ec0000">&amp;&amp;</span> cwp <span style="color:#ec0000">&amp;&amp;</span> cwp<span style="color:#ec0000">-&gt;</span>hwnd)  
+</span></span><span style="display:flex;"><span>    {      
+</span></span><span style="display:flex;"><span>         DWORD procid;  
+</span></span><span style="display:flex;"><span>        DWORD id<span style="color:#ec0000">=</span>GetWindowThreadProcessId(cwp<span style="color:#ec0000">-&gt;</span>hwnd,<span style="color:#ec0000">&amp;</span>procid);  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(procid <span style="color:#ec0000">!=</span> _gpidSpyxx <span style="color:#ec0000">&amp;&amp;</span> id <span style="color:#ec0000">!=</span> _gpidSpyxx <span style="color:#ec0000">&amp;&amp;</span> GetCurrentThreadId() <span style="color:#ec0000">!=</span> _gpidSpyxx)  
+</span></span><span style="display:flex;"><span>            func(<span style="color:#008900">2</span>,cwp<span style="color:#ec0000">-&gt;</span>lResult,cwp<span style="color:#ec0000">-&gt;</span>hwnd,cwp<span style="color:#ec0000">-&gt;</span>message,cwp<span style="color:#ec0000">-&gt;</span>wParam,cwp<span style="color:#ec0000">-&gt;</span>lParam,<span style="color:#008900">0</span>,<span style="color:#008900">0</span>,<span style="color:#008900">0</span>);  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> ret;  
+</span></span><span style="display:flex;"><span>}  
+</span></span><span style="display:flex;"><span>UINT gmsgOtherProcessData;  
+</span></span><span style="display:flex;"><span>HWND gopd;//目标进程窗口句柄，exe在OnIdle例程中修改该处  
+</span></span><span style="display:flex;"><span>DWORD goproc;//目标窗口回调函数地址  
+</span></span><span style="display:flex;"><span>WNDCLASS WndClass;  
+</span></span><span style="display:flex;"><span>LRESULT WINAPI <span style="color:#5f5fff">SpyxxGetMsgProc</span>(<span style="color:#5f5fff">int</span> nCode, WPARAM wParam, LPARAM lParam)  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>    MSG<span style="color:#ec0000">*</span> msg<span style="color:#ec0000">=</span>(MSG<span style="color:#ec0000">*</span>)lParam;  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(nCode <span style="color:#ec0000">==</span> HC_ACTION <span style="color:#ec0000">&amp;&amp;</span> (wParam<span style="color:#ec0000">&amp;</span>PM_REMOVE) <span style="color:#ec0000">&amp;&amp;</span> msg <span style="color:#ec0000">&amp;&amp;</span> msg<span style="color:#ec0000">-&gt;</span>hwnd)  
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span>(msg<span style="color:#ec0000">-&gt;</span>message <span style="color:#ec0000">==</span> gmsgOtherProcessData)  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(msg<span style="color:#ec0000">-&gt;</span>hwnd <span style="color:#ec0000">==</span> gopd <span style="color:#ec0000">&amp;&amp;</span> hAccessMutex <span style="color:#ec0000">&amp;&amp;</span> <span style="color:#ec0000">!</span>WaitForSingleObject(hAccessMutex,<span style="color:#008900">1000</span>))  
+</span></span><span style="display:flex;"><span>            {  
+</span></span><span style="display:flex;"><span>                TCHAR ClassName[<span style="color:#008900">128</span>];  
+</span></span><span style="display:flex;"><span>                GetClassName(msg<span style="color:#ec0000">-&gt;</span>hwnd,ClassName,<span style="color:#008900">128</span>);  
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(IsWindowUnicode(msg<span style="color:#ec0000">-&gt;</span>hwnd))  
+</span></span><span style="display:flex;"><span>                    goproc<span style="color:#ec0000">=</span>GetWindowLongW(msg<span style="color:#ec0000">-&gt;</span>hwnd,GWL_WNDPROC);  
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span> 
+</span></span><span style="display:flex;"><span>                    goproc<span style="color:#ec0000">=</span>GetWindowLongA(msg<span style="color:#ec0000">-&gt;</span>hwnd,GWL_WNDPROC);  
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span>(GetClassInfoW(<span style="color:#ec0000">NULL</span>,ClassName,<span style="color:#ec0000">&amp;</span>WndClass))  
+</span></span><span style="display:flex;"><span>                {  
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">if</span>(WndClass.lpszMenuName) {/*...............*/};  
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">if</span>(IsWindowUnicode(msg<span style="color:#ec0000">-&gt;</span>hwnd))  
+</span></span><span style="display:flex;"><span>                        WndClass.lpfnWndProc<span style="color:#ec0000">=</span>(WNDPROC)GetClassLongW(msg<span style="color:#ec0000">-&gt;</span>hwnd,GCL_WNDPROC);  
+</span></span><span style="display:flex;"><span>                }  
+</span></span><span style="display:flex;"><span>                //..............  
+</span></span><span style="display:flex;"><span>                msg<span style="color:#ec0000">-&gt;</span>message<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>                msg<span style="color:#ec0000">-&gt;</span>wParam<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>                msg<span style="color:#ec0000">-&gt;</span>lParam<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>            }  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span>(gfHookEnabled <span style="color:#ec0000">&amp;&amp;</span> <span style="color:#ec0000">!</span>gfHookDisabled)  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>            DWORD procid;  
+</span></span><span style="display:flex;"><span>            DWORD id<span style="color:#ec0000">=</span>GetWindowThreadProcessId(msg<span style="color:#ec0000">-&gt;</span>hwnd,<span style="color:#ec0000">&amp;</span>procid);  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(procid <span style="color:#ec0000">!=</span> _gpidSpyxx <span style="color:#ec0000">&amp;&amp;</span> id <span style="color:#ec0000">!=</span> _gpidSpyxx <span style="color:#ec0000">&amp;&amp;</span> GetCurrentThreadId() <span style="color:#ec0000">!=</span> _gpidSpyxx)  
+</span></span><span style="display:flex;"><span>                func(<span style="color:#008900">0</span>,<span style="color:#008900">0</span>,msg<span style="color:#ec0000">-&gt;</span>hwnd,msg<span style="color:#ec0000">-&gt;</span>message,msg<span style="color:#ec0000">-&gt;</span>wParam,msg<span style="color:#ec0000">-&gt;</span>lParam,msg<span style="color:#ec0000">-&gt;</span>time,msg<span style="color:#ec0000">-&gt;</span>pt.x,msg<span style="color:#ec0000">-&gt;</span>pt.y);  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> CallNextHookEx(_ghhkMsgHook,nCode,wParam,lParam);  
+</span></span><span style="display:flex;"><span>} 
+</span></span></code></pre></div><h2 id="结论">结论</h2>
+<p>  可以分析出，spy++通过windows hook方式注入相关功能到目标进程，从而实现自己的目的。Window编写hook时是要把函数放在专门的dll中，hook后所有程序都会自动加载该dll</p>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150104_driver_stl/">
+                        Windows驱动开发中使用STL
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150117_pwd_viewer/">
+                        星号密码查看器逆向分析
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

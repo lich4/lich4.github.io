@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Win_posts on 超哥的博客</title>
+    <link>https://lich4.github.io/win_posts/</link>
+    <description>Recent content in Win_posts on 超哥的博客</description>
+    <generator>Hugo</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Sun, 01 Jan 2017 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://lich4.github.io/win_posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>使用Fiddler调试http/https协议</title>
+      <link>https://lich4.github.io/win_posts/20170101_fiddler/</link>
+      <pubDate>Sun, 01 Jan 2017 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20170101_fiddler/</guid>
+      <description>使用Fiddler调试http/https协议</description>
+    </item>
+    <item>
+      <title>提取动态链接库ntdll的函数到静态lib</title>
+      <link>https://lich4.github.io/win_posts/20151116_ntdll_staticlib/</link>
+      <pubDate>Mon, 16 Nov 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20151116_ntdll_staticlib/</guid>
+      <description>提取动态链接库ntdll的函数到静态lib</description>
+    </item>
+    <item>
+      <title>Windbg K命令分析</title>
+      <link>https://lich4.github.io/win_posts/20150809_windbg_k/</link>
+      <pubDate>Sun, 09 Aug 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150809_windbg_k/</guid>
+      <description>Windbg K命令分析</description>
+    </item>
+    <item>
+      <title>探究为何32位程序无法远程注入64位程序</title>
+      <link>https://lich4.github.io/win_posts/20150726_wow/</link>
+      <pubDate>Sun, 26 Jul 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150726_wow/</guid>
+      <description>探究为何32位程序无法远程注入64位程序</description>
+    </item>
+    <item>
+      <title>Windbg内核调试协议分析</title>
+      <link>https://lich4.github.io/win_posts/20150709_windbg_proto/</link>
+      <pubDate>Sun, 19 Jul 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150709_windbg_proto/</guid>
+      <description>Windbg内核调试协议分析</description>
+    </item>
+    <item>
+      <title>Windows用户态调试</title>
+      <link>https://lich4.github.io/win_posts/20150706_usermod_debug/</link>
+      <pubDate>Mon, 06 Jul 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150706_usermod_debug/</guid>
+      <description>Windows用户态调试</description>
+    </item>
+    <item>
+      <title>Dll入口函数中Wait系函数死锁的解决</title>
+      <link>https://lich4.github.io/win_posts/20150623_dllentry_deadlock/</link>
+      <pubDate>Mon, 29 Jun 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150623_dllentry_deadlock/</guid>
+      <description>Dll入口函数中Wait系函数死锁的解决</description>
+    </item>
+    <item>
+      <title>MFC消息响应函数逆向分析</title>
+      <link>https://lich4.github.io/win_posts/20150629_mfc_msgcb/</link>
+      <pubDate>Mon, 29 Jun 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150629_mfc_msgcb/</guid>
+      <description>MFC消息响应函数逆向分析</description>
+    </item>
+    <item>
+      <title>实现磁盘内存映射</title>
+      <link>https://lich4.github.io/win_posts/20150628_disk_mmap/</link>
+      <pubDate>Sun, 28 Jun 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150628_disk_mmap/</guid>
+      <description>实现磁盘内存映射</description>
+    </item>
+    <item>
+      <title>强删正在运行文件</title>
+      <link>https://lich4.github.io/win_posts/20150526_force_del_file/</link>
+      <pubDate>Tue, 26 May 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150526_force_del_file/</guid>
+      <description>强删正在运行文件</description>
+    </item>
+    <item>
+      <title>NtQuerySystemInformation用法</title>
+      <link>https://lich4.github.io/win_posts/20150429_ntquerysystem/</link>
+      <pubDate>Wed, 29 Apr 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150429_ntquerysystem/</guid>
+      <description>NtQuerySystemInformation用法</description>
+    </item>
+    <item>
+      <title>Windbg符号文件夹中像MD5的文件夹名如何生成</title>
+      <link>https://lich4.github.io/win_posts/20150224_windbg_dir/</link>
+      <pubDate>Tue, 24 Feb 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150224_windbg_dir/</guid>
+      <description>Windbg符号文件夹中像MD5的文件夹名如何生成</description>
+    </item>
+    <item>
+      <title>对彗星DNS加速器的分析</title>
+      <link>https://lich4.github.io/win_posts/20150222_fastdns/</link>
+      <pubDate>Sun, 22 Feb 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150222_fastdns/</guid>
+      <description>对彗星DNS加速器的分析</description>
+    </item>
+    <item>
+      <title>变速齿轮原理浅析</title>
+      <link>https://lich4.github.io/win_posts/20150208_gearnt/</link>
+      <pubDate>Sun, 08 Feb 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150208_gearnt/</guid>
+      <description>变速齿轮原理浅析</description>
+    </item>
+    <item>
+      <title>虚拟机检测程序的分析</title>
+      <link>https://lich4.github.io/win_posts/20150208_vm_detect/</link>
+      <pubDate>Sun, 08 Feb 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150208_vm_detect/</guid>
+      <description>虚拟机检测程序的分析</description>
+    </item>
+    <item>
+      <title>星号密码查看器逆向分析</title>
+      <link>https://lich4.github.io/win_posts/20150117_pwd_viewer/</link>
+      <pubDate>Sat, 17 Jan 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150117_pwd_viewer/</guid>
+      <description>星号密码查看器逆向分析</description>
+    </item>
+    <item>
+      <title>Spy&#43;&#43;如何获取窗口的WndProc回调地址</title>
+      <link>https://lich4.github.io/win_posts/20150116_spyxx/</link>
+      <pubDate>Fri, 16 Jan 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150116_spyxx/</guid>
+      <description>Spy++如何获取窗口的WndProc回调地址</description>
+    </item>
+    <item>
+      <title>Windows驱动开发中使用STL</title>
+      <link>https://lich4.github.io/win_posts/20150104_driver_stl/</link>
+      <pubDate>Sun, 04 Jan 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150104_driver_stl/</guid>
+      <description>Windows驱动开发中使用STL</description>
+    </item>
+    <item>
+      <title>记一次木马分析</title>
+      <link>https://lich4.github.io/win_posts/20150103_trojan_analysis/</link>
+      <pubDate>Sat, 03 Jan 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150103_trojan_analysis/</guid>
+      <description>记一次木马分析</description>
+    </item>
+    <item>
+      <title>QQ管家驱动分析</title>
+      <link>https://lich4.github.io/win_posts/20150102_qqmgr/</link>
+      <pubDate>Fri, 02 Jan 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150102_qqmgr/</guid>
+      <description>QQ管家驱动分析</description>
+    </item>
+    <item>
+      <title>Windbg调试笔记</title>
+      <link>https://lich4.github.io/win_posts/20150101_windbg_note/</link>
+      <pubDate>Thu, 01 Jan 2015 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20150101_windbg_note/</guid>
+      <description>Windbg调试笔记</description>
+    </item>
+    <item>
+      <title>OllyDbg插件开发及逆向分析</title>
+      <link>https://lich4.github.io/win_posts/20141230_ollydbg_plugin/</link>
+      <pubDate>Tue, 30 Dec 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20141230_ollydbg_plugin/</guid>
+      <description>OllyDbg插件开发及逆向分析</description>
+    </item>
+    <item>
+      <title>Win7磁盘读写操作</title>
+      <link>https://lich4.github.io/win_posts/20140418_win7_disk/</link>
+      <pubDate>Fri, 18 Apr 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20140418_win7_disk/</guid>
+      <description>Win7磁盘读写操作</description>
+    </item>
+    <item>
+      <title>XP/Win7扫雷逆向分析</title>
+      <link>https://lich4.github.io/win_posts/20140327_winmine/</link>
+      <pubDate>Thu, 27 Mar 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20140327_winmine/</guid>
+      <description>XP/Win7扫雷逆向分析</description>
+    </item>
+    <item>
+      <title>获取硬盘信息</title>
+      <link>https://lich4.github.io/win_posts/20140102_disk_info/</link>
+      <pubDate>Thu, 02 Jan 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20140102_disk_info/</guid>
+      <description>获取硬盘信息</description>
+    </item>
+    <item>
+      <title>可执行文件另类加密</title>
+      <link>https://lich4.github.io/win_posts/20140101_pe_encrypt/</link>
+      <pubDate>Wed, 01 Jan 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/win_posts/20140101_pe_encrypt/</guid>
+      <description>可执行文件另类加密</description>
+    </item>
+  </channel>
+</rss>

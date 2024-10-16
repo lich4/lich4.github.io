@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    IPSet策略设计 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/linux_posts/20181113_ipset_policy/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/linux_posts/">Linux_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/linux_posts/20181113_ipset_policy/">IPSet策略设计</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">IPSet策略设计</h1>
+    
+    <p class="single-summary">IPSet策略设计</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2018-11-13T00:00:00&#43;00:00">November 13, 2018</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#快速开始">快速开始</a></li>
+    <li><a href="#原理">原理</a></li>
+    <li><a href="#ipset策略设计">IPSet策略设计</a>
+      <ul>
+        <li><a href="#ipset使用注意事项">IPSet使用注意事项</a></li>
+      </ul>
+    </li>
+    <li><a href="#iptables策略设计">IPTables策略设计</a></li>
+    <li><a href="#ipset方案相比iptables方案的优点">IPSet方案相比IPTables方案的优点</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h1 id="ipset">IPSET</h1>
+<p>本项目提供与Linux IPSET技术兼容的服务器隔离策略自动部署和更新方案</p>
+<h2 id="快速开始">快速开始</h2>
+<p>本项目为Golang开发的插件</p>
+<h2 id="原理">原理</h2>
+<p>  IPTables是Linux服务器上进行网络隔离的核心技术，内核在处理网络请求时会对IPTables中的策略进行逐条解析，因此当策略较多时效率较低；而是用IPSet技术可以将策略中的五元组(协议，源地址，源端口,目的地址，目的端口)合并到有限的集合中，可以大大减少IPTables策略条目从而提高效率。测试结果显示IPSet方式效率将比IPTables提高100倍。<br>
+  使用到的IPTables参数如下：</p>
+<pre tabindex="0"><code>-A  INPUT|OUTPUT     指定IPTables链，对应网络数据流相对于当前网卡的方向是流入或流出
+-p  tcp|udp|icmp     指定网络数据流使用的协议
+-m  state|set        指定加载的模块：set对应IPSet模块，具体的介绍在后面；state模块用于限定连接状态，配置此项可以避免对每个ACCEPT的策略同时加入INPUT链和OUTPUT链
+-j  ACCEPT|REJECT    指定对网络数据流放行或拒绝
+</code></pre><p>  目前网络隔离使用默认拒绝+白名单的方式配置，在配置IPSet表时，根据其方向、协议、是否放行及五元组类型可以分为24个list:set类型的集合，每个list:set集合可以容纳65536个其他类型集合(目前为hash:ip hash:ip,port)，从而容纳海量策略：</p>
+<pre tabindex="0"><code>in_tcp_acc_si    out_tcp_acc_di 
+in_tcp_rej_si    out_tcp_rej_di 
+in_udp_acc_si    out_udp_acc_di 
+in_udp_rej_si    out_udp_rej_di 
+in_tcp_acc_dp    out_tcp_acc_dp 
+in_tcp_rej_dp    out_tcp_rej_dp 
+in_udp_acc_dp    out_udp_acc_dp
+in_udp_rej_dp    out_udp_rej_dp 
+in_tcp_acc_sidp  out_tcp_acc_didp
+in_tcp_rej_sidp  out_tcp_rej_didp
+in_udp_acc_sidp  out_udp_acc_didp
+in_udp_rej_sidp  out_udp_rej_didp
+</code></pre><h2 id="ipset策略设计">IPSet策略设计</h2>
+<p>  使用到的IPSet类型</p>
+<ul>
+<li>hash:ip 用于单独指定(si=源地址)或(di=目标地址)，这两种在本方案中都会使用</li>
+<li>hash:ip,port 用于指定(sisp=源地址-源端口)、(disp=目的地址-源端口)、(sidp=源地址-目的端口)、(didp=目的地址-目的端口)，后两种在本方案中会使用</li>
+<li>bitmap:port 用于单独指定端口(sp=源端口)或(dp=目的端口)，后一种在本方案中会使用</li>
+<li>list:set 用于容纳前述三种集合类型，且不能包含本身</li>
+</ul>
+<p>  目前存在的hash:ip hash:ip,port容量设置为1048576，bitmap:port容量设置为65536，外层list:set容量设置为65536，这样任意一个list:set集合可以容纳1048576*65536=600亿 个元素，整体结构如下：</p>
+<pre tabindex="0"><code>IPTables
+    in_tcp_acc_si        
+        set1
+        set2
+        ....
+        setn
+    in_tcp_rej_si        
+        set1
+        set2
+        ....
+        setn
+    in_udp_acc_si      
+    in_udp_rej_si
+    in_tcp_acc_dp    
+    in_tcp_rej_dp        
+    in_udp_acc_dp        
+    in_udp_rej_dp        
+    in_tcp_acc_sidp    
+    in_tcp_rej_sidp    
+    in_udp_acc_sidp    
+    in_udp_rej_sidp    
+    out_tcp_acc_di  
+    out_tcp_rej_di  
+    out_udp_acc_di  
+    out_udp_rej_di  
+    out_tcp_acc_dp  
+    out_tcp_rej_dp  
+    out_udp_acc_dp
+    out_udp_rej_dp  
+    out_tcp_acc_didp
+    out_tcp_rej_didp
+    out_udp_acc_didp
+    out_udp_rej_didp
+</code></pre><h3 id="ipset使用注意事项">IPSet使用注意事项</h3>
+<p>1.hash类型集合在iptables命令执行时大小确定，后期如果对该集合增加较多元素会发生哈希冲突，影响策略匹配。因此建立集合时需要设定一个较大容量
+2.ipset的集合在执行iptables后进行更新操作时，会在这段时间执行默认操作(reject)
+3.list:set不能包含list:set类型，只能包含其他类型</p>
+<h2 id="iptables策略设计">IPTables策略设计</h2>
+<p>  按如下形式固定IPTables策略，可避免IPTables本身策略的备份与恢复操作(IPTables进行restore操作时会全量还原重置，而IPSet进行restore操作时是增量进行的)：</p>
+<pre tabindex="0"><code>*filter
+:INPUT DROP [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT DROP [0:0]
+-A INPUT -i lo -j ACCEPT 
+-A INPUT -p icmp -j ACCEPT 
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT    
+-A INPUT -p tcp -m state --state NEW,ESTABLISHED -j ACCEPT -m set --set in_tcp_acc_si src         
+-A INPUT -p tcp -m state --state NEW,ESTABLISHED -j ACCEPT -m set --set in_tcp_acc_dp dst         
+-A INPUT -p tcp -m state --state NEW,ESTABLISHED -j ACCEPT -m set --set in_tcp_acc_sidp src,dst   
+-A INPUT -p tcp -m state --state NEW,ESTABLISHED -j REJECT -m set --set in_tcp_rej_si src         
+-A INPUT -p tcp -m state --state NEW,ESTABLISHED -j REJECT -m set --set in_tcp_rej_dp dst         
+-A INPUT -p tcp -m state --state NEW,ESTABLISHED -j REJECT -m set --set in_tcp_rej_sidp src,dst   
+-A INPUT -p udp -m state --state NEW,ESTABLISHED -j ACCEPT -m set --set in_udp_acc_si src         
+-A INPUT -p udp -m state --state NEW,ESTABLISHED -j ACCEPT -m set --set in_udp_acc_dp dst         
+-A INPUT -p udp -m state --state NEW,ESTABLISHED -j ACCEPT -m set --set in_udp_acc_sidp src,dst   
+-A INPUT -p udp -m state --state NEW,ESTABLISHED -j REJECT -m set --set in_udp_rej_si src         
+-A INPUT -p udp -m state --state NEW,ESTABLISHED -j REJECT -m set --set in_udp_rej_dp dst         
+-A INPUT -p udp -m state --state NEW,ESTABLISHED -j REJECT -m set --set in_udp_rej_sidp src,dst   
+-A INPUT -m state --state NEW -j REJECT
+-A OUTPUT -o lo -j ACCEPT 
+-A OUTPUT -p icmp -j ACCEPT 
+-A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT 
+-A OUTPUT -p tcp -m state --state NEW,ESTABLISHED -j ACCEPT -m set --set out_tcp_acc_di src       
+-A OUTPUT -p tcp -m state --state NEW,ESTABLISHED -j ACCEPT -m set --set out_tcp_acc_dp dst       
+-A OUTPUT -p tcp -m state --state NEW,ESTABLISHED -j ACCEPT -m set --set out_tcp_acc_didp src,dst 
+-A OUTPUT -p tcp -m state --state NEW,ESTABLISHED -j REJECT -m set --set out_tcp_rej_di src       
+-A OUTPUT -p tcp -m state --state NEW,ESTABLISHED -j REJECT -m set --set out_tcp_rej_dp dst       
+-A OUTPUT -p tcp -m state --state NEW,ESTABLISHED -j REJECT -m set --set out_tcp_rej_didp src,dst 
+-A OUTPUT -p udp -m state --state NEW,ESTABLISHED -j ACCEPT -m set --set out_udp_acc_di src       
+-A OUTPUT -p udp -m state --state NEW,ESTABLISHED -j ACCEPT -m set --set out_udp_acc_dp dst       
+-A OUTPUT -p udp -m state --state NEW,ESTABLISHED -j ACCEPT -m set --set out_udp_acc_didp src,dst 
+-A OUTPUT -p udp -m state --state NEW,ESTABLISHED -j REJECT -m set --set out_udp_rej_di src       
+-A OUTPUT -p udp -m state --state NEW,ESTABLISHED -j REJECT -m set --set out_udp_rej_dp dst       
+-A OUTPUT -p udp -m state --state NEW,ESTABLISHED -j REJECT -m set --set out_udp_rej_didp src,dst 
+-A OUTPUT -j LOG --log-prefix &#34;iptables:&#34;
+-A OUTPUT -m state --state NEW -j REJECT 
+COMMIT
+</code></pre><p>  现在来考虑IPSet指定的五元组的问题</p>
+<ul>
+<li>INPUT连接：考虑socket的accept函数，源端即远程主机，目的端即本机。这里只考虑新链接(NEW)</li>
+<li>
+<ul>
+<li>源地址 即远程主机地址，可以作为策略限制因子</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>源端口 即远程主机端口，一般为随机端口，不可作为策略限制因子</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>目的地址 即本机地址，由于是固定的，无需作为策略限制因子</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>目的端口 即本机端口，可以作为策略限制因子</li>
+</ul>
+</li>
+<li>OUTPUT连接：考虑socket的connect函数，源端即本机，目的端即远程主机。这里只考虑新链接(NEW)</li>
+<li>
+<ul>
+<li>源地址 即本机地址，由于是固定的，无需作为策略限制因子</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>源端口 即本机端口，一般为随机端口，不可作为策略限制因子</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>目的地址 即远程主机地址，可以作为策略限制因子</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>目的端口 即远程主机端口，可以作为策略限制因子</li>
+</ul>
+</li>
+</ul>
+<p>  综上，对于INPUT连接，可以指定源地址(si)、目的端口(dp)、源地址+目的端口(sidp)；而对于OUTPUT连接，可以指定目的地址(di)、目的端口(dp)、目的地址+目的端口(didp)</p>
+<h2 id="ipset方案相比iptables方案的优点">IPSet方案相比IPTables方案的优点</h2>
+<ul>
+<li>IPSet基于IPTables方案，是对IPTables技术的优化，将线性策略查找优化为集合元素查找，提高了通信速度</li>
+<li>IPSet方案在进行下发更新时，只需要对IPSet策略进行更新，无需对IPTables策略进行更新，由于在这种情况下IPTables条目极少，且无需还原操作，因此在更新的时间段对网络策略的影响较小，不会出现因为IPTables重置而导致短时间策略失效问题</li>
+</ul>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/linux_posts/20160909_iter_mod/">
+                        Win/Linux/Mac遍历进程模块
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/linux_posts/20181212_preload_hook/">
+                        Preload Hook原理与实践
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

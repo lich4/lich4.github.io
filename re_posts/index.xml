@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Re_posts on 超哥的博客</title>
+    <link>https://lich4.github.io/re_posts/</link>
+    <description>Recent content in Re_posts on 超哥的博客</description>
+    <generator>Hugo</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Sat, 16 May 2020 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://lich4.github.io/re_posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>佐罗(Zorro)改机改串一键新机原理分析</title>
+      <link>https://lich4.github.io/re_posts/20200516_zorro/</link>
+      <pubDate>Sat, 16 May 2020 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20200516_zorro/</guid>
+      <description>佐罗(Zorro)改机改串一键新机原理分析</description>
+    </item>
+    <item>
+      <title>361改机改串一键新机原理分析</title>
+      <link>https://lich4.github.io/re_posts/20191212_361/</link>
+      <pubDate>Thu, 12 Dec 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20191212_361/</guid>
+      <description>361改机改串一键新机原理分析</description>
+    </item>
+    <item>
+      <title>抖音越狱检测深度分析</title>
+      <link>https://lich4.github.io/re_posts/20191201_douyin_jb_detect/</link>
+      <pubDate>Sun, 01 Dec 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20191201_douyin_jb_detect/</guid>
+      <description>抖音越狱检测深度分析</description>
+    </item>
+    <item>
+      <title>爱伪装(AWZ)改机改串一键新机原理分析</title>
+      <link>https://lich4.github.io/re_posts/20190827_awz/</link>
+      <pubDate>Tue, 27 Aug 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20190827_awz/</guid>
+      <description>爱伪装(AWZ)改机改串一键新机原理分析</description>
+    </item>
+    <item>
+      <title>iOS逆向分析笔记</title>
+      <link>https://lich4.github.io/re_posts/20180101_ios_re/</link>
+      <pubDate>Mon, 01 Jan 2018 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20180101_ios_re/</guid>
+      <description>iOS逆向分析笔记</description>
+    </item>
+    <item>
+      <title>Android逆向分析笔记</title>
+      <link>https://lich4.github.io/re_posts/20170110_android_re/</link>
+      <pubDate>Tue, 10 Jan 2017 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20170110_android_re/</guid>
+      <description>Android逆向分析笔记</description>
+    </item>
+    <item>
+      <title>010editor脚本语法深入分析</title>
+      <link>https://lich4.github.io/re_posts/20160710_010editor/</link>
+      <pubDate>Sun, 10 Jul 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20160710_010editor/</guid>
+      <description>010editor脚本语法深入分析</description>
+    </item>
+    <item>
+      <title>C&#43;&#43;逆向分析技巧</title>
+      <link>https://lich4.github.io/re_posts/20141010_pe_re/</link>
+      <pubDate>Fri, 10 Oct 2014 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/re_posts/20141010_pe_re/</guid>
+      <description>C++逆向分析技巧</description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    MFC消息响应函数逆向分析 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/win_posts/20150629_mfc_msgcb/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/win_posts/">Win_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/win_posts/20150629_mfc_msgcb/">MFC消息响应函数逆向分析</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">MFC消息响应函数逆向分析</h1>
+    
+    <p class="single-summary">MFC消息响应函数逆向分析</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2015-06-29T00:00:00&#43;00:00">June 29, 2015</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E9%80%86%E5%90%91/">#逆向</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#尝试">尝试</a></li>
+    <li><a href="#从mfc源码找答案">从MFC源码找答案</a></li>
+    <li><a href="#回到分析">回到分析</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="背景">背景</h2>
+<p>  MFC-Microsoft Foundation Class，微软基础类库，他封装了Windows API以便用户更快速的开发界面功能程序。然而该库及其庞大而复杂，需要有C++的功底否则很难解决bug，逆向起来也是需要一定技巧。Windows消息以如下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span>#define WM_NULL                                                        0x0000                        0
+</span></span><span style="display:flex;"><span> #define WM_CREATE                                                0x0001
+</span></span><span style="display:flex;"><span> #define WM_DESTROY                                                0x0002
+</span></span><span style="display:flex;"><span> #define WM_MOVE                                                        0x0003
+</span></span><span style="display:flex;"><span> #define WM_SIZE                                                        0x0005
+</span></span><span style="display:flex;"><span> #define WM_ACTIVATE                                                0x0006
+</span></span><span style="display:flex;"><span> #define WM_SETFOCUS                                                0x0007
+</span></span><span style="display:flex;"><span> #define WM_KILLFOCUS                                        0x0008
+</span></span><span style="display:flex;"><span> #define WM_ENABLE                       0x000A
+</span></span><span style="display:flex;"><span> #define WM_SETREDRAW                    0x000B
+</span></span><span style="display:flex;"><span> #define WM_SETTEXT                      0x000C
+</span></span><span style="display:flex;"><span> #define WM_GETTEXT                      0x000D
+</span></span><span style="display:flex;"><span> #define WM_GETTEXTLENGTH                0x000E
+</span></span><span style="display:flex;"><span> #define WM_PAINT                        0x000F
+</span></span><span style="display:flex;"><span>// more
+</span></span></code></pre></div><h2 id="尝试">尝试</h2>
+<p>  如果拿其他自己写的程序来说明显然没有说服力，我们就找一个MFC写的来看，超凡搜索BeyondSeacher ，下载下来以后主程序是P2P Searcher.exe，网上说他们抄袭了amule的，我们就来看看究竟。用peid看做初步判断，可以看到Microsoft Visual C++ 7.0 [Debug]    IDA载入，先来找入口点，Start-&gt;WinMain-&gt;可以看到了IDA识别出了Afx系内部函数，且为静态调用。对于对话框类MFC程序，C??App和C???Dlg是关键类，在源码中可以看到这一点，总是有个全局对象，例如“CtestmfcApp theApp;”，那么就需要在c库_initc()中进行初始化(__xc_a -&gt; __xc_z)，另外C???App构造的时候会先构造父类CWinApp，且构造父类之后会设置设置虚表从而构造子类，C???Dlg过程类似。根据该原理可以定位到这2个类的位置。先找到CWinApp::CWinApp构造函数，发现索引位置：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>__thiscall <span style="color:#5f5fff">sub_401850</span>(<span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span><span style="color:#ec0000">this</span>)
+</span></span><span style="display:flex;"><span> {
+</span></span><span style="display:flex;"><span>   <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>v1; // esi@1
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>   v1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">this</span>;
+</span></span><span style="display:flex;"><span>   CWinApp<span style="color:#ec0000">::</span>CWinApp(<span style="color:#ec0000">this</span>, <span style="color:#008900">0</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)v1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>off_4315F8;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">return</span> v1;
+</span></span><span style="display:flex;"><span> }
+</span></span></code></pre></div><p>显然是C???App的构造函数，先不急着看，往上层找：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">sub_42FF70</span>()
+</span></span><span style="display:flex;"><span> {
+</span></span><span style="display:flex;"><span>   sub_401850(<span style="color:#ec0000">&amp;</span>unk_43F0E0);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">return</span> atexit(sub_42FFF0);
+</span></span><span style="display:flex;"><span> }
+</span></span></code></pre></div><p>  可见此处执行的是c库，程序启动时构造C???App myapp，同时注册退出时的析构函数，以便清理资源，在往上看已经是一堆要在启动时要初始化的函数了，接着看sub_401850，其虚表为off_4315F8：</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">.rdata:004315F8 off_4315F8      dd offset sub_42B312    ; DATA XREF: sub_401850+A o
+ .rdata:004315FC                 dd offset sub_401970
+ .rdata:00431600                 dd offset nullsub_4
+ .rdata:00431604                 dd offset ?OnCmdMsg@CCmdTarget@@UAEHIHPAXPAUAFX_CMDHANDLERINFO@@@Z ; CCmdTarget::OnCmdMsg(uint,int,void *,AFX_CMDHANDLERINFO *)
+ .rdata:00431608                 dd offset ?OnFinalRelease@CCmdTarget@@UAEXXZ ; CCmdTarget::OnFinalRelease(void)
+ .rdata:0043160C                 dd offset sub_4229A6
+ .rdata:00431610                 dd offset ?_Get_deleter@_Ref_count_base@std@@UBEPAXABVtype_info@@@Z_6 ; std::_Ref_count_base::_Get_deleter(type_info const &amp;)
+ .rdata:00431614                 dd offset sub_4229AC
+ .rdata:00431618                 dd offset sub_4229AC
+ .rdata:0043161C                 dd offset ?GetTypeLib@CCmdTarget@@UAEJKPAPAUITypeLib@@@Z ; CCmdTarget::GetTypeLib(ulong,ITypeLib * *)
+ .rdata:00431620                 dd offset sub_401840
+ .rdata:00431624                 dd offset sub_422A0C
+ .rdata:00431628                 dd offset sub_4229BD
+ .rdata:0043162C                 dd offset sub_422A06
+ .rdata:00431630                 dd offset sub_4229C9
+ .rdata:00431634                 dd offset sub_4229C3
+ .rdata:00431638                 dd offset sub_4229FD
+。。。。。。。。。。。。
+</code></pre><p>  根据虚函数特点，如果子类重新定义了虚函数后会覆盖父类虚函数，因此未识别出来的均是经过修改的，那么我们只需要对照MFC源码中CWinApp的类布局，就可以知道未识别出的函数是哪些了，具体操作不再赘述，C???App最重要的是InitInstance函数，为虚表第21个函数，我们来看他做了些什么：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span><span style="color:#5f5fff">int</span> __thiscall <span style="color:#5f5fff">sub_401880</span>(CWinApp <span style="color:#ec0000">*</span><span style="color:#ec0000">this</span>)
+</span></span><span style="display:flex;"><span> {
+</span></span><span style="display:flex;"><span>   CWinApp <span style="color:#ec0000">*</span>v1; // esi@1
+</span></span><span style="display:flex;"><span>   <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>v2; // eax@1
+</span></span><span style="display:flex;"><span>   <span style="color:#5f5fff">int</span> v3; // eax@2
+</span></span><span style="display:flex;"><span>   <span style="color:#5f5fff">char</span> v5; // [sp+8h] [bp-2C8h]@1
+</span></span><span style="display:flex;"><span>   <span style="color:#5f5fff">int</span> v6; // [sp+2CCh] [bp-4h]@1
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>   v1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">this</span>;
+</span></span><span style="display:flex;"><span>   InitCommonControls();
+</span></span><span style="display:flex;"><span>   CWinApp<span style="color:#ec0000">::</span>InitInstance(v1);
+</span></span><span style="display:flex;"><span>   AfxEnableControlContainer(<span style="color:#008900">0</span>);
+</span></span><span style="display:flex;"><span>   sub_42B8C2(<span style="color:#008900">&#34;应用程序向导生成的本地应用程序&#34;</span>);
+</span></span><span style="display:flex;"><span>   sub_40A150(<span style="color:#ec0000">&amp;</span>v5, <span style="color:#008900">0</span>);
+</span></span><span style="display:flex;"><span>   v6 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v1 <span style="color:#ec0000">+</span> <span style="color:#008900">7</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>v5;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">CDialog</span>:oModal((CDialog <span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>v5);
+</span></span><span style="display:flex;"><span>   v2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">operator</span> <span style="color:#ec0000">new</span>(<span style="color:#008900">1u</span>);
+</span></span><span style="display:flex;"><span>   LOBYTE(v6) <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">if</span> ( v2 )
+</span></span><span style="display:flex;"><span>     v3 <span style="color:#ec0000">=</span> sub_401000(v2);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>     v3 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   LOBYTE(v6) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   j_uninit(v3);
+</span></span><span style="display:flex;"><span>   v6 <span style="color:#ec0000">=</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>   sub_409E20(<span style="color:#ec0000">&amp;</span>v5);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">return</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span> }
+</span></span></code></pre></div><p>  我们只来讨论和普通CWinApp构造函数不同的地方，可以得知v5是我们的C???Dlg，而下面v2 = operator new(1u)显然是某个构造函数：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span>BOOL CP2pSearcherApp<span style="color:#ec0000">::</span>InitInstance()
+</span></span><span style="display:flex;"><span> {
+</span></span><span style="display:flex;"><span>         InitCommonControls();
+</span></span><span style="display:flex;"><span>         CWinApp<span style="color:#ec0000">::</span>InitInstance();
+</span></span><span style="display:flex;"><span>         SetRegistryKey(_T(<span style="color:#008900">&#34;应用程序向导生成的本地应用程序&#34;</span>));
+</span></span><span style="display:flex;"><span>         CP2pSearcherDlg dlg;
+</span></span><span style="display:flex;"><span>         m_pMainWnd<span style="color:#ec0000">=&amp;</span>Dlg;
+</span></span><span style="display:flex;"><span>         <span style="color:#5f5fff">int</span> nResponse<span style="color:#ec0000">=</span>dlg.DoModal();
+</span></span><span style="display:flex;"><span>         <span style="color:#ec0000">if</span> (nResponse <span style="color:#ec0000">==</span> IDOK)
+</span></span><span style="display:flex;"><span>         {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>         }
+</span></span><span style="display:flex;"><span>         <span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span> (nResponse <span style="color:#ec0000">==</span> IDCANCEL)
+</span></span><span style="display:flex;"><span>         {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>         }
+</span></span><span style="display:flex;"><span>         dispatch<span style="color:#ec0000">*</span> mydispatch<span style="color:#ec0000">=</span><span style="color:#ec0000">new</span> dispatch;        
+</span></span><span style="display:flex;"><span>         mydispatch<span style="color:#ec0000">-&gt;</span>uninit();
+</span></span><span style="display:flex;"><span> }
+</span></span></code></pre></div><p>下面来看CP2pSearcherDlg：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>__thiscall <span style="color:#5f5fff">sub_40A150</span>(<span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span><span style="color:#ec0000">this</span>, <span style="color:#5f5fff">int</span> a2)
+</span></span><span style="display:flex;"><span> {
+</span></span><span style="display:flex;"><span>   v2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">this</span>;
+</span></span><span style="display:flex;"><span>   CDialog<span style="color:#ec0000">::</span>CDialog(<span style="color:#ec0000">this</span>, <span style="color:#008900">0x66u</span>, a2);
+</span></span><span style="display:flex;"><span>   v17 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>off_431C50;
+</span></span><span style="display:flex;"><span>   CWnd<span style="color:#ec0000">::</span>CWnd((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">116</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">29</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>off_43326C;
+</span></span><span style="display:flex;"><span>   CWnd<span style="color:#ec0000">::</span>CWnd((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">196</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">49</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>off_4334A4;
+</span></span><span style="display:flex;"><span>   CWnd<span style="color:#ec0000">::</span>CWnd((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">276</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">69</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>off_43326C;
+</span></span><span style="display:flex;"><span>   CWnd<span style="color:#ec0000">::</span>CWnd((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">356</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">89</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>off_43326C;
+</span></span><span style="display:flex;"><span>   CWnd<span style="color:#ec0000">::</span>CWnd((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">436</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">109</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>off_43311C;
+</span></span><span style="display:flex;"><span>   CWnd<span style="color:#ec0000">::</span>CWnd((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">516</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">129</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>off_4335F4;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">149</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">156</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">15</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">155</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_BYTE <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">604</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   LOBYTE(v17) <span style="color:#ec0000">=</span> <span style="color:#008900">7</span>;
+</span></span><span style="display:flex;"><span>   v3 <span style="color:#ec0000">=</span> sub_402BB0((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">628</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">158</span>) <span style="color:#ec0000">=</span> v3;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>(_BYTE <span style="color:#ec0000">*</span>)(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">45</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(<span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">158</span>) <span style="color:#ec0000">+</span> <span style="color:#008900">4</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">158</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">**</span>((_DWORD <span style="color:#ec0000">**</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">158</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">158</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(<span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">158</span>) <span style="color:#ec0000">+</span> <span style="color:#008900">8</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">158</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">159</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   LOBYTE(v17) <span style="color:#ec0000">=</span> <span style="color:#008900">8</span>;
+</span></span><span style="display:flex;"><span>   v4 <span style="color:#ec0000">=</span> sub_402BF0((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">640</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">161</span>) <span style="color:#ec0000">=</span> v4;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>(_BYTE <span style="color:#ec0000">*</span>)(v4 <span style="color:#ec0000">+</span> <span style="color:#008900">57</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(<span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">161</span>) <span style="color:#ec0000">+</span> <span style="color:#008900">4</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">161</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">**</span>((_DWORD <span style="color:#ec0000">**</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">161</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">161</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(<span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">161</span>) <span style="color:#ec0000">+</span> <span style="color:#008900">8</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">161</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">162</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   v5 <span style="color:#ec0000">=</span> (<span style="color:#5f5fff">int</span>)((<span style="color:#5f5fff">char</span> <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">656</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(v5 <span style="color:#ec0000">+</span> <span style="color:#008900">4</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(v5 <span style="color:#ec0000">+</span> <span style="color:#008900">8</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)(v5 <span style="color:#ec0000">+</span> <span style="color:#008900">12</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   LOBYTE(v17) <span style="color:#ec0000">=</span> <span style="color:#008900">10</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">168</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">169</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">170</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   AfxGetModuleState();
+</span></span><span style="display:flex;"><span>   v6 <span style="color:#ec0000">=</span> AfxGetModuleState();
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">28</span>) <span style="color:#ec0000">=</span> LoadIconA(<span style="color:#ec0000">*</span>((HINSTANCE <span style="color:#ec0000">*</span>)v6 <span style="color:#ec0000">+</span> <span style="color:#008900">3</span>), (LPCSTR)<span style="color:#008900">0x80</span>);
+</span></span><span style="display:flex;"><span>   v7 <span style="color:#ec0000">=</span> <span style="color:#ec0000">operator</span> <span style="color:#ec0000">new</span>(<span style="color:#008900">1u</span>);
+</span></span><span style="display:flex;"><span>   LOBYTE(v17) <span style="color:#ec0000">=</span> <span style="color:#008900">11</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">if</span> ( v7 )
+</span></span><span style="display:flex;"><span>     v8 <span style="color:#ec0000">=</span> sub_401000(v7);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>     v8 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   LOBYTE(v17) <span style="color:#ec0000">=</span> <span style="color:#008900">10</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">149</span>) <span style="color:#ec0000">=</span> v8;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_BYTE <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">684</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   v9 <span style="color:#ec0000">=</span> <span style="color:#ec0000">operator</span> <span style="color:#ec0000">new</span>(<span style="color:#008900">0x10u</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">if</span> ( v9 )
+</span></span><span style="display:flex;"><span>   {
+</span></span><span style="display:flex;"><span>     <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)v9 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>     <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v9 <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>     <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v9 <span style="color:#ec0000">+</span> <span style="color:#008900">2</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>     <span style="color:#ec0000">*</span>((_BYTE <span style="color:#ec0000">*</span>)v9 <span style="color:#ec0000">+</span> <span style="color:#008900">12</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>   {
+</span></span><span style="display:flex;"><span>     v9 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">173</span>) <span style="color:#ec0000">=</span> v9;
+</span></span><span style="display:flex;"><span>   sub_40AB90(v9);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">172</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   v15 <span style="color:#ec0000">=</span> <span style="color:#008900">15</span>;
+</span></span><span style="display:flex;"><span>   v14 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   LOBYTE(v13) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   LOBYTE(v17) <span style="color:#ec0000">=</span> <span style="color:#008900">12</span>;
+</span></span><span style="display:flex;"><span>   sub_4016A0(<span style="color:#ec0000">&amp;</span>unk_431DA8, <span style="color:#008900">4</span>);
+</span></span><span style="display:flex;"><span>   v16 <span style="color:#ec0000">=</span> <span style="color:#008900">60</span>;
+</span></span><span style="display:flex;"><span>   sub_4085C0(<span style="color:#ec0000">&amp;</span>v12);
+</span></span><span style="display:flex;"><span>   sub_4016A0(<span style="color:#ec0000">&amp;</span>unk_431B40, <span style="color:#008900">6</span>);
+</span></span><span style="display:flex;"><span>   v16 <span style="color:#ec0000">=</span> <span style="color:#008900">270</span>;
+</span></span><span style="display:flex;"><span>   sub_4085C0(<span style="color:#ec0000">&amp;</span>v12);
+</span></span><span style="display:flex;"><span>   sub_4016A0(<span style="color:#ec0000">&amp;</span>unk_431C3C, <span style="color:#008900">8</span>);
+</span></span><span style="display:flex;"><span>   v16 <span style="color:#ec0000">=</span> <span style="color:#008900">90</span>;
+</span></span><span style="display:flex;"><span>   sub_4085C0(<span style="color:#ec0000">&amp;</span>v12);
+</span></span><span style="display:flex;"><span>   sub_4016A0(<span style="color:#008900">&#34;hash值&#34;</span>, <span style="color:#008900">6</span>);
+</span></span><span style="display:flex;"><span>   v16 <span style="color:#ec0000">=</span> <span style="color:#008900">280</span>;
+</span></span><span style="display:flex;"><span>   sub_4085C0(<span style="color:#ec0000">&amp;</span>v12);
+</span></span><span style="display:flex;"><span>   sub_4016A0(<span style="color:#ec0000">&amp;</span>unk_431C34, <span style="color:#008900">6</span>);
+</span></span><span style="display:flex;"><span>   v16 <span style="color:#ec0000">=</span> <span style="color:#008900">90</span>;
+</span></span><span style="display:flex;"><span>   sub_4085C0(<span style="color:#ec0000">&amp;</span>v12);
+</span></span><span style="display:flex;"><span>   v10 <span style="color:#ec0000">=</span> v15 <span style="color:#ec0000">&lt;</span> <span style="color:#008900">0x10</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">163</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">8</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>v10 )
+</span></span><span style="display:flex;"><span>     j__free(v13);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">return</span> v2;
+</span></span><span style="display:flex;"><span> }
+</span></span></code></pre></div><p>可以看到虚表为off_431C50：</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">.rdata:00431C50 off_431C50      dd offset loc_42B8BC    ; DATA XREF: sub_409E20+21 o
+ .rdata:00431C50                                         ; sub_40A150+41 o
+ .rdata:00431C50                                         ; Exception filter 1 for function 401990
+ .rdata:00431C54                 dd offset sub_40A440
+ .rdata:00431C58                 dd offset nullsub_4
+ .rdata:00431C5C                 dd offset unknown_libname_209 ; MFC 3.1-11.0 32bit
+ .rdata:00431C60                 dd offset ?OnFinalRelease@CWnd@@UAEXXZ ; CWnd::OnFinalRelease(void)
+ .rdata:00431C64                 dd offset sub_4229A6
+ .rdata:00431C68                 dd offset ?_Get_deleter@_Ref_count_base@std@@UBEPAXABVtype_info@@@Z_6 ; std::_Ref_count_base::_Get_deleter(type_info const &amp;)
+ .rdata:00431C6C                 dd offset sub_4229AC
+ .rdata:00431C70                 dd offset sub_4229AC
+ .rdata:00431C74                 dd offset ?GetTypeLib@CCmdTarget@@UAEJKPAPAUITypeLib@@@Z ; CCmdTarget::GetTypeLib(ulong,ITypeLib * *)
+ .rdata:00431C78                 dd offset sub_401C60
+ .rdata:00431C7C                 dd offset sub_422A0C
+ .rdata:00431C80                 dd offset sub_4229BD
+ .rdata:00431C84                 dd offset sub_422A06
+ .rdata:00431C88                 dd offset sub_423A14
+ .rdata:00431C8C                 dd offset sub_4229C3
+ .rdata:00431C90                 dd offset sub_4229FD
+</code></pre><p>  同样我们只关注很少的一些，OnInitDialog为初始化函数，GetMessageMap可以得到消息响应函数，OnInitDialog做的最重要的一件事为：</p>
+<pre tabindex="0"><code>if ( !sub_401020(*((_DWORD *)v1 + 149)) )
+     sub_4243C6(&#34;无法连入emule网络&#34;, &#34;警告&#34;, 0);
+</code></pre><p>  而sub_4243C6做的是和上面uninit对应的init，都是dispatch.dll中的， 而149对应的变量则在CP2pSearcherDlg构造函数中可以找到踪迹。</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span> v7 <span style="color:#ec0000">=</span> <span style="color:#ec0000">operator</span> <span style="color:#ec0000">new</span>(<span style="color:#008900">1u</span>);
+</span></span><span style="display:flex;"><span>   LOBYTE(v17) <span style="color:#ec0000">=</span> <span style="color:#008900">11</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">if</span> ( v7 )
+</span></span><span style="display:flex;"><span>     v8 <span style="color:#ec0000">=</span> sub_401000(v7);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>     v8 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   LOBYTE(v17) <span style="color:#ec0000">=</span> <span style="color:#008900">10</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">149</span>) <span style="color:#ec0000">=</span> v8;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_BYTE <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">684</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   v9 <span style="color:#ec0000">=</span> <span style="color:#ec0000">operator</span> <span style="color:#ec0000">new</span>(<span style="color:#008900">0x10u</span>);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">if</span> ( v9 )
+</span></span><span style="display:flex;"><span>   {
+</span></span><span style="display:flex;"><span>     <span style="color:#ec0000">*</span>(_DWORD <span style="color:#ec0000">*</span>)v9 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>     <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v9 <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>     <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v9 <span style="color:#ec0000">+</span> <span style="color:#008900">2</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>     <span style="color:#ec0000">*</span>((_BYTE <span style="color:#ec0000">*</span>)v9 <span style="color:#ec0000">+</span> <span style="color:#008900">12</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>   {
+</span></span><span style="display:flex;"><span>     v9 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">173</span>) <span style="color:#ec0000">=</span> v9;
+</span></span><span style="display:flex;"><span>   sub_40AB90(v9);
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">172</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   v15 <span style="color:#ec0000">=</span> <span style="color:#008900">15</span>;
+</span></span><span style="display:flex;"><span>   v14 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   LOBYTE(v13) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>   LOBYTE(v17) <span style="color:#ec0000">=</span> <span style="color:#008900">12</span>;
+</span></span><span style="display:flex;"><span>   sub_4016A0(<span style="color:#ec0000">&amp;</span>unk_431DA8, <span style="color:#008900">4</span>);
+</span></span><span style="display:flex;"><span>   v16 <span style="color:#ec0000">=</span> <span style="color:#008900">60</span>;
+</span></span><span style="display:flex;"><span>   sub_4085C0(<span style="color:#ec0000">&amp;</span>v12);
+</span></span><span style="display:flex;"><span>   sub_4016A0(<span style="color:#ec0000">&amp;</span>unk_431B40, <span style="color:#008900">6</span>);
+</span></span><span style="display:flex;"><span>   v16 <span style="color:#ec0000">=</span> <span style="color:#008900">270</span>;
+</span></span><span style="display:flex;"><span>   sub_4085C0(<span style="color:#ec0000">&amp;</span>v12);
+</span></span><span style="display:flex;"><span>   sub_4016A0(<span style="color:#ec0000">&amp;</span>unk_431C3C, <span style="color:#008900">8</span>);
+</span></span><span style="display:flex;"><span>   v16 <span style="color:#ec0000">=</span> <span style="color:#008900">90</span>;
+</span></span><span style="display:flex;"><span>   sub_4085C0(<span style="color:#ec0000">&amp;</span>v12);
+</span></span><span style="display:flex;"><span>   sub_4016A0(<span style="color:#008900">&#34;hash值&#34;</span>, <span style="color:#008900">6</span>);
+</span></span><span style="display:flex;"><span>   v16 <span style="color:#ec0000">=</span> <span style="color:#008900">280</span>;
+</span></span><span style="display:flex;"><span>   sub_4085C0(<span style="color:#ec0000">&amp;</span>v12);
+</span></span><span style="display:flex;"><span>   sub_4016A0(<span style="color:#ec0000">&amp;</span>unk_431C34, <span style="color:#008900">6</span>);
+</span></span><span style="display:flex;"><span>   v16 <span style="color:#ec0000">=</span> <span style="color:#008900">90</span>;
+</span></span><span style="display:flex;"><span>   sub_4085C0(<span style="color:#ec0000">&amp;</span>v12);
+</span></span><span style="display:flex;"><span>   v10 <span style="color:#ec0000">=</span> v15 <span style="color:#ec0000">&lt;</span> <span style="color:#008900">0x10</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">*</span>((_DWORD <span style="color:#ec0000">*</span>)v2 <span style="color:#ec0000">+</span> <span style="color:#008900">163</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">8</span>;
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>v10 )
+</span></span><span style="display:flex;"><span>     j__free(v13);
+</span></span></code></pre></div><p>  看完了之后我们知道了真正做的是dispatch.dll中的init和uninit，下面我们再来看消息处理</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#ec0000">****</span><span style="color:#5f5fff">sub_401C60</span>()
+</span></span><span style="display:flex;"><span> {
+</span></span><span style="display:flex;"><span>   <span style="color:#ec0000">return</span> <span style="color:#ec0000">&amp;</span>off_4316D0;
+</span></span><span style="display:flex;"><span> }
+</span></span><span style="display:flex;"><span> .<span style="color:#ec0000">rdata</span>:<span style="color:#008900">004316</span>D0 off_4316D0      dd offset off_432340    ; DATA <span style="color:#ec0000">XREF</span>: sub_401C60 o
+</span></span><span style="display:flex;"><span> .<span style="color:#ec0000">rdata</span>:<span style="color:#008900">004316</span>D4                 dd offset dword_4316D8
+</span></span><span style="display:flex;"><span> .<span style="color:#ec0000">rdata</span>:<span style="color:#008900">004316</span>D8 dword_4316D8    dd <span style="color:#008900">113</span>h                 ; DATA <span style="color:#ec0000">XREF</span>: .<span style="color:#ec0000">rdata</span>:<span style="color:#008900">004316</span>D4 o
+</span></span><span style="display:flex;"><span> .<span style="color:#ec0000">rdata</span>:<span style="color:#008900">004316</span>DC                 dd <span style="color:#008900">0</span>
+</span></span><span style="display:flex;"><span> .<span style="color:#ec0000">rdata</span>:<span style="color:#008900">004316E0</span>                 dd <span style="color:#008900">0</span>
+</span></span><span style="display:flex;"><span> .<span style="color:#ec0000">rdata</span>:<span style="color:#008900">004316E4</span>                 dd <span style="color:#008900">0</span>
+</span></span><span style="display:flex;"><span> .<span style="color:#ec0000">rdata</span>:<span style="color:#008900">004316E8</span>                 dd <span style="color:#008900">11</span>h
+</span></span><span style="display:flex;"><span> .<span style="color:#ec0000">rdata</span>:<span style="color:#008900">004316</span>EC                 dd offset OnTimer
+</span></span><span style="display:flex;"><span> .<span style="color:#ec0000">rdata</span>:<span style="color:#008900">004316F</span><span style="color:#008900">0</span>                 dd <span style="color:#008900">112</span>h
+</span></span><span style="display:flex;"><span> .<span style="color:#ec0000">rdata</span>:<span style="color:#008900">004316F</span><span style="color:#008900">4</span>                 dd <span style="color:#008900">0</span>
+</span></span><span style="display:flex;"><span> .<span style="color:#ec0000">rdata</span>:<span style="color:#008900">004316F</span><span style="color:#008900">8</span>                 dd <span style="color:#008900">0</span>
+</span></span><span style="display:flex;"><span> .<span style="color:#ec0000">rdata</span>:<span style="color:#008900">004316F</span>C                 dd <span style="color:#008900">0</span>
+</span></span><span style="display:flex;"><span> .<span style="color:#ec0000">rdata</span>:<span style="color:#008900">00431700</span>                 dd <span style="color:#008900">1</span>Bh
+</span></span><span style="display:flex;"><span> .<span style="color:#ec0000">rdata</span>:<span style="color:#008900">00431704</span>                 dd offset OnSysCommand
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">。。。。。。。。。。。</span>
+</span></span></code></pre></div><h2 id="从mfc源码找答案">从MFC源码找答案</h2>
+<p>  先来看MFC里的相关知识，来说明这里为何这么做，我们每添加一个消息，都会在消息映射里增加一条，例如</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span>BEGIN_MESSAGE_MAP(CtestmfcDlg, CDialogEx)
+</span></span><span style="display:flex;"><span>         ON_WM_PAINT()
+</span></span><span style="display:flex;"><span>         ON_WM_QUERYDRAGICON()
+</span></span><span style="display:flex;"><span>         ON_BN_CLICKED(IDOK, <span style="color:#ec0000">&amp;</span>CtestmfcDlg<span style="color:#ec0000">::</span>OnBnClickedOk)
+</span></span><span style="display:flex;"><span>         ON_NOTIFY(NM_RCLICK, IDC_LIST1, <span style="color:#ec0000">&amp;</span>CtestmfcDlg<span style="color:#ec0000">::</span>OnNMRClickList1)
+</span></span><span style="display:flex;"><span> END_MESSAGE_MAP()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> <span style="color:#5f5fff">AFX_MSGMAP</span>
+</span></span><span style="display:flex;"><span> {
+</span></span><span style="display:flex;"><span>         <span style="color:#ec0000">const</span> AFX_MSGMAP<span style="color:#ec0000">*</span> (PASCAL<span style="color:#ec0000">*</span> pfnGetBaseMap)();
+</span></span><span style="display:flex;"><span>         <span style="color:#ec0000">const</span> AFX_MSGMAP_ENTRY<span style="color:#ec0000">*</span> lpEntries;
+</span></span><span style="display:flex;"><span> };
+</span></span><span style="display:flex;"><span> <span style="color:#ec0000">struct</span> <span style="color:#5f5fff">AFX_MSGMAP_ENTRY</span>
+</span></span><span style="display:flex;"><span> {
+</span></span><span style="display:flex;"><span>         UINT nMessage;   // windows message
+</span></span><span style="display:flex;"><span>         UINT nCode;      // control code or WM_NOTIFY code
+</span></span><span style="display:flex;"><span>         UINT nID;        // control ID (or 0 for windows messages)
+</span></span><span style="display:flex;"><span>         UINT nLastID;    // used for entries specifying a range of control id&#39;s
+</span></span><span style="display:flex;"><span>         UINT_PTR nSig;       // signature type (action) or pointer to message #
+</span></span><span style="display:flex;"><span>         AFX_PMSG pfn;    // routine to call (or special value)
+</span></span><span style="display:flex;"><span> };
+</span></span></code></pre></div><h2 id="回到分析">回到分析</h2>
+<p>  从这里很显然的可以看到如何对应上消息响应了。。。。。。。不用解释了吧，如此，对照前面说的windows消息代码，结合exescope查看控件id，可以吧004316D8开始的AFX_MSGMAP_ENTRY标注成消息回调函数：</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">OnTimer
+OnSysCommand
+OnPaint
+OnDragIcon
+OnSearch
+OnSelectSource
+OnTcnSelChange
+OnLvnColumnClick
+OnNMLVRClickList
+OnNMTCRClickList
+OnNMLVDoubleClick
+OnSize
+</code></pre>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150628_disk_mmap/">
+                        实现磁盘内存映射
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150623_dllentry_deadlock/">
+                        Dll入口函数中Wait系函数死锁的解决
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

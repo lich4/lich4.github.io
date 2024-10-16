@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    010editor脚本语法深入分析 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/re_posts/20160710_010editor/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/re_posts/">Re_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/re_posts/20160710_010editor/">010editor脚本语法深入分析</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">010editor脚本语法深入分析</h1>
+    
+    <p class="single-summary">010editor脚本语法深入分析</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2016-07-10T00:00:00&#43;00:00">July 10, 2016</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#简介">简介</a>
+      <ul>
+        <li><a href="#语法特点">语法特点</a></li>
+      </ul>
+    </li>
+    <li><a href="#基本语法">基本语法</a>
+      <ul>
+        <li><a href="#表达式">表达式</a></li>
+        <li><a href="#变量">变量</a></li>
+        <li><a href="#数据类型">数据类型</a></li>
+        <li><a href="#控制语句">控制语句</a></li>
+        <li><a href="#函数">函数</a></li>
+        <li><a href="#关键字">关键字</a></li>
+        <li><a href="#预处理">预处理</a></li>
+        <li><a href="#脚本限制">脚本限制</a></li>
+      </ul>
+    </li>
+    <li><a href="#模板基础">模板基础</a>
+      <ul>
+        <li><a href="#声明模板变量">声明模板变量</a></li>
+        <li><a href="#用户变量">用户变量</a></li>
+        <li><a href="#on-demand结构体">On-Demand结构体</a></li>
+        <li><a href="#模板限制">模板限制</a></li>
+      </ul>
+    </li>
+    <li><a href="#接口函数">接口函数</a>
+      <ul>
+        <li><a href="#文件">文件</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="简介">简介</h2>
+<p>  010editor是一款十六进制编辑器，和winhex相比支持更灵活的脚本语法，可以对文件、内存、磁盘进行操作。</p>
+<p>常用的模板库：</p>
+<ul>
+<li>常见后缀: cab gzip rar zip cda midi mp3 ogg wav avi flv mp4 rm pdf iso vhd lnk dmp dex androidmanifest class</li>
+<li>Drive.bt  解析mbr  fat16 fat43 hfs ntfs等</li>
+<li>elf.bt  解析linux elf格式的文件</li>
+<li>exe.bt 解析windows pe x86/x64 格式文件(dll sys exe &hellip;)</li>
+<li>macho.bt 解析mac os可执行文件</li>
+<li>registrayhive.bt 解析注册表(hive)文件</li>
+<li>bson.bt 解析二进制json</li>
+</ul>
+<p>常用的脚本库(*.1sc)</p>
+<ul>
+<li>CountBlocks.1sc 查找指定数据块</li>
+<li>DecodeBase64.1sc 解码base64</li>
+<li>EncodeBase64.1sc 编码base64</li>
+<li>Entropy.1sc 计算熵</li>
+<li>JoinFIle.1sc SplitFile.1sc 分隔合并文件</li>
+<li>Js-unicode-escape.1sc   Js-unicode-unescape.1sc URLDecoder.1sc  js编码解码</li>
+<li>CopyAsAsm.1sc CopyAsBinary.1sc CopyAsCpp.1sc CopyAsPython.1sc 复制到剪贴板</li>
+<li>DumpStrings.1sc 查找所有ascii unicode字符串</li>
+</ul>
+<h3 id="语法特点">语法特点</h3>
+<p>  010editor脚本语言语法类似于c++，这种结构体不同之处在于：</p>
+<ul>
+<li>访问变量时，从文件读取并显示，赋值变量时，写入文件</li>
+<li>可以使用控制语句如if/for/while</li>
+</ul>
+<p>例子:</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ec0000">struct</span> FILE 
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">struct</span> HEADER 
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>		<span style="color:#5f5fff">char</span> type[<span style="color:#008900">4</span>];
+</span></span><span style="display:flex;"><span>		<span style="color:#5f5fff">int</span> version;
+</span></span><span style="display:flex;"><span>		<span style="color:#5f5fff">int</span> numRecords;
+</span></span><span style="display:flex;"><span>	} header;
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">struct</span> RECORD 
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">int</span> employeeId;
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">char</span> name[<span style="color:#008900">40</span>];
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">float</span> salary;
+</span></span><span style="display:flex;"><span>	} record[ header.numRecords ];
+</span></span><span style="display:flex;"><span>} file;
+</span></span></code></pre></div><h2 id="基本语法">基本语法</h2>
+<h3 id="表达式">表达式</h3>
+<ul>
+<li>支持标准c的操作符：+ - * / ~ ^ &amp; | % ++ &ndash; ?: &laquo; &raquo; ()</li>
+<li>支持的比较操作符：&lt; ? &lt;= &gt;= == != !</li>
+<li>支持的赋值操作符：= += -= *= /= &amp;= ^= %= |= &laquo;= &raquo;=</li>
+<li>布尔运算符：&amp;&amp; || !</li>
+<li>常数：</li>
+<li>
+<ul>
+<li>10进制 456</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>16进制 0xff 25h 0EFh</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>8进制 013</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>2进制 0b011</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>u后缀表示unsigned/L后缀表示8字节int64值</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>指数 1e10</li>
+</ul>
+</li>
+<li>
+<ul>
+<li>浮点数 2.0f 2.0</li>
+</ul>
+</li>
+</ul>
+<h3 id="变量">变量</h3>
+<p>定义脚本变量</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">int</span> x;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">float</span> a <span style="color:#ec0000">=</span> <span style="color:#008900">3.5f</span>;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> myVar1, myVar2;
+</span></span></code></pre></div><p>常量</p>
+<pre tabindex="0"><code>const int TAG_EOF = 0x3545;
+</code></pre><p>内建常量：<code>true false TRUE FALSE M_PI PI</code></p>
+<h3 id="数据类型">数据类型</h3>
+<ul>
+<li>8字节 char byte CHAR BYTE uchar ubyte UCHAR UBYTE</li>
+<li>16字节 short int16 SHORT INT16 ushort uint16 USHORT UINT16 WORD</li>
+<li>32字节 int int32 long INT INT32 LONG uint uint32 ulong UINT UINT32 ULONG DWORD</li>
+<li>64字节 int64 quad QUAD INT64 __int64 uint64 uquad UQUAD UINT64 __uint64 QWORD</li>
+<li>浮点 float FLOAT double DOUBLE hfloat HFLOAT</li>
+<li>其他 DOSDATE DOSTIME FILETIME OLETIME time_t</li>
+</ul>
+<p>使用typedef</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> myInt;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">char</span> myString[<span style="color:#008900">15</span>];
+</span></span><span style="display:flex;"><span>myString s <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;Test&#34;</span>;
+</span></span></code></pre></div><p>使用enum</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ec0000">enum</span> MYENUM { COMP_1, COMP_2 <span style="color:#ec0000">=</span> <span style="color:#008900">5</span>, COMP_3 } var1;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">enum</span> <span style="color:#ec0000">&lt;</span>ushort<span style="color:#ec0000">&gt;</span> MYENUM { COMP_1, COMP_2 <span style="color:#ec0000">=</span> <span style="color:#008900">5</span>, COMP_3 } var1;
+</span></span></code></pre></div><p>数组和字符串</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">int</span> myArray[<span style="color:#008900">15</span>];
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> myArray[ <span style="color:#5f5fff">FileSize</span>() <span style="color:#ec0000">-</span> myInt <span style="color:#ec0000">*</span> <span style="color:#008900">0x10</span> <span style="color:#ec0000">+</span> (<span style="color:#008900">17</span> <span style="color:#ec0000">&lt;&lt;</span> <span style="color:#008900">5</span>) ];//大小可以是变量
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span> str[<span style="color:#008900">15</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;First&#34;</span>;
+</span></span><span style="display:flex;"><span>string s <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;Second&#34;</span>;
+</span></span><span style="display:flex;"><span>string r1 <span style="color:#ec0000">=</span> str <span style="color:#ec0000">+</span> s;
+</span></span><span style="display:flex;"><span>string r2 <span style="color:#ec0000">=</span> str;
+</span></span><span style="display:flex;"><span>r2 <span style="color:#ec0000">+=</span> s;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">return</span> (r1 <span style="color:#ec0000">==</span> r2);
+</span></span></code></pre></div><p>宽字符</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">wchar_t</span> str1[<span style="color:#008900">15</span>] <span style="color:#ec0000">=</span> <span style="color:#008900">L</span><span style="color:#008900">&#34;How now&#34;</span>;
+</span></span><span style="display:flex;"><span>wstring str2 <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;brown cow&#34;</span>;
+</span></span><span style="display:flex;"><span>wstring str3 <span style="color:#ec0000">=</span> str1 <span style="color:#ec0000">+</span> <span style="color:#008900">L</span><span style="color:#008900">&#39; &#39;</span> <span style="color:#ec0000">+</span> str2 <span style="color:#ec0000">+</span> <span style="color:#008900">L</span><span style="color:#008900">&#39;?&#39;</span>;
+</span></span></code></pre></div><p>可以通过WStringToString StringToWString转换</p>
+<h3 id="控制语句">控制语句</h3>
+<p>if语句</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ec0000">if</span>( x <span style="color:#ec0000">&lt;</span> <span style="color:#008900">5</span> )
+</span></span><span style="display:flex;"><span>    x <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">if</span>( y <span style="color:#ec0000">&gt;</span> x )
+</span></span><span style="display:flex;"><span>    max <span style="color:#ec0000">=</span> y;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    max <span style="color:#ec0000">=</span> x;
+</span></span><span style="display:flex;"><span>    y <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>for语句</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ec0000">for</span>( i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>, x <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> <span style="color:#008900">15</span>; i<span style="color:#ec0000">++</span> )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    x <span style="color:#ec0000">+=</span> i;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>while语句</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ec0000">while</span>( myVar <span style="color:#ec0000">&lt;</span> <span style="color:#008900">15</span> )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    x <span style="color:#ec0000">*=</span> myVar;
+</span></span><span style="display:flex;"><span>    myVar <span style="color:#ec0000">+=</span> <span style="color:#008900">2</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">do</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    x <span style="color:#ec0000">*=</span> myVar;
+</span></span><span style="display:flex;"><span>    myVar <span style="color:#ec0000">+=</span> <span style="color:#008900">2</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">while</span>( myVar <span style="color:#ec0000">&lt;</span> <span style="color:#008900">23</span> );
+</span></span></code></pre></div><p>switch语句</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ec0000">switch</span>( <span style="color:#ec0000">&lt;</span>variable<span style="color:#ec0000">&gt;</span> )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">case</span> <span style="color:#ec0000">&lt;</span>expression<span style="color:#ec0000">&gt;:</span> <span style="color:#ec0000">&lt;</span>statement<span style="color:#ec0000">&gt;</span>; [<span style="color:#ec0000">break</span>;]
+</span></span><span style="display:flex;"><span>    ...
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">default</span> <span style="color:#ec0000">:</span> <span style="color:#ec0000">&lt;</span>statement<span style="color:#ec0000">&gt;</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">switch</span>( value )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">case</span> <span style="color:#008900">2</span> <span style="color:#ec0000">:</span> result <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>; <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">case</span> <span style="color:#008900">4</span> <span style="color:#ec0000">:</span> result <span style="color:#ec0000">=</span> <span style="color:#008900">2</span>; <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">case</span> <span style="color:#008900">8</span> <span style="color:#ec0000">:</span> result <span style="color:#ec0000">=</span> <span style="color:#008900">3</span>; <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">case</span> <span style="color:#008900">16</span> <span style="color:#ec0000">:</span> result <span style="color:#ec0000">=</span> <span style="color:#008900">4</span>; <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">default</span> <span style="color:#ec0000">:</span> result <span style="color:#ec0000">=</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>循环控制：<code>break continue return</code></p>
+<h3 id="函数">函数</h3>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>string str <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;Apple&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">return</span> <span style="color:#5f5fff">Strlen</span>( str );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;string=&#39;%s&#39; length=&#39;%d&#39;</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, str, <span style="color:#5f5fff">Strlen</span>( str ) );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">OutputInt</span>( <span style="color:#5f5fff">int</span> d )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;%d</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, d );
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">OutputInt</span>( <span style="color:#008900">5</span> );
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">GetExtension</span>( <span style="color:#5f5fff">char</span> filename[], <span style="color:#5f5fff">int</span> <span style="color:#ec0000">&amp;</span>extLength )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> pos <span style="color:#ec0000">=</span> <span style="color:#5f5fff">Strchr</span>( filename, <span style="color:#008900">&#39;.&#39;</span> );
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>( pos <span style="color:#ec0000">==</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        extLength <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span> <span style="color:#008900">&#34;&#34;</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        extLength <span style="color:#ec0000">=</span> <span style="color:#5f5fff">Strlen</span>( filename ) <span style="color:#ec0000">-</span> pos <span style="color:#ec0000">-</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span> <span style="color:#5f5fff">SubStr</span>( filename, pos <span style="color:#ec0000">+</span> <span style="color:#008900">1</span> );
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>参数可以通过值或引用传递，010editor脚本不支持指针，但是可以用[]表示数组。
+程序中不需要main函数，代码从第一行开始执行</p>
+<h3 id="关键字">关键字</h3>
+<ul>
+<li>sizeof</li>
+<li>startof  用于计算变量起始地址。 <code>SetCursorPos( startof( lines[0] ) );</code></li>
+<li>exists  检查某变量是否声明</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">int</span> i;
+</span></span><span style="display:flex;"><span>string s;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">while</span>( <span style="color:#5f5fff">exists</span>( file[i] ) )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>s <span style="color:#ec0000">=</span> file[i].frFileName;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;%s</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, s );
+</span></span><span style="display:flex;"><span>i<span style="color:#ec0000">++</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><ul>
+<li>function_exists 检查函数是否定义</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ec0000">if</span>( <span style="color:#5f5fff">function_exists</span>(CopyStringToClipboard) )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><ul>
+<li>this 引用当前结构体</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">PrintHeader</span>( <span style="color:#ec0000">struct</span> HEADER <span style="color:#ec0000">&amp;</span>h )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;ID1 = %d</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, h.ID1 );
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;ID2 = %d</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, h.ID2 );
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> HEADER
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> ID1;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> ID2;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">PrintHeader</span>( this );
+</span></span><span style="display:flex;"><span>} h1;
+</span></span></code></pre></div><ul>
+<li>parentof 访问包含变量的结构和union</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">PrintHeader</span>( <span style="color:#ec0000">struct</span> HEADER <span style="color:#ec0000">&amp;</span>h )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;ID1 = %d</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, h.ID1 );
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;ID2 = %d</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, h.ID2 );
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> HEADER
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> ID1;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> ID2;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">struct</span> SUBITEM
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> data1;
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> data2;
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">PrintHeader</span>( <span style="color:#5f5fff">parentof</span>(this) );
+</span></span><span style="display:flex;"><span>    } item1;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">PrintHeader</span>( <span style="color:#5f5fff">parentof</span>(item1) );
+</span></span><span style="display:flex;"><span>} h1;
+</span></span></code></pre></div><h3 id="预处理">预处理</h3>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>define
+</span></span><span style="display:flex;"><span>#define PI 3.14159265
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>#define CHECK_VALUE if( value &gt; 5) { \
+</span></span><span style="display:flex;"><span>Printf( &#34;Invalid value %d\n&#34;, value ); \
+</span></span><span style="display:flex;"><span>Exit(-1); }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>#define FILE_ICON 12
+</span></span><span style="display:flex;"><span>#define FOLDER_ICON (FILE_ICON+100)
+</span></span></code></pre></div><p>内建常量</p>
+<ul>
+<li>_010EDITOR  010editor运行后定义</li>
+<li>_010_WIN 运行在windows上定义</li>
+<li>_010_MAC</li>
+<li>_010_LINUX</li>
+<li>_010_64BIT</li>
+</ul>
+<p>条件编译</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>#ifdef | #ifndef &lt;constant_name&gt;
+</span></span><span style="display:flex;"><span>(...)
+</span></span><span style="display:flex;"><span>[ <span style="color:#ec0000">#</span><span style="color:#ec0000">else</span> ]
+</span></span><span style="display:flex;"><span>(...)
+</span></span><span style="display:flex;"><span>#endif
+</span></span><span style="display:flex;"><span>#ifndef CONSTANTS_H
+</span></span><span style="display:flex;"><span>#define CONSTANTS_H
+</span></span></code></pre></div><p>警告和错误</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>#ifdef NUMBITS
+</span></span><span style="display:flex;"><span>value <span style="color:#ec0000">=</span> value <span style="color:#ec0000">+</span> NUMBITS;
+</span></span><span style="display:flex;"><span>#else
+</span></span><span style="display:flex;"><span>#warning &#34;NUMBITS not defined!&#34;
+</span></span><span style="display:flex;"><span>#endif
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>#ifndef CURRENT_OS
+</span></span><span style="display:flex;"><span>#error &#34;CURRENT_OS must be defined. Compilation stopped.&#34;
+</span></span><span style="display:flex;"><span>#endif
+</span></span></code></pre></div><p>include</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>#include &#34;Vector.bt&#34;
+</span></span></code></pre></div><h3 id="脚本限制">脚本限制</h3>
+<p>禁止使用指针，可以使用引用传参数
+禁止使用#if预处理
+禁止使用多维数组
+禁止使用goto</p>
+<h2 id="模板基础">模板基础</h2>
+<h3 id="声明模板变量">声明模板变量</h3>
+<p>特殊属性</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-xml" data-lang="xml"><span style="display:flex;"><span><span style="color:#ec0000">&lt; format</span><span style="color:#ec0000">=hex|decimal|octal|binary,</span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">fgcolor=</span><span style="color:#008900">&lt;color</span><span style="color:#ec0000">&gt;</span>,
+</span></span><span style="display:flex;"><span>bgcolor=<span style="color:#ec0000">&lt;color&gt;</span>,
+</span></span><span style="display:flex;"><span>comment=&#34;<span style="color:#ec0000">&lt;string&gt;</span>&#34;|<span style="color:#ec0000">&lt;function_name&gt;</span>,
+</span></span><span style="display:flex;"><span>name=&#34;<span style="color:#ec0000">&lt;string&gt;</span>&#34;|<span style="color:#ec0000">&lt;function_name&gt;</span>,
+</span></span><span style="display:flex;"><span>open=true|false|suppress,
+</span></span><span style="display:flex;"><span>hidden=true|false,
+</span></span><span style="display:flex;"><span>read=<span style="color:#ec0000">&lt;function_name&gt;</span>,
+</span></span><span style="display:flex;"><span>write=<span style="color:#ec0000">&lt;function_name&gt;</span>
+</span></span><span style="display:flex;"><span>size=<span style="color:#ec0000">&lt;number&gt;</span>|<span style="color:#ec0000">&lt;function_name&gt;</span> &gt;
+</span></span></code></pre></div><p>format 设置</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">int</span> crc <span style="color:#ec0000">&lt;</span>format<span style="color:#ec0000">=</span>hex<span style="color:#ec0000">&gt;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> flags <span style="color:#ec0000">&lt;</span>format<span style="color:#ec0000">=</span>binary<span style="color:#ec0000">&gt;</span>;
+</span></span></code></pre></div><p>color设置</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">int</span> id <span style="color:#ec0000">&lt;</span>fgcolor<span style="color:#ec0000">=</span>cBlack, bgcolor<span style="color:#ec0000">=</span><span style="color:#008900">0x0000FF</span><span style="color:#ec0000">&gt;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">SetForeColor</span>( cRed );
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> first; // will be colored red
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> second; // will be colored red
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">SetForeColor</span>( cNone );
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> third; // will not be colored
+</span></span></code></pre></div><p>注释设置</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">int</span> machineStatus <span style="color:#ec0000">&lt;</span>comment<span style="color:#ec0000">=</span><span style="color:#008900">&#34;This should be greater than 15.&#34;</span><span style="color:#ec0000">&gt;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> machineStatus <span style="color:#ec0000">&lt;</span>comment<span style="color:#ec0000">=</span>MachineStatusComment<span style="color:#ec0000">&gt;</span>;
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">MachineStatusComment</span>( <span style="color:#5f5fff">int</span> status )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>( status <span style="color:#ec0000">&lt;=</span> <span style="color:#008900">15</span> )
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span> <span style="color:#008900">&#34;*** Invalid machine status&#34;</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span> <span style="color:#008900">&#34;Valid machine status&#34;</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>显示名设置</p>
+<pre tabindex="0"><code>byte _si8 &lt;name=&#34;Signed Byte&#34;&gt;;
+</code></pre><p>顺序：在声明模板变量后，当前文件指针后移，通过FTell获取当前位置，通过FSeek FSkip移动指针  通过ReadByte ReadShort ReadInt任意读取而不移动指针</p>
+<p>局部变量</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>local <span style="color:#5f5fff">int</span> i, total <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> recordCounts[<span style="color:#008900">5</span>];
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">for</span>( i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> <span style="color:#008900">5</span>; i<span style="color:#ec0000">++</span> )
+</span></span><span style="display:flex;"><span>total <span style="color:#ec0000">+=</span> recordCounts[i];
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> records[ total ];
+</span></span></code></pre></div><p>打开状态设置</p>
+<pre tabindex="0"><code>&lt;open=true/false&gt;展开/收敛节点
+</code></pre><p>字符串</p>
+<pre tabindex="0"><code>char str[];
+string str;
+wchar_t str[];
+wstring str;
+</code></pre><p>隐藏设置</p>
+<pre tabindex="0"><code>&lt;hidden=true/false&gt; 
+</code></pre><p>结构体联合体</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ec0000">struct</span> myStruct {
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> a;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> b;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> c;
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> myStruct {
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> a;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> b;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> c;
+</span></span><span style="display:flex;"><span>} s1, s2;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> myIfStruct {
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> a;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>( a <span style="color:#ec0000">&gt;</span> <span style="color:#008900">5</span> )
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> b;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> c;
+</span></span><span style="display:flex;"><span>} s;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> width;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">struct</span> COLOR {
+</span></span><span style="display:flex;"><span>        uchar r, g, b;
+</span></span><span style="display:flex;"><span>    } colors[width];
+</span></span><span style="display:flex;"><span>} line1;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#ec0000">struct</span> {
+</span></span><span style="display:flex;"><span>    ushort id;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> size;
+</span></span><span style="display:flex;"><span>} myData;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">union</span> myUnion {
+</span></span><span style="display:flex;"><span>    ushort s;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">double</span> d;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> i;
+</span></span><span style="display:flex;"><span>} u;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>//带参数结构体
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">struct</span> <span style="color:#5f5fff">VarSizeStruct</span> (<span style="color:#5f5fff">int</span> arraySize)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> id;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> array[arraySize];
+</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">struct</span> (<span style="color:#5f5fff">int</span> arraySize)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> id;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> array[arraySize];
+</span></span><span style="display:flex;"><span>} VarSizeStruct;
+</span></span><span style="display:flex;"><span>VarSizeStruct <span style="color:#5f5fff">s1</span>(<span style="color:#008900">5</span>);
+</span></span><span style="display:flex;"><span>VarSizeStruct <span style="color:#5f5fff">s2</span>(<span style="color:#008900">7</span>);
+</span></span></code></pre></div><p>010editor允许重复模板变量</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">int</span> x;<span style="color:#ec0000">/</span>x[<span style="color:#008900">0</span>]
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> y;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> x;//x[1]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>local <span style="color:#5f5fff">int</span> i;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">for</span>( i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> <span style="color:#008900">5</span>; i<span style="color:#ec0000">++</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> x;//x[0-5]
+</span></span></code></pre></div><p>010editor默认认为结构体大小一致，这样生成大量结构体数组的速度较快，若实际结构体大小不一致则可能产生问题，此时用optimize=false，如下例：</p>
+<pre tabindex="0"><code>typedef struct {
+    int id;
+    int length;
+    uchar data[ length ];
+} RECORD;
+RECORD record[5] &lt;optimize=false&gt;;
+</code></pre><p>位域</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#ec0000">alpha</span> : <span style="color:#008900">5</span>;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#ec0000">:</span> <span style="color:#008900">12</span>;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#ec0000">beta</span> : <span style="color:#008900">15</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">enum</span> <span style="color:#ec0000">&lt;</span>ushort<span style="color:#ec0000">&gt;</span> ENUM1 { VAL1_1<span style="color:#ec0000">=</span><span style="color:#008900">25</span>, VAL1_2<span style="color:#ec0000">=</span><span style="color:#008900">29</span>, VAL1_3<span style="color:#ec0000">=</span><span style="color:#008900">7</span> } <span style="color:#ec0000">var1</span> : <span style="color:#008900">12</span>;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">enum</span> <span style="color:#ec0000">&lt;</span>ushort<span style="color:#ec0000">&gt;</span> ENUM2 { VAL2_1<span style="color:#ec0000">=</span><span style="color:#008900">5</span>, VAL2_2<span style="color:#ec0000">=</span><span style="color:#008900">6</span> } <span style="color:#ec0000">var2</span> : <span style="color:#008900">4</span>;
+</span></span></code></pre></div><h3 id="用户变量">用户变量</h3>
+<p>指定如何显示和修改数据</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> ushort FIXEDPT <span style="color:#ec0000">&lt;</span>read<span style="color:#ec0000">=</span>FIXEDPTRead, write<span style="color:#ec0000">=</span>FIXEDPTWrite<span style="color:#ec0000">&gt;</span>;
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">FIXEDPTRead</span>( FIXEDPT f )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    string s;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">SPrintf</span>( s, <span style="color:#008900">&#34;%lg&#34;</span>, f <span style="color:#ec0000">/</span> <span style="color:#008900">256.0</span> );
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> s;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">FIXEDPTWrite</span>( FIXEDPT <span style="color:#ec0000">&amp;</span>f, string s )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    f <span style="color:#ec0000">=</span> (FIXEDPT)( <span style="color:#5f5fff">Atof</span>( s ) <span style="color:#ec0000">*</span> <span style="color:#008900">256</span> );
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#5f5fff">float</span> VEC3F[<span style="color:#008900">3</span>] <span style="color:#ec0000">&lt;</span>read<span style="color:#ec0000">=</span>Vec3FRead, write<span style="color:#ec0000">=</span>Vec3FWrite<span style="color:#ec0000">&gt;</span>;
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">Vec3FRead</span>( VEC3F v )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    string s;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">SPrintf</span>( s, <span style="color:#008900">&#34;(%f %f %f)&#34;</span>, v[<span style="color:#008900">0</span>], v[<span style="color:#008900">1</span>], v[<span style="color:#008900">2</span>] );
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> s;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">Vec3FWrite</span>( VEC3F <span style="color:#ec0000">&amp;</span>v, string s )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">SScanf</span>( s, <span style="color:#008900">&#34;(%f %f %f)&#34;</span>, v[<span style="color:#008900">0</span>], v[<span style="color:#008900">1</span>], v[<span style="color:#008900">2</span>] );
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="on-demand结构体">On-Demand结构体</h3>
+<p>通过指定size解决大量变量消耗内存问题</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#ec0000">struct</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> header;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> value1;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> value2;
+</span></span><span style="display:flex;"><span>} MyStruct <span style="color:#ec0000">&lt;</span>size<span style="color:#ec0000">=</span><span style="color:#008900">12</span><span style="color:#ec0000">&gt;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#ec0000">struct</span> {
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">&lt;</span>...<span style="color:#ec0000">&gt;</span>
+</span></span><span style="display:flex;"><span>uint frCompressedSize;
+</span></span><span style="display:flex;"><span>uint frUncompressedSize;
+</span></span><span style="display:flex;"><span>ushort frFileNameLength;
+</span></span><span style="display:flex;"><span>ushort frExtraFieldLength;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">if</span>( frFileNameLength <span style="color:#ec0000">&gt;</span> <span style="color:#008900">0</span> )
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">char</span> frFileName[ frFileNameLength ];
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">if</span>( frExtraFieldLength <span style="color:#ec0000">&gt;</span> <span style="color:#008900">0</span> )
+</span></span><span style="display:flex;"><span>    uchar frExtraField[ frExtraFieldLength ];
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">if</span>( frCompressedSize <span style="color:#ec0000">&gt;</span> <span style="color:#008900">0</span> )
+</span></span><span style="display:flex;"><span>    uchar frData[ frCompressedSize ];
+</span></span><span style="display:flex;"><span>} ZIPFILERECORD <span style="color:#ec0000">&lt;</span>size<span style="color:#ec0000">=</span>SizeZIPFILERECORD<span style="color:#ec0000">&gt;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">SizeZIPFILERECORD</span>( ZIPFILERECORD <span style="color:#ec0000">&amp;</span>r )
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> <span style="color:#008900">30</span> <span style="color:#ec0000">+</span> // base size of the struct
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">ReadUInt</span>(<span style="color:#5f5fff">startof</span>(r)<span style="color:#ec0000">+</span><span style="color:#008900">18</span>) <span style="color:#ec0000">+</span> // size of the compressed data
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">ReadUShort</span>(<span style="color:#5f5fff">startof</span>(r)<span style="color:#ec0000">+</span><span style="color:#008900">26</span>) <span style="color:#ec0000">+</span> // size of the file name
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">ReadUShort</span>(<span style="color:#5f5fff">startof</span>(r)<span style="color:#ec0000">+</span><span style="color:#008900">28</span>); // size of the extra field
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="模板限制">模板限制</h3>
+<p>禁止多维数组</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ec0000">typedef</span> <span style="color:#ec0000">struct</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">float</span> row[<span style="color:#008900">4</span>];
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>MATRIX[<span style="color:#008900">4</span>];
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>MATRIX m;
+</span></span></code></pre></div><h2 id="接口函数">接口函数</h2>
+<p>书签</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">AddBookmark</span>( int64 pos, string name, string <span style="color:#ec0000">typename</span>, <span style="color:#5f5fff">int</span> arraySize<span style="color:#ec0000">=-</span><span style="color:#008900">1</span>, <span style="color:#5f5fff">int</span> forecolor<span style="color:#ec0000">=</span>cNone, <span style="color:#5f5fff">int</span> backcolor<span style="color:#ec0000">=</span><span style="color:#008900">0xffffc4</span>, <span style="color:#5f5fff">int</span> moveWithCursor<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">AddBookmark</span>( <span style="color:#5f5fff">GetCursorPos</span>(), <span style="color:#008900">&#34;endmarker&#34;</span>,<span style="color:#008900">&#34;ZIPENDLOCATOR&#34;</span>, <span style="color:#ec0000">-</span><span style="color:#008900">1</span>, cRed );
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetBookmarkArraySize</span>( <span style="color:#5f5fff">int</span> index )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetBookmarkBackColor</span>( <span style="color:#5f5fff">int</span> index )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetBookmarkForeColor</span>( <span style="color:#5f5fff">int</span> index )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetBookmarkMoveWithCursor</span>( <span style="color:#5f5fff">int</span> index )
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">GetBookmarkName</span>( <span style="color:#5f5fff">int</span> index )
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">GetBookmarkPos</span>( <span style="color:#5f5fff">int</span> index )
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">GetBookmarkType</span>( <span style="color:#5f5fff">int</span> index )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetNumBookmarks</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">RemoveBookmark</span>( <span style="color:#5f5fff">int</span> index )
+</span></span><span style="display:flex;"><span>//断言
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">Assert</span>( <span style="color:#5f5fff">int</span> value, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> msg[] <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;&#34;</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">Assert</span>( numRecords <span style="color:#ec0000">&gt;</span> <span style="color:#008900">10</span>,<span style="color:#008900">&#34;numRecords should be more than 10.&#34;</span> );
+</span></span><span style="display:flex;"><span>//剪贴板
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">ClearClipboard</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">CopyBytesToClipboard</span>( uchar buffer[], <span style="color:#5f5fff">int</span> size, <span style="color:#5f5fff">int</span> charset<span style="color:#ec0000">=</span>CHARSET_ANSI, <span style="color:#5f5fff">int</span> bigendian<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">CopyStringToClipboard</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str[], <span style="color:#5f5fff">int</span> charset<span style="color:#ec0000">=</span>CHARSET_ANSI )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">CopyToClipboard</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">CutToClipboard</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetClipboardBytes</span>( uchar buffer[], <span style="color:#5f5fff">int</span> maxBytes )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetClipboardIndex</span>()
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">GetClipboardString</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">PasteFromClipboard</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">SetClipboardIndex</span>( <span style="color:#5f5fff">int</span> index )
+</span></span></code></pre></div><h3 id="文件">文件</h3>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">DeleteFile</span>( <span style="color:#5f5fff">char</span> filename[] )    //删除文件，文件不能在编辑器中打开
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">FileClose</span>()//关闭当前文件
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">FileCount</span>()//获取editor打开的文件数
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">FileExists</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> filename[] )//检测文件存在
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">FileNew</span>( <span style="color:#5f5fff">char</span> interface[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#5f5fff">int</span> makeActive<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span> )//创建爱你文件
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">FileOpen</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> filename[], <span style="color:#5f5fff">int</span> runTemplate<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span>, <span style="color:#5f5fff">char</span> interface[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#5f5fff">int</span> openDuplicate<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span> )//打开文件
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">FileSave</span>() 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">FileSave</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> filename[] ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">FileSave</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> filename[] ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">FileSaveRange</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> filename[], int64 start, int64 size ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">FileSaveRange</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> filename[], int64 start, int64 size )//保存文件
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">FileSelect</span>( <span style="color:#5f5fff">int</span> index )//选择读写的文件
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">FindOpenFile</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> path[] ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">FindOpenFileW</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> path[] )//查找并打开文件
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetFileAttributesUnix</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetFileAttributesWin</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">SetFileAttributesUnix</span>( <span style="color:#5f5fff">int</span> attributes )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">SetFileAttributesWin</span>( <span style="color:#5f5fff">int</span> attributes )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetFileCharSet</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">GetFileInterface</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">SetFileInterface</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> name[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">GetFileName</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">wchar_t</span>[] <span style="color:#5f5fff">GetFileNameW</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetFileNum</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetReadOnly</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">SetReadOnly</span>( <span style="color:#5f5fff">int</span> readonly )
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">GetTempDirectory</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">GetTempFileName</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">GetTemplateName</span>() 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">wchar_t</span>[] <span style="color:#5f5fff">GetTemplateNameW</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">GetTemplateFileName</span>() 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">wchar_t</span>[] <span style="color:#5f5fff">GetTemplateFileNameW</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">GetScriptName</span>() 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">wchar_t</span>[] <span style="color:#5f5fff">GetScriptNameW</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">GetScriptFileName</span>() 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">wchar_t</span>[] <span style="color:#5f5fff">GetScriptFileNameW</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">GetWorkingDirectory</span>() 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">wchar_t</span>[] <span style="color:#5f5fff">GetWorkingDirectoryW</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">RenameFile</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> originalname[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> newname[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">RequiresFile</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">RequiresVersion</span>( <span style="color:#5f5fff">int</span> majorVer, <span style="color:#5f5fff">int</span> minorVer<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, <span style="color:#5f5fff">int</span> revision<span style="color:#ec0000">=</span><span style="color:#008900">0</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">RunTemplate</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> filename[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#5f5fff">int</span> clearOutput<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">SetWorkingDirectory</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> dir[] ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">SetWorkingDirectoryW</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> dir[] )
+</span></span></code></pre></div><p>输入</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">InputDirectory</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> title[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> defaultDir[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">InputFloat</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> title[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> caption[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> defaultValue[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">InputNumber</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> title[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> caption[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> defaultValue[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">InputOpenFileName</span>( <span style="color:#5f5fff">char</span> title[], <span style="color:#5f5fff">char</span> filter[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;All files (*.*)&#34;</span>, <span style="color:#5f5fff">char</span> filename[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span> )
+</span></span><span style="display:flex;"><span>TOpenFileNames <span style="color:#5f5fff">InputOpenFileNames</span>( <span style="color:#5f5fff">char</span> title[], <span style="color:#5f5fff">char</span> filter[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;All files (*.*)&#34;</span>, <span style="color:#5f5fff">char</span> filename[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span> )
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">int</span> i;
+</span></span><span style="display:flex;"><span>	TOpenFileNames f <span style="color:#ec0000">=</span> <span style="color:#5f5fff">InputOpenFileNames</span>(
+</span></span><span style="display:flex;"><span>	<span style="color:#008900">&#34;Open File Test&#34;</span>,
+</span></span><span style="display:flex;"><span>	<span style="color:#008900">&#34;C Files (*.c *.cpp)|All Files (*.*)&#34;</span> );
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">for</span>( i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> f.count; i<span style="color:#ec0000">++</span> )
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;%s</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, f.file[i].filename );
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">InputRadioButtonBox</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> title[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> caption[], <span style="color:#5f5fff">int</span> defaultIndex, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str1[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str2[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str3[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str4[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str5[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str6[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str7[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str8[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str9[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str10[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str11[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str12[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str13[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str14[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str15[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">InputSaveFileName</span>( <span style="color:#5f5fff">char</span> title[], <span style="color:#5f5fff">char</span> filter[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;All files (*.*)&#34;</span>, <span style="color:#5f5fff">char</span> filename[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, <span style="color:#5f5fff">char</span> extension[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">InputString</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> title[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> caption[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> defaultValue[] )
+</span></span><span style="display:flex;"><span>wstring <span style="color:#5f5fff">InputWString</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> title[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> caption[], <span style="color:#ec0000">const</span> wstring defaultValue )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">InsertFile</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> filename[], int64 position )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">IsEditorFocused</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">IsModified</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">IsNoUIMode</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">MessageBox</span>( <span style="color:#5f5fff">int</span> mask, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> title[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> format[] [, argument, ... ] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">OutputPaneClear</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">OutputPaneSave</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> filename[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">OutputPaneCopy</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">Printf</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> format[] [, argument, ... ] )
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;Num = %d, Float = %lf, Str = &#39;%s&#39;</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, <span style="color:#008900">15</span>, <span style="color:#008900">5</span>, <span style="color:#008900">&#34;Test&#34;</span> );
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">StatusMessage</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> format[] [, argument, ... ] )
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">GetSelSize</span>()
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">GetSelStart</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">SetSelection</span>( int64 start, int64 size )
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>//颜色
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetForeColor</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetBackColor</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">SetBackColor</span>( <span style="color:#5f5fff">int</span> color ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">SetColor</span>( <span style="color:#5f5fff">int</span> forecolor, <span style="color:#5f5fff">int</span> backcolor ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">SetForeColor</span>( <span style="color:#5f5fff">int</span> color )
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetBytesPerLine</span>()//获取显示列数
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>//时间
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">GetCurrentTime</span>( <span style="color:#5f5fff">char</span> format[] <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;hh:mm:ss&#34;</span> )
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">GetCurrentDate</span>( <span style="color:#5f5fff">char</span> format[] <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;MM/dd/yyyy&#34;</span> )
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">GetCurrentDateTime</span>( <span style="color:#5f5fff">char</span> format[] <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;MM/dd/yyyy hh:mm:ss&#34;</span> )
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">DisableUndo</span>()//禁止undo
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">EnableUndo</span>()//允许undo
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>//设置显示值
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">DisplayFormatBinary</span>() 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">DisplayFormatDecimal</span>() 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">DisplayFormatHex</span>() 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">DisplayFormatOctal</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">Exec</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> program[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> arguments[], <span style="color:#5f5fff">int</span> wait<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span> ) <span style="color:#5f5fff">int</span> <span style="color:#5f5fff">Exec</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> program[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> arguments[], <span style="color:#5f5fff">int</span> wait, <span style="color:#5f5fff">int</span> <span style="color:#ec0000">&amp;</span>errorCode )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">Exit</span>( <span style="color:#5f5fff">int</span> errorcode )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">Warning</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> format[] [, argument, ... ] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">Terminate</span>( <span style="color:#5f5fff">int</span> force<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">GetArg</span>( <span style="color:#5f5fff">int</span> index ) <span style="color:#5f5fff">wchar_t</span>[] <span style="color:#5f5fff">GetArgW</span>( <span style="color:#5f5fff">int</span> index )//获取传递给脚本的命令
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">GetEnv</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str[] )//获取环境变量
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">SetEnv</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> value[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetNumArgs</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">ExpandAll</span>()//展开节点
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">ExportCSV</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> filename[] )//导出
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">ExportXML</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> filename[] )//导出
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">GetCursorPos</span>()//获取当前指针
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">SetCursorPos</span>( int64 pos )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">Sleep</span>( <span style="color:#5f5fff">int</span> milliseconds )
+</span></span></code></pre></div><p>I/O函数</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">BigEndian</span>()//设置大小头端
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">IsBigEndian</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">IsLittleEndian</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">LittleEndian</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">ConvertBytesToDouble</span>( uchar byteArray[] ) //数据转换
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">float</span> <span style="color:#5f5fff">ConvertBytesToFloat</span>( uchar byteArray[] ) 
+</span></span><span style="display:flex;"><span>hfloat <span style="color:#5f5fff">ConvertBytesToHFloat</span>( uchar byteArray[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">ConvertDataToBytes</span>( data_type value, uchar byteArray[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">DeleteBytes</span>( int64 start, int64 size )//删除数据
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">InsertBytes</span>( int64 start, int64 size, uchar value<span style="color:#ec0000">=</span><span style="color:#008900">0</span> )//插入数据
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">OverwriteBytes</span>( int64 start, int64 size, uchar value<span style="color:#ec0000">=</span><span style="color:#008900">0</span> )
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span> <span style="color:#5f5fff">ReadByte</span>( int64 pos<span style="color:#ec0000">=</span><span style="color:#5f5fff">FTell</span>() ) //读取数据
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">ReadDouble</span>( int64 pos<span style="color:#ec0000">=</span><span style="color:#5f5fff">FTell</span>() ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">float</span> <span style="color:#5f5fff">ReadFloat</span>( int64 pos<span style="color:#ec0000">=</span><span style="color:#5f5fff">FTell</span>() ) 
+</span></span><span style="display:flex;"><span>hfloat <span style="color:#5f5fff">ReadHFloat</span>( int64 pos<span style="color:#ec0000">=</span><span style="color:#5f5fff">FTell</span>() ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">ReadInt</span>( int64 pos<span style="color:#ec0000">=</span><span style="color:#5f5fff">FTell</span>() ) 
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">ReadInt64</span>( int64 pos<span style="color:#ec0000">=</span><span style="color:#5f5fff">FTell</span>() ) 
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">ReadQuad</span>( int64 pos<span style="color:#ec0000">=</span><span style="color:#5f5fff">FTell</span>() ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">short</span> <span style="color:#5f5fff">ReadShort</span>( int64 pos<span style="color:#ec0000">=</span><span style="color:#5f5fff">FTell</span>() )
+</span></span><span style="display:flex;"><span>uchar <span style="color:#5f5fff">ReadUByte</span>( int64 pos<span style="color:#ec0000">=</span><span style="color:#5f5fff">FTell</span>() ) 
+</span></span><span style="display:flex;"><span>uint <span style="color:#5f5fff">ReadUInt</span>( int64 pos<span style="color:#ec0000">=</span><span style="color:#5f5fff">FTell</span>() ) 
+</span></span><span style="display:flex;"><span>uint64 <span style="color:#5f5fff">ReadUInt64</span>( int64 pos<span style="color:#ec0000">=</span><span style="color:#5f5fff">FTell</span>() ) 
+</span></span><span style="display:flex;"><span>uint64 <span style="color:#5f5fff">ReadUQuad</span>( int64 pos<span style="color:#ec0000">=</span><span style="color:#5f5fff">FTell</span>() ) 
+</span></span><span style="display:flex;"><span>ushort <span style="color:#5f5fff">ReadUShort</span>( int64 pos<span style="color:#ec0000">=</span><span style="color:#5f5fff">FTell</span>() )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">ReadBytes</span>( uchar buffer[], int64 pos, <span style="color:#5f5fff">int</span> n )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">ReadString</span>( int64 pos, <span style="color:#5f5fff">int</span> maxLen<span style="color:#ec0000">=-</span><span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">ReadStringLength</span>( int64 pos, <span style="color:#5f5fff">int</span> maxLen<span style="color:#ec0000">=-</span><span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span>wstring <span style="color:#5f5fff">ReadWString</span>( int64 pos, <span style="color:#5f5fff">int</span> maxLen<span style="color:#ec0000">=-</span><span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">ReadWStringLength</span>( int64 pos, <span style="color:#5f5fff">int</span> maxLen<span style="color:#ec0000">=-</span><span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span>wstring <span style="color:#5f5fff">ReadWLine</span>( int64 pos, <span style="color:#5f5fff">int</span> maxLen<span style="color:#ec0000">=-</span><span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">ReadLine</span>( int64 pos, <span style="color:#5f5fff">int</span> maxLen<span style="color:#ec0000">=-</span><span style="color:#008900">1</span>, <span style="color:#5f5fff">int</span> includeLinefeeds<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span> )
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteByte</span>( int64 pos, <span style="color:#5f5fff">char</span> value ) //写入数据
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteDouble</span>( int64 pos, <span style="color:#5f5fff">double</span> value ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteFloat</span>( int64 pos, <span style="color:#5f5fff">float</span> value ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteHFloat</span>( int64 pos, <span style="color:#5f5fff">float</span> value ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteInt</span>( int64 pos, <span style="color:#5f5fff">int</span> value ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteInt64</span>( int64 pos, int64 value ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteQuad</span>( int64 pos, int64 value ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteShort</span>( int64 pos, <span style="color:#5f5fff">short</span> value ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteUByte</span>( int64 pos, uchar value ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteUInt</span>( int64 pos, uint value ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteUInt64</span>( int64 pos, uint64 value ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteUQuad</span>( int64 pos, uint64 value ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteUShort</span>( int64 pos, ushort value )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteBytes</span>( <span style="color:#ec0000">const</span> uchar buffer[], int64 pos, <span style="color:#5f5fff">int</span> n )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteString</span>( int64 pos, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> value[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WriteWString</span>( int64 pos, <span style="color:#ec0000">const</span> wstring value )
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">DirectoryExists</span>( string dir )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">MakeDir</span>( string dir )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">FEof</span>()
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">FileSize</span>()
+</span></span><span style="display:flex;"><span>TFileList <span style="color:#5f5fff">FindFiles</span>( string dir, string filter )
+</span></span><span style="display:flex;"><span>	TFileList fl <span style="color:#ec0000">=</span> <span style="color:#5f5fff">FindFiles</span>( <span style="color:#008900">&#34;C:</span><span style="color:#008900">\\</span><span style="color:#008900">temp</span><span style="color:#008900">\\</span><span style="color:#008900">&#34;</span>, <span style="color:#008900">&#34;*.zip&#34;</span> );
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">int</span> i;
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;Num files = %d</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, fl.filecount );
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">for</span>( i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> fl.filecount; i<span style="color:#ec0000">++</span> )
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34; %s</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, fl.file[i].filename );
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span> );
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;Num dirs = %d</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, fl.dircount );
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">for</span>( i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> fl.dircount; i<span style="color:#ec0000">++</span> )
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34; %s</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, fl.dir[i].dirname );
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">FPrintf</span>( <span style="color:#5f5fff">int</span> fileNum, <span style="color:#5f5fff">char</span> format[], ... )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">FSeek</span>( int64 pos )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">FSkip</span>( int64 offset )
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">FTell</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">TextAddressToLine</span>( int64 address )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">TextAddressToColumn</span>( int64 address )
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">TextColumnToAddress</span>( int64 line, <span style="color:#5f5fff">int</span> column )
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">TextGetNumLines</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">TextGetLineSize</span>( int64 line, <span style="color:#5f5fff">int</span> includeLinefeeds<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span> )
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">TextLineToAddress</span>( int64 line )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">TextReadLine</span>( <span style="color:#5f5fff">char</span> buffer[], int64 line, <span style="color:#5f5fff">int</span> maxsize, <span style="color:#5f5fff">int</span> includeLinefeeds<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">TextReadLineW</span>( <span style="color:#5f5fff">wchar_t</span> buffer[], int64 line, <span style="color:#5f5fff">int</span> maxsize, <span style="color:#5f5fff">int</span> includeLinefeeds<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">TextWriteLineW</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> buffer[], int64 line, <span style="color:#5f5fff">int</span> includeLinefeeds<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">TextWriteLine</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> buffer[], int64 line, <span style="color:#5f5fff">int</span> includeLinefeeds<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span> )
+</span></span></code></pre></div><p>字符串函数</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>//类型转换
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">Atof</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> s[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">Atoi</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> s[] )
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">BinaryStrToInt</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> s[] )
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">return</span> <span style="color:#5f5fff">BinaryStrToInt</span>( <span style="color:#008900">&#34;01001101&#34;</span> );
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">ConvertString</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> src[], <span style="color:#5f5fff">int</span> srcCharSet, <span style="color:#5f5fff">int</span> destCharSet )
+</span></span><span style="display:flex;"><span>	CHARSET_ASCII CHARSET_ANSI CHARSET_OEM CHARSET_EBCDIC CHARSET_UNICODE CHARSET_MAC CHARSET_ARABIC CHARSET_BALTIC CHARSET_CHINESE_S CHARSET_CHINESE_T CHARSET_CYRILLIC CHARSET_EASTEUROPE CHARSET_GREEK CHARSET_HEBREW CHARSET_JAPANESE CHARSET_KOREAN_J CHARSET_KOREAN_W CHARSET_THAI CHARSET_TURKISH CHARSET_VIETNAMESE CHARSET_UTF8
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">DosDateToString</span>( DOSDATE d, <span style="color:#5f5fff">char</span> format[] <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;MM/dd/yyyy&#34;</span> )
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">DosTimeToString</span>( DOSTIME t, <span style="color:#5f5fff">char</span> format[] <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;hh:mm:ss&#34;</span> )
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">EnumToString</span>( <span style="color:#ec0000">enum</span> e )
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">FileTimeToString</span>( FILETIME ft, <span style="color:#5f5fff">char</span> format[] <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;MM/dd/yyyy hh:mm:ss&#34;</span> )
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">int</span> hour, minute, second, day, month, year;
+</span></span><span style="display:flex;"><span>	string s <span style="color:#ec0000">=</span> <span style="color:#5f5fff">FileTimeToString</span>( ft );
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">SScanf</span>( s, <span style="color:#008900">&#34;%02d/%02d/%04d %02d:%02d:%02d&#34;</span>,
+</span></span><span style="display:flex;"><span>	month, day, year, hour, minute, second );
+</span></span><span style="display:flex;"><span>	year<span style="color:#ec0000">++</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">SPrintf</span>( s, <span style="color:#008900">&#34;%02d/%02d/%04d %02d:%02d:%02d&#34;</span>,
+</span></span><span style="display:flex;"><span>	month, day, year, hour, minute, second );
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">StringToDosDate</span>( string s, DOSDATE <span style="color:#ec0000">&amp;</span>d, <span style="color:#5f5fff">char</span> format[] <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;MM/dd/yyyy&#34;</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">StringToDosTime</span>( string s, DOSTIME <span style="color:#ec0000">&amp;</span>t, <span style="color:#5f5fff">char</span> format[] <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;hh:mm:ss&#34;</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">StringToFileTime</span>( string s, FILETIME <span style="color:#ec0000">&amp;</span>ft, <span style="color:#5f5fff">char</span> format[] <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;MM/dd/yyyy hh:mm:ss&#34;</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">StringToOleTime</span>( string s, OLETIME <span style="color:#ec0000">&amp;</span>ot, <span style="color:#5f5fff">char</span> format[] <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;MM/dd/yyyy hh:mm:ss&#34;</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">StringToTimeT</span>( string s, <span style="color:#5f5fff">time_t</span> <span style="color:#ec0000">&amp;</span>t, <span style="color:#5f5fff">char</span> format[] <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;MM/dd/yyyy hh:mm:ss&#34;</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">StringToUTF8</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> src[], <span style="color:#5f5fff">int</span> srcCharSet<span style="color:#ec0000">=</span>CHARSET_ANSI )
+</span></span><span style="display:flex;"><span>wstring <span style="color:#5f5fff">StringToWString</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str[], <span style="color:#5f5fff">int</span> srcCharSet<span style="color:#ec0000">=</span>CHARSET_ANSI )
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>//内存操作
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">Memcmp</span>( <span style="color:#ec0000">const</span> uchar s1[], <span style="color:#ec0000">const</span> uchar s2[], <span style="color:#5f5fff">int</span> n )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">Memcpy</span>( uchar dest[], <span style="color:#ec0000">const</span> uchar src[], <span style="color:#5f5fff">int</span> n, <span style="color:#5f5fff">int</span> destOffset<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, <span style="color:#5f5fff">int</span> srcOffset<span style="color:#ec0000">=</span><span style="color:#008900">0</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">Memset</span>( uchar s[], <span style="color:#5f5fff">int</span> c, <span style="color:#5f5fff">int</span> n )
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">OleTimeToString</span>( OLETIME ot, <span style="color:#5f5fff">char</span> format[] <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;MM/dd/yyyy hh:mm:ss&#34;</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">RegExMatch</span>( string str, string regex ); //正则匹配
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">RegExMatchW</span>( wstring str, wstring regex );
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">RegExSearch</span>( string str, string regex, <span style="color:#5f5fff">int</span> <span style="color:#ec0000">&amp;</span>matchSize, <span style="color:#5f5fff">int</span> startPos<span style="color:#ec0000">=</span><span style="color:#008900">0</span> ); 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">RegExSearchW</span>( wstring str, wstring regex, <span style="color:#5f5fff">int</span> <span style="color:#ec0000">&amp;</span>matchSize, <span style="color:#5f5fff">int</span> startPos<span style="color:#ec0000">=</span><span style="color:#008900">0</span> );
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">if</span>( <span style="color:#5f5fff">RegExMatch</span>( <span style="color:#008900">&#34;test@test.ca&#34;</span>,
+</span></span><span style="display:flex;"><span>	<span style="color:#008900">&#34;</span><span style="color:#008900">\\</span><span style="color:#008900">b[A-Za-z0-9.%_+</span><span style="color:#008900">\\</span><span style="color:#008900">-]+@[A-Za-z0-9.</span><span style="color:#008900">\\</span><span style="color:#008900">-]+</span><span style="color:#008900">\\</span><span style="color:#008900">.[A-Za-z]{2,4}</span><span style="color:#008900">\\</span><span style="color:#008900">b&#34;</span> )
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">==</span> <span style="color:#ec0000">false</span> )
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Warning</span>( <span style="color:#008900">&#34;Invalid email address&#34;</span> );
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">return</span> <span style="color:#ec0000">-</span><span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">int</span> result, size;
+</span></span><span style="display:flex;"><span>	result <span style="color:#ec0000">=</span> <span style="color:#5f5fff">RegExSearch</span>(
+</span></span><span style="display:flex;"><span>	<span style="color:#008900">&#34;12:03:23 AM - 192.168.0.10 : www.sweetscape.com/&#34;</span>,
+</span></span><span style="display:flex;"><span>	<span style="color:#008900">&#34;</span><span style="color:#008900">\\</span><span style="color:#008900">d{1,3}</span><span style="color:#008900">\\</span><span style="color:#008900">.</span><span style="color:#008900">\\</span><span style="color:#008900">d{1,3}.</span><span style="color:#008900">\\</span><span style="color:#008900">d{1,3}.</span><span style="color:#008900">\\</span><span style="color:#008900">d{1,3}&#34;</span>, size );
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;Match at pos %d of size %d</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, result, size );
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">Strcat</span>( <span style="color:#5f5fff">char</span> dest[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> src[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">Strchr</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> s[], <span style="color:#5f5fff">char</span> c )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">Strcmp</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> s1[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> s2[] ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">Strcpy</span>( <span style="color:#5f5fff">char</span> dest[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> src[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">StrDel</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str[], <span style="color:#5f5fff">int</span> start, <span style="color:#5f5fff">int</span> count ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">Stricmp</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> s1[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> s2[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">Strlen</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> s[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">Strncmp</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> s1[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> s2[], <span style="color:#5f5fff">int</span> n )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">Strncpy</span>( <span style="color:#5f5fff">char</span> dest[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> src[], <span style="color:#5f5fff">int</span> n ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">Strnicmp</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> s1[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> s2[], <span style="color:#5f5fff">int</span> n )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">Strstr</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> s1[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> s2[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">SubStr</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> str[], <span style="color:#5f5fff">int</span> start, <span style="color:#5f5fff">int</span> count<span style="color:#ec0000">=-</span><span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span>string <span style="color:#5f5fff">TimeTToString</span>( <span style="color:#5f5fff">time_t</span> t, <span style="color:#5f5fff">char</span> format[] <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;MM/dd/yyyy hh:mm:ss&#34;</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span> <span style="color:#5f5fff">ToLower</span>( <span style="color:#5f5fff">char</span> c ) <span style="color:#5f5fff">wchar_t</span> <span style="color:#5f5fff">ToLowerW</span>( <span style="color:#5f5fff">wchar_t</span> c )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span> <span style="color:#5f5fff">ToUpper</span>( <span style="color:#5f5fff">char</span> c ) <span style="color:#5f5fff">wchar_t</span> <span style="color:#5f5fff">ToUpperW</span>( <span style="color:#5f5fff">wchar_t</span> c )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WMemcmp</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> s1[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> s2[], <span style="color:#5f5fff">int</span> n )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WMemcpy</span>( <span style="color:#5f5fff">wchar_t</span> dest[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> src[], <span style="color:#5f5fff">int</span> n, <span style="color:#5f5fff">int</span> destOffset<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, <span style="color:#5f5fff">int</span> srcOffset<span style="color:#ec0000">=</span><span style="color:#008900">0</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WMemset</span>( <span style="color:#5f5fff">wchar_t</span> s[], <span style="color:#5f5fff">int</span> c, <span style="color:#5f5fff">int</span> n )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WStrcat</span>( <span style="color:#5f5fff">wchar_t</span> dest[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> src[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">WStrchr</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> s[], <span style="color:#5f5fff">wchar_t</span> c )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">WStrcmp</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> s1[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> s2[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WStrcpy</span>( <span style="color:#5f5fff">wchar_t</span> dest[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> src[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">wchar_t</span>[] <span style="color:#5f5fff">WStrDel</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">whar_t</span> str[], <span style="color:#5f5fff">int</span> start, <span style="color:#5f5fff">int</span> count ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">WStricmp</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> s1[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> s2[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">WStringToString</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> str[], <span style="color:#5f5fff">int</span> destCharSet<span style="color:#ec0000">=</span>CHARSET_ANSI )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">WStringToUTF8</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> str[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">WStrlen</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> s[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">WStrncmp</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> s1[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> s2[], <span style="color:#5f5fff">int</span> n )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">WStrncpy</span>( <span style="color:#5f5fff">wchar_t</span> dest[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> src[], <span style="color:#5f5fff">int</span> n )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">WStrnicmp</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> s1[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> s2[], <span style="color:#5f5fff">int</span> n ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">WStrstr</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> s1[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> s2[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">wchar_t</span>[] <span style="color:#5f5fff">WSubStr</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> str[], <span style="color:#5f5fff">int</span> start, <span style="color:#5f5fff">int</span> count<span style="color:#ec0000">=-</span><span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">FileNameGetBase</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> path[], <span style="color:#5f5fff">int</span> includeExtension<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span> ) //获取文件名
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">wchar_t</span>[] <span style="color:#5f5fff">FileNameGetBaseW</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> path[], <span style="color:#5f5fff">int</span> includeExtension<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">FileNameGetExtension</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> path[] ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">wchar_t</span>[] <span style="color:#5f5fff">FileNameGetExtensionW</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> path[] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">FileNameGetPath</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> path[], <span style="color:#5f5fff">int</span> includeSlash<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span> ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">wchar_t</span>[] <span style="color:#5f5fff">FileNameGetPathW</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> path[], <span style="color:#5f5fff">int</span> includeSlash<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span>[] <span style="color:#5f5fff">FileNameSetExtension</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> path[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> extension[] ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">wchar_t</span>[] <span style="color:#5f5fff">FileNameSetExtensionW</span>( <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> path[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">wchar_t</span> extension[] ) 
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>//格式化字符串
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">SPrintf</span>( <span style="color:#5f5fff">char</span> buffer[], <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> format[] [, argument, ... ] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">SScanf</span>( <span style="color:#5f5fff">char</span> str[], <span style="color:#5f5fff">char</span> format[], ... )
+</span></span></code></pre></div><p>数学函数</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">Abs</span>( <span style="color:#5f5fff">double</span> x )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">Ceil</span>( <span style="color:#5f5fff">double</span> x )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">Cos</span>( <span style="color:#5f5fff">double</span> a )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">Exp</span>( <span style="color:#5f5fff">double</span> x )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">Floor</span>( <span style="color:#5f5fff">double</span> x)
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">Log</span>( <span style="color:#5f5fff">double</span> x )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">Max</span>( <span style="color:#5f5fff">double</span> a, <span style="color:#5f5fff">double</span> b )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">Min</span>( <span style="color:#5f5fff">double</span> a, <span style="color:#5f5fff">double</span> b)
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">Pow</span>( <span style="color:#5f5fff">double</span> x, <span style="color:#5f5fff">double</span> y)
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">Random</span>( <span style="color:#5f5fff">int</span> maximum )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">Sin</span>( <span style="color:#5f5fff">double</span> a )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">Sqrt</span>( <span style="color:#5f5fff">double</span> x )
+</span></span><span style="display:flex;"><span>data_type <span style="color:#5f5fff">SwapBytes</span>( data_type x )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">double</span> <span style="color:#5f5fff">Tan</span>( <span style="color:#5f5fff">double</span> a )
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>//工具函数
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>//计算校验和
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">Checksum</span>( <span style="color:#5f5fff">int</span> algorithm, int64 start<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, int64 size<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, int64 crcPolynomial<span style="color:#ec0000">=-</span><span style="color:#008900">1</span>, int64 crcInitValue<span style="color:#ec0000">=-</span><span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span>	CHECKSUM_BYTE CHECKSUM_SHORT_LE CHECKSUM_SHORT_BE CHECKSUM_INT_LE CHECKSUM_INT_BE CHECKSUM_INT64_LE CHECKSUM_INT64_BE CHECKSUM_SUM8 CHECKSUM_SUM16 CHECKSUM_SUM32 CHECKSUM_SUM64 CHECKSUM_CRC16 CHECKSUM_CRCCCITT CHECKSUM_CRC32 CHECKSUM_ADLER32
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">ChecksumAlgArrayStr</span>( <span style="color:#5f5fff">int</span> algorithm, <span style="color:#5f5fff">char</span> result[], uchar <span style="color:#ec0000">*</span>buffer, int64 size, <span style="color:#5f5fff">char</span> ignore[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, int64 crcPolynomial<span style="color:#ec0000">=-</span><span style="color:#008900">1</span>, int64 crcInitValue<span style="color:#ec0000">=-</span><span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">ChecksumAlgArrayBytes</span>( <span style="color:#5f5fff">int</span> algorithm, uchar result[], uchar <span style="color:#ec0000">*</span>buffer, int64 size, <span style="color:#5f5fff">char</span> ignore[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, int64 crcPolynomial<span style="color:#ec0000">=-</span><span style="color:#008900">1</span>, int64 crcInitValue<span style="color:#ec0000">=-</span><span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">ChecksumAlgStr</span>( <span style="color:#5f5fff">int</span> algorithm, <span style="color:#5f5fff">char</span> result[], int64 start<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, int64 size<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, <span style="color:#5f5fff">char</span> ignore[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, int64 crcPolynomial<span style="color:#ec0000">=-</span><span style="color:#008900">1</span>, int64 crcInitValue<span style="color:#ec0000">=-</span><span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">ChecksumAlgBytes</span>( <span style="color:#5f5fff">int</span> algorithm, uchar result[], int64 start<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, int64 size<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, <span style="color:#5f5fff">char</span> ignore[]<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, int64 crcPolynomial<span style="color:#ec0000">=-</span><span style="color:#008900">1</span>, int64 crcInitValue<span style="color:#ec0000">=-</span><span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>//查找比较
+</span></span><span style="display:flex;"><span>TCompareResults <span style="color:#5f5fff">Compare</span>( <span style="color:#5f5fff">int</span> type, <span style="color:#5f5fff">int</span> fileNumA, <span style="color:#5f5fff">int</span> fileNumB, int64 startA<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, int64 sizeA<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, int64 startB<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, int64 sizeB<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, <span style="color:#5f5fff">int</span> matchcase<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span>, int64 maxlookahead<span style="color:#ec0000">=</span><span style="color:#008900">10000</span>, int64 minmatchlength<span style="color:#ec0000">=</span><span style="color:#008900">8</span>, int64 quickmatch<span style="color:#ec0000">=</span><span style="color:#008900">512</span> )
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">int</span> i, f1, f2;
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">FileOpen</span>( <span style="color:#008900">&#34;C:</span><span style="color:#008900">\\</span><span style="color:#008900">temp</span><span style="color:#008900">\\</span><span style="color:#008900">test1&#34;</span> );
+</span></span><span style="display:flex;"><span>	f1 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">GetFileNum</span>();
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">FileOpen</span>( <span style="color:#008900">&#34;C:</span><span style="color:#008900">\\</span><span style="color:#008900">temp</span><span style="color:#008900">\\</span><span style="color:#008900">test2&#34;</span> );
+</span></span><span style="display:flex;"><span>	f2 <span style="color:#ec0000">=</span> <span style="color:#5f5fff">GetFileNum</span>();
+</span></span><span style="display:flex;"><span>	TCompareResults r <span style="color:#ec0000">=</span> <span style="color:#5f5fff">Compare</span>( COMPARE_SYNCHRONIZE, f1, f2 );
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">for</span>( i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> r.count; i<span style="color:#ec0000">++</span> )
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;%d %Ld %Ld %Ld %Ld</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>,
+</span></span><span style="display:flex;"><span>	r.record[i].type,
+</span></span><span style="display:flex;"><span>	r.record[i].startA,
+</span></span><span style="display:flex;"><span>	r.record[i].sizeA,
+</span></span><span style="display:flex;"><span>	r.record[i].startB,
+</span></span><span style="display:flex;"><span>	r.record[i].sizeB );
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>TFindResults <span style="color:#5f5fff">FindAll</span>( <span style="color:#ec0000">&lt;</span>datatype<span style="color:#ec0000">&gt;</span> data, <span style="color:#5f5fff">int</span> matchcase<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span>, <span style="color:#5f5fff">int</span> wholeword<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span>, <span style="color:#5f5fff">int</span> method<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, <span style="color:#5f5fff">double</span> tolerance<span style="color:#ec0000">=</span><span style="color:#008900">0.0</span>, <span style="color:#5f5fff">int</span> dir<span style="color:#ec0000">=</span><span style="color:#008900">1</span>, int64 start<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, int64 size<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, <span style="color:#5f5fff">int</span> wildcardMatchLength<span style="color:#ec0000">=</span><span style="color:#008900">24</span> )
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">int</span> i;
+</span></span><span style="display:flex;"><span>	TFindResults r <span style="color:#ec0000">=</span> <span style="color:#5f5fff">FindAll</span>( <span style="color:#008900">&#34;Test&#34;</span> );
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;%d</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, r.count );
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">for</span>( i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> r.count; i<span style="color:#ec0000">++</span> )
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;%Ld %Ld</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, r.start[i], r.size[i] );
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">FindFirst</span>( <span style="color:#ec0000">&lt;</span>datatype<span style="color:#ec0000">&gt;</span> data, <span style="color:#5f5fff">int</span> matchcase<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span>, <span style="color:#5f5fff">int</span> wholeword<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span>, <span style="color:#5f5fff">int</span> method<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, <span style="color:#5f5fff">double</span> tolerance<span style="color:#ec0000">=</span><span style="color:#008900">0.0</span>, <span style="color:#5f5fff">int</span> dir<span style="color:#ec0000">=</span><span style="color:#008900">1</span>, int64 start<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, int64 size<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, <span style="color:#5f5fff">int</span> wildcardMatchLength<span style="color:#ec0000">=</span><span style="color:#008900">24</span> )
+</span></span><span style="display:flex;"><span>TFindInFilesResults <span style="color:#5f5fff">FindInFiles</span>( <span style="color:#ec0000">&lt;</span>datatype<span style="color:#ec0000">&gt;</span> data, <span style="color:#5f5fff">char</span> dir[], <span style="color:#5f5fff">char</span> mask[], <span style="color:#5f5fff">int</span> subdirs<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span>, <span style="color:#5f5fff">int</span> openfiles<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span>, <span style="color:#5f5fff">int</span> matchcase<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span>, <span style="color:#5f5fff">int</span> wholeword<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span>, <span style="color:#5f5fff">int</span> method<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, <span style="color:#5f5fff">double</span> tolerance<span style="color:#ec0000">=</span><span style="color:#008900">0.0</span>, <span style="color:#5f5fff">int</span> wildcardMatchLength<span style="color:#ec0000">=</span><span style="color:#008900">24</span> )
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">int</span> i, j;
+</span></span><span style="display:flex;"><span>	TFindInFilesResults r <span style="color:#ec0000">=</span> <span style="color:#5f5fff">FindInFiles</span>( <span style="color:#008900">&#34;PK&#34;</span>,
+</span></span><span style="display:flex;"><span>	<span style="color:#008900">&#34;C:</span><span style="color:#008900">\\</span><span style="color:#008900">temp&#34;</span>, <span style="color:#008900">&#34;*.zip&#34;</span> );
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;%d</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, r.count );
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">for</span>( i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> r.count; i<span style="color:#ec0000">++</span> )
+</span></span><span style="display:flex;"><span>	{
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34; %s</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, r.file[i].filename );
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34; %d</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, r.file[i].count );
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">for</span>( j <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; j <span style="color:#ec0000">&lt;</span> r.file[i].count; j<span style="color:#ec0000">++</span> )
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34; %Ld %Ld</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>,
+</span></span><span style="display:flex;"><span>	r.file[i].start[j],
+</span></span><span style="display:flex;"><span>	r.file[i].size[j] );
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">FindNext</span>( <span style="color:#5f5fff">int</span> dir<span style="color:#ec0000">=</span><span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span>TFindStringsResults <span style="color:#5f5fff">FindStrings</span>( <span style="color:#5f5fff">int</span> minStringLength, <span style="color:#5f5fff">int</span> type, <span style="color:#5f5fff">int</span> matchingCharTypes, wstring customChars<span style="color:#ec0000">=</span><span style="color:#008900">&#34;&#34;</span>, int64 start<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, int64 size<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, <span style="color:#5f5fff">int</span> requireNull<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span> )
+</span></span><span style="display:flex;"><span>	TFindStringsResults r <span style="color:#ec0000">=</span> <span style="color:#5f5fff">FindStrings</span>( <span style="color:#008900">5</span>, FINDSTRING_ASCII,
+</span></span><span style="display:flex;"><span>	FINDSTRING_LETTERS <span style="color:#ec0000">|</span> FINDSTRING_CUSTOM, <span style="color:#008900">&#34;$&amp;&#34;</span> );
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;%d</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, r.count );
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">for</span>( i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> r.count; i<span style="color:#ec0000">++</span> )
+</span></span><span style="display:flex;"><span>	<span style="color:#5f5fff">Printf</span>( <span style="color:#008900">&#34;%Ld %Ld %d</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>, r.start[i], r.size[i], r.type[i] );
+</span></span><span style="display:flex;"><span>	
+</span></span><span style="display:flex;"><span>//类型转换
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span> <span style="color:#5f5fff">ConvertASCIIToEBCDIC</span>( <span style="color:#5f5fff">char</span> ascii )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">ConvertASCIIToUNICODE</span>( <span style="color:#5f5fff">int</span> len, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> ascii[], ubyte unicode[], <span style="color:#5f5fff">int</span> bigendian<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">ConvertASCIIToUNICODEW</span>( <span style="color:#5f5fff">int</span> len, <span style="color:#ec0000">const</span> <span style="color:#5f5fff">char</span> ascii[], ushort unicode[] ) 
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">char</span> <span style="color:#5f5fff">ConvertEBCDICToASCII</span>( <span style="color:#5f5fff">char</span> ebcdic )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">ConvertUNICODEToASCII</span>( <span style="color:#5f5fff">int</span> len, <span style="color:#ec0000">const</span> ubyte unicode[], <span style="color:#5f5fff">char</span> ascii[], <span style="color:#5f5fff">int</span> bigendian<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">ConvertUNICODEToASCIIW</span>( <span style="color:#5f5fff">int</span> len, <span style="color:#ec0000">const</span> ushort unicode[], <span style="color:#5f5fff">char</span> ascii[] )
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">ExportFile</span>( <span style="color:#5f5fff">int</span> type, <span style="color:#5f5fff">char</span> filename[], int64 start<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, int64 size<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, int64 startaddress<span style="color:#ec0000">=</span><span style="color:#008900">0</span>,<span style="color:#5f5fff">int</span> bytesperrow<span style="color:#ec0000">=</span><span style="color:#008900">16</span>, <span style="color:#5f5fff">int</span> wordaddresses<span style="color:#ec0000">=</span><span style="color:#008900">0</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">ImportFile</span>( <span style="color:#5f5fff">int</span> type, <span style="color:#5f5fff">char</span> filename[], <span style="color:#5f5fff">int</span> wordaddresses<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span>, <span style="color:#5f5fff">int</span> defaultByteValue<span style="color:#ec0000">=-</span><span style="color:#008900">1</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetSectorSize</span>()	
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">HexOperation</span>( <span style="color:#5f5fff">int</span> operation, int64 start, int64 size, operand, step<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, int64 skip<span style="color:#ec0000">=</span><span style="color:#008900">0</span> )
+</span></span><span style="display:flex;"><span>int64 <span style="color:#5f5fff">Histogram</span>( int64 start, int64 size, int64 result[<span style="color:#008900">256</span>] )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">IsDrive</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">IsLogicalDrive</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">IsPhysicalDrive</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">IsProcess</span>()
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">OpenLogicalDrive</span>( <span style="color:#5f5fff">char</span> driveletter )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">OpenPhysicalDrive</span>( <span style="color:#5f5fff">int</span> physicalID )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">OpenProcessById</span>( <span style="color:#5f5fff">int</span> processID, <span style="color:#5f5fff">int</span> openwriteable<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">OpenProcessByName</span>( <span style="color:#5f5fff">char</span> processname[], <span style="color:#5f5fff">int</span> openwriteable<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span> )
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">ReplaceAll</span>( <span style="color:#ec0000">&lt;</span>datatype<span style="color:#ec0000">&gt;</span> finddata, <span style="color:#ec0000">&lt;</span>datatype<span style="color:#ec0000">&gt;</span> replacedata, <span style="color:#5f5fff">int</span> matchcase<span style="color:#ec0000">=</span><span style="color:#ec0000">true</span>, <span style="color:#5f5fff">int</span> wholeword<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span>, <span style="color:#5f5fff">int</span> method<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, <span style="color:#5f5fff">double</span> tolerance<span style="color:#ec0000">=</span><span style="color:#008900">0.0</span>, <span style="color:#5f5fff">int</span> dir<span style="color:#ec0000">=</span><span style="color:#008900">1</span>, int64 start<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, int64 size<span style="color:#ec0000">=</span><span style="color:#008900">0</span>, <span style="color:#5f5fff">int</span> padwithzeros<span style="color:#ec0000">=</span><span style="color:#ec0000">false</span>, <span style="color:#5f5fff">int</span> wildcardMatchLength<span style="color:#ec0000">=</span><span style="color:#008900">24</span> )
+</span></span></code></pre></div>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/re_posts/20141010_pe_re/">
+                        C&#43;&#43;逆向分析技巧
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/re_posts/20170110_android_re/">
+                        Android逆向分析笔记
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

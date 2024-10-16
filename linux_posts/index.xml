@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Linux_posts on 超哥的博客</title>
+    <link>https://lich4.github.io/linux_posts/</link>
+    <description>Recent content in Linux_posts on 超哥的博客</description>
+    <generator>Hugo</generator>
+    <language>zh-CN</language>
+    <lastBuildDate>Fri, 16 Aug 2019 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://lich4.github.io/linux_posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>利用nc分析网络协议</title>
+      <link>https://lich4.github.io/linux_posts/20190816_nc/</link>
+      <pubDate>Fri, 16 Aug 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/linux_posts/20190816_nc/</guid>
+      <description>利用nc分析网络协议</description>
+    </item>
+    <item>
+      <title>Linux Shell参考</title>
+      <link>https://lich4.github.io/linux_posts/20190623_shell/</link>
+      <pubDate>Sun, 23 Jun 2019 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/linux_posts/20190623_shell/</guid>
+      <description>Linux Shell参考</description>
+    </item>
+    <item>
+      <title>Preload Hook原理与实践</title>
+      <link>https://lich4.github.io/linux_posts/20181212_preload_hook/</link>
+      <pubDate>Wed, 12 Dec 2018 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/linux_posts/20181212_preload_hook/</guid>
+      <description>Preload Hook原理与实践</description>
+    </item>
+    <item>
+      <title>IPSet策略设计</title>
+      <link>https://lich4.github.io/linux_posts/20181113_ipset_policy/</link>
+      <pubDate>Tue, 13 Nov 2018 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/linux_posts/20181113_ipset_policy/</guid>
+      <description>IPSet策略设计</description>
+    </item>
+    <item>
+      <title>Win/Linux/Mac遍历进程模块</title>
+      <link>https://lich4.github.io/linux_posts/20160909_iter_mod/</link>
+      <pubDate>Fri, 09 Sep 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/linux_posts/20160909_iter_mod/</guid>
+      <description>Win/Linux/Mac遍历进程模块</description>
+    </item>
+    <item>
+      <title>Linux ptrace实验</title>
+      <link>https://lich4.github.io/linux_posts/20160501_ptrace/</link>
+      <pubDate>Sun, 01 May 2016 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/linux_posts/20160501_ptrace/</guid>
+      <description>Linux ptrace实验</description>
+    </item>
+  </channel>
+</rss>

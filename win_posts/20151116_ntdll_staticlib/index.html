@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    提取动态链接库ntdll的函数到静态lib | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/win_posts/20151116_ntdll_staticlib/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/win_posts/">Win_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/win_posts/20151116_ntdll_staticlib/">提取动态链接库ntdll的函数到静态lib</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">提取动态链接库ntdll的函数到静态lib</h1>
+    
+    <p class="single-summary">提取动态链接库ntdll的函数到静态lib</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2015-11-16T00:00:00&#43;00:00">November 16, 2015</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#源码">源码</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="源码">源码</h2>
+<p>  以_alldiv函数为例，为什么挑它呢？ 因为他没有对数据引用，也没有全局变量导致重定位问题，纯机器码，用来测试我的“任意机器码转静态lib”最好不过</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>// CodeCopier.cpp : 定义控制台应用程序的入口点。
+</span></span><span style="display:flex;"><span>//
+</span></span><span style="display:flex;"><span>#include &lt;windows.h&gt;
+</span></span><span style="display:flex;"><span>#include &lt;stdio.h&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>#define BEA_ENGINE_STATIC
+</span></span><span style="display:flex;"><span>#define BEA_USE_STDCALL
+</span></span><span style="display:flex;"><span>#include &#34;BeaEngine.h&#34;
+</span></span><span style="display:flex;"><span>#pragma comment(lib,&#34;BeaEngine.lib&#34;)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>#define    TYPE_I386    0x00000001
+</span></span><span style="display:flex;"><span>#define    TYPE_AMD64    0x00000002
+</span></span><span style="display:flex;"><span>#define TYPE_EXE    0x00000100
+</span></span><span style="display:flex;"><span>#define TYPE_DLL    0x00000200
+</span></span><span style="display:flex;"><span>#define TYPE_SYS    0x00000400
+</span></span><span style="display:flex;"><span>#define TYPE_PE        0x00010000
+</span></span><span style="display:flex;"><span>#define TYPE_FILE    0x10000000//文件
+</span></span><span style="display:flex;"><span>#define TYPE_MEMMAP    0x20000000//文件内存映射代码
+</span></span><span style="display:flex;"><span>#define TYPE_MEM    0x40000000//纯内存代码
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>#define TYPE_FILE_DLL_X86 (TYPE_FILE | TYPE_PE | TYPE_DLL | TYPE_I386)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>#include &lt;vector&gt;
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">using</span> <span style="color:#ec0000">namespace</span> std;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>BOOL <span style="color:#5f5fff">OpenPeByFileName</span>(PCHAR FilePath, PVOID<span style="color:#ec0000">*</span> OutBaseAddr)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (<span style="color:#ec0000">!</span>GetFileAttributesA(FilePath) <span style="color:#ec0000">&amp;</span> FILE_ATTRIBUTE_NORMAL)
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span> FALSE;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">*</span>OutBaseAddr <span style="color:#ec0000">=</span> (PVOID)(((ULONG_PTR)LoadLibrary(FilePath)) <span style="color:#ec0000">&amp;</span> <span style="color:#ec0000">~</span><span style="color:#008900">0xF</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> TRUE;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>BOOL <span style="color:#5f5fff">OpenCodeContainer</span>(ULONG CodeType, PCHAR Name, ULONG Id, PVOID<span style="color:#ec0000">*</span> OutBaseAddr)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">switch</span> (CodeType)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">case</span> <span style="color:#ec0000">TYPE_FILE_DLL_X86</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">return</span> OpenPeByFileName(Name, OutBaseAddr);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">default</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> FALSE;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">GetFunctionLen</span>(ULONG_PTR Begin)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    DISASM disasm;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> sum <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> len <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>, maxsize <span style="color:#ec0000">=</span> <span style="color:#008900">0xFFFF</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">do</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        memset(<span style="color:#ec0000">&amp;</span>disasm, <span style="color:#008900">0</span>, <span style="color:#ec0000">sizeof</span>(disasm));
+</span></span><span style="display:flex;"><span>        disasm.EIP <span style="color:#ec0000">=</span> (UIntPtr)Begin <span style="color:#ec0000">+</span> (UIntPtr)sum;
+</span></span><span style="display:flex;"><span>        len <span style="color:#ec0000">=</span> Disasm(<span style="color:#ec0000">&amp;</span>disasm);
+</span></span><span style="display:flex;"><span>        sum <span style="color:#ec0000">+=</span> len;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (len <span style="color:#ec0000">&gt;</span> <span style="color:#008900">0</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> (strstr(disasm.CompleteInstr, <span style="color:#008900">&#34;ret&#34;</span>))
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">break</span>;//发现ret指令则假设函数退出并以此推测函数大小和
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    } <span style="color:#ec0000">while</span> (len <span style="color:#ec0000">&gt;</span> <span style="color:#008900">0</span> <span style="color:#ec0000">&amp;&amp;</span> sum <span style="color:#ec0000">&lt;=</span> maxsize);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> sum;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>BOOL <span style="color:#5f5fff">WriteCodeToObj</span>(HANDLE File, ULONG_PTR Begin, ULONG Len)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    //1.构造section目录
+</span></span><span style="display:flex;"><span>    //2.构造section内容，将各个section内部数据存储到lib中，lib的section的个数为导出符号数，导出地址需要适应IMAGE_SCN_ALIGN_??BYTES
+</span></span><span style="display:flex;"><span>    //3.构造COFF Symbol Table
+</span></span><span style="display:flex;"><span>    //4.加入导出符号名数组
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    std<span style="color:#ec0000">::</span>vector<span style="color:#ec0000">&lt;</span>BYTE<span style="color:#ec0000">&gt;</span> filedata;
+</span></span><span style="display:flex;"><span>    IMAGE_FILE_HEADER objheader;
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> symbolnum <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    //加入文件头
+</span></span><span style="display:flex;"><span>    memset(<span style="color:#ec0000">&amp;</span>objheader, <span style="color:#008900">0</span>, <span style="color:#ec0000">sizeof</span>(objheader));
+</span></span><span style="display:flex;"><span>    filedata.insert(filedata.end(), (BYTE<span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>objheader, (BYTE<span style="color:#ec0000">*</span>)(<span style="color:#ec0000">&amp;</span>objheader <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    //加入k个.text段
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> secnum <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;//要求dll输出最后一个为辅助函数
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> offsetraw <span style="color:#ec0000">=</span> <span style="color:#ec0000">sizeof</span>(IMAGE_FILE_HEADER)<span style="color:#ec0000">+</span>secnum <span style="color:#ec0000">*</span> <span style="color:#ec0000">sizeof</span>(IMAGE_SECTION_HEADER);//后置数据偏移
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> offsetsymbol <span style="color:#ec0000">=</span> <span style="color:#008900">4</span>;//符号字串偏移，之前有字串数DWORD
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> index <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    symbolnum <span style="color:#ec0000">=</span> secnum;
+</span></span><span style="display:flex;"><span>    std<span style="color:#ec0000">::</span>vector<span style="color:#ec0000">&lt;</span>BYTE<span style="color:#ec0000">&gt;</span> rawdata;//储存各个section指向的数据
+</span></span><span style="display:flex;"><span>    std<span style="color:#ec0000">::</span>vector<span style="color:#ec0000">&lt;</span>BYTE<span style="color:#ec0000">&gt;</span> symbolinfo;//存储COFF Symbol Table
+</span></span><span style="display:flex;"><span>    std<span style="color:#ec0000">::</span>vector<span style="color:#ec0000">&lt;</span>BYTE<span style="color:#ec0000">&gt;</span> functors;//存储符号名数组
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    IMAGE_SECTION_HEADER secheader;
+</span></span><span style="display:flex;"><span>    memset(<span style="color:#ec0000">&amp;</span>secheader, <span style="color:#008900">0</span>, <span style="color:#ec0000">sizeof</span>(secheader));
+</span></span><span style="display:flex;"><span>    memcpy(secheader.Name, <span style="color:#008900">&#34;.text&#34;</span>, IMAGE_SIZEOF_SHORT_NAME);
+</span></span><span style="display:flex;"><span>    secheader.SizeOfRawData <span style="color:#ec0000">=</span> Len;
+</span></span><span style="display:flex;"><span>    secheader.PointerToRawData <span style="color:#ec0000">=</span> offsetraw ;
+</span></span><span style="display:flex;"><span>    secheader.Characteristics <span style="color:#ec0000">=</span> IMAGE_SCN_CNT_CODE <span style="color:#ec0000">|</span> IMAGE_SCN_ALIGN_16BYTES <span style="color:#ec0000">|</span> IMAGE_SCN_MEM_EXECUTE <span style="color:#ec0000">|</span> IMAGE_SCN_MEM_READ;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    secheader.PointerToRelocations <span style="color:#ec0000">=</span> secheader.PointerToRawData <span style="color:#ec0000">+</span> secheader.SizeOfRawData;
+</span></span><span style="display:flex;"><span>    filedata.insert(filedata.end(), (BYTE<span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>secheader, (BYTE<span style="color:#ec0000">*</span>)(<span style="color:#ec0000">&amp;</span>secheader <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    //构造symboltable和section关联
+</span></span><span style="display:flex;"><span>    IMAGE_SYMBOL symbol;
+</span></span><span style="display:flex;"><span>    BYTE<span style="color:#ec0000">*</span> funcname <span style="color:#ec0000">=</span> (BYTE<span style="color:#ec0000">*</span>)<span style="color:#008900">&#34;_alldiv&#34;</span>;
+</span></span><span style="display:flex;"><span>    functors.insert(functors.end(),funcname,funcname<span style="color:#ec0000">+</span><span style="color:#008900">8</span>);
+</span></span><span style="display:flex;"><span>    memset(<span style="color:#ec0000">&amp;</span>symbol, <span style="color:#008900">0</span>, <span style="color:#ec0000">sizeof</span>(symbol));
+</span></span><span style="display:flex;"><span>    symbol.N.LongName[<span style="color:#008900">1</span>] <span style="color:#ec0000">=</span> offsetsymbol;
+</span></span><span style="display:flex;"><span>    symbol.SectionNumber <span style="color:#ec0000">=</span> index <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>;
+</span></span><span style="display:flex;"><span>    symbol.Type <span style="color:#ec0000">=</span> <span style="color:#008900">0x20</span>;// TYPE_FUNCTION
+</span></span><span style="display:flex;"><span>    symbol.StorageClass <span style="color:#ec0000">=</span> IMAGE_SYM_CLASS_EXTERNAL;
+</span></span><span style="display:flex;"><span>    symbolinfo.insert(symbolinfo.end(), (BYTE<span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>symbol, (BYTE<span style="color:#ec0000">*</span>)(<span style="color:#ec0000">&amp;</span>symbol <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    filedata.insert(filedata.end(), (BYTE<span style="color:#ec0000">*</span>)Begin,(BYTE<span style="color:#ec0000">*</span>)Begin <span style="color:#ec0000">+</span> Len);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    //更新头部
+</span></span><span style="display:flex;"><span>    IMAGE_FILE_HEADER<span style="color:#ec0000">*</span> pobjheader <span style="color:#ec0000">=</span> (IMAGE_FILE_HEADER<span style="color:#ec0000">*</span>)filedata.data();
+</span></span><span style="display:flex;"><span>    pobjheader<span style="color:#ec0000">-&gt;</span>Machine <span style="color:#ec0000">=</span> IMAGE_FILE_MACHINE_I386;
+</span></span><span style="display:flex;"><span>    pobjheader<span style="color:#ec0000">-&gt;</span>NumberOfSections <span style="color:#ec0000">=</span> secnum;
+</span></span><span style="display:flex;"><span>    pobjheader<span style="color:#ec0000">-&gt;</span>PointerToSymbolTable <span style="color:#ec0000">=</span> filedata.size();//计算符号表偏移
+</span></span><span style="display:flex;"><span>    pobjheader<span style="color:#ec0000">-&gt;</span>NumberOfSymbols <span style="color:#ec0000">=</span> symbolnum;
+</span></span><span style="display:flex;"><span>    //加入符号表
+</span></span><span style="display:flex;"><span>    filedata.insert(filedata.end(), symbolinfo.begin(), symbolinfo.end());
+</span></span><span style="display:flex;"><span>    //加入符号名数组个数
+</span></span><span style="display:flex;"><span>    <span style="color:#5f5fff">int</span> strsize <span style="color:#ec0000">=</span> functors.size() <span style="color:#ec0000">+</span> <span style="color:#008900">4</span>;
+</span></span><span style="display:flex;"><span>    filedata.insert(filedata.end(), (BYTE<span style="color:#ec0000">*</span>)<span style="color:#ec0000">&amp;</span>strsize, (BYTE<span style="color:#ec0000">*</span>)(<span style="color:#ec0000">&amp;</span>strsize <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>));
+</span></span><span style="display:flex;"><span>    //加入符号名数组
+</span></span><span style="display:flex;"><span>    filedata.insert(filedata.end(), functors.begin(), functors.end());
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    DWORD writenum;
+</span></span><span style="display:flex;"><span>    WriteFile(File, filedata.data(), filedata.size(), <span style="color:#ec0000">&amp;</span>writenum, <span style="color:#ec0000">NULL</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> TRUE;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">main</span>()
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    //第一步，打开文件或内存
+</span></span><span style="display:flex;"><span>    PVOID BaseAddr <span style="color:#ec0000">=</span> <span style="color:#ec0000">NULL</span>;
+</span></span><span style="display:flex;"><span>    ULONG BufSize;
+</span></span><span style="display:flex;"><span>    OpenCodeContainer(TYPE_FILE_DLL_X86, <span style="color:#008900">&#34;e:</span><span style="color:#008900">\\</span><span style="color:#008900">ntdll.dll&#34;</span>, <span style="color:#008900">0</span>, <span style="color:#ec0000">&amp;</span>BaseAddr);;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    HANDLE hObj <span style="color:#ec0000">=</span> CreateFileA(<span style="color:#008900">&#34;alldiv.obj&#34;</span>, GENERIC_WRITE, <span style="color:#008900">0</span>, <span style="color:#ec0000">NULL</span>, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, <span style="color:#ec0000">NULL</span>);
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (BaseAddr)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        ULONG_PTR Begin <span style="color:#ec0000">=</span> (ULONG_PTR)GetProcAddress((HMODULE)BaseAddr, <span style="color:#008900">&#34;_alldiv&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">int</span> Len <span style="color:#ec0000">=</span> GetFunctionLen(Begin);
+</span></span><span style="display:flex;"><span>        WriteCodeToObj(hObj, Begin, Len);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    CloseHandle(hObj);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>生成obj结果</p>
+<pre tabindex="0"><code>ext:00000000
+.text:00000000 ; =============== S U B R O U T I N E =======================================
+.text:00000000
+.text:00000000
+.text:00000000                 public _alldiv
+.text:00000000 _alldiv         proc near
+.text:00000000
+.text:00000000 arg_0           = dword ptr  4
+.text:00000000 arg_4           = dword ptr  8
+.text:00000000 arg_8           = dword ptr  0Ch
+.text:00000000 arg_C           = dword ptr  10h
+.text:00000000
+.text:00000000                 push    edi
+.text:00000001                 push    esi
+.text:00000002                 push    ebx
+.text:00000003                 xor     edi, edi
+.text:00000005                 mov     eax, [esp+0Ch+arg_4]
+.text:00000009                 or      eax, eax
+.text:0000000B                 jge     short loc_21
+.text:0000000D                 inc     edi
+.text:0000000E                 mov     edx, [esp+0Ch+arg_0]
+.text:00000012                 neg     eax
+.text:00000014                 neg     edx
+.text:00000016                 sbb     eax, 0
+.text:00000019                 mov     [esp+0Ch+arg_4], eax
+.text:0000001D                 mov     [esp+0Ch+arg_0], edx
+.text:00000021
+.text:00000021 loc_21:                                 ; CODE XREF: _alldiv+Bj
+.text:00000021                 mov     eax, [esp+0Ch+arg_C]
+.text:00000025                 or      eax, eax
+.text:00000027                 jge     short loc_3D
+.text:00000029                 inc     edi
+.text:0000002A                 mov     edx, [esp+0Ch+arg_8]
+.text:0000002E                 neg     eax
+.text:00000030                 neg     edx
+.text:00000032                 sbb     eax, 0
+.text:00000035                 mov     [esp+0Ch+arg_C], eax
+.text:00000039                 mov     [esp+0Ch+arg_8], edx
+.text:0000003D
+.text:0000003D loc_3D:                                 ; CODE XREF: _alldiv+27j
+.text:0000003D                 or      eax, eax
+.text:0000003F                 jnz     short loc_59
+.text:00000041                 mov     ecx, [esp+0Ch+arg_8]
+.text:00000045                 mov     eax, [esp+0Ch+arg_4]
+.text:00000049                 xor     edx, edx
+.text:0000004B                 div     ecx
+.text:0000004D                 mov     ebx, eax
+.text:0000004F                 mov     eax, [esp+0Ch+arg_0]
+.text:00000053                 div     ecx
+.text:00000055                 mov     edx, ebx
+.text:00000057                 jmp     short loc_9A
+.text:00000059 ; ---------------------------------------------------------------------------
+.text:00000059
+.text:00000059 loc_59:                                 ; CODE XREF: _alldiv+3Fj
+.text:00000059                 mov     ebx, eax
+.text:0000005B                 mov     ecx, [esp+0Ch+arg_8]
+.text:0000005F                 mov     edx, [esp+0Ch+arg_4]
+.text:00000063                 mov     eax, [esp+0Ch+arg_0]
+.text:00000067
+.text:00000067 loc_67:                                 ; CODE XREF: _alldiv+71j
+.text:00000067                 shr     ebx, 1
+.text:00000069                 rcr     ecx, 1
+.text:0000006B                 shr     edx, 1
+.text:0000006D                 rcr     eax, 1
+.text:0000006F                 or      ebx, ebx
+.text:00000071                 jnz     short loc_67
+.text:00000073                 div     ecx
+.text:00000075                 mov     esi, eax
+.text:00000077                 mul     [esp+0Ch+arg_C]
+.text:0000007B                 mov     ecx, eax
+.text:0000007D                 mov     eax, [esp+0Ch+arg_8]
+.text:00000081                 mul     esi
+.text:00000083                 add     edx, ecx
+.text:00000085                 jb      short loc_95
+.text:00000087                 cmp     edx, [esp+0Ch+arg_4]
+.text:0000008B                 ja      short loc_95
+.text:0000008D                 jb      short loc_96
+.text:0000008F                 cmp     eax, [esp+0Ch+arg_0]
+.text:00000093                 jbe     short loc_96
+.text:00000095
+.text:00000095 loc_95:                                 ; CODE XREF: _alldiv+85j
+.text:00000095                                         ; _alldiv+8Bj
+.text:00000095                 dec     esi
+.text:00000096
+.text:00000096 loc_96:                                 ; CODE XREF: _alldiv+8Dj
+.text:00000096                                         ; _alldiv+93j
+.text:00000096                 xor     edx, edx
+.text:00000098                 mov     eax, esi
+.text:0000009A
+.text:0000009A loc_9A:                                 ; CODE XREF: _alldiv+57j
+.text:0000009A                 dec     edi
+.text:0000009B                 jnz     short loc_A4
+.text:0000009D                 neg     edx
+.text:0000009F                 neg     eax
+.text:000000A1                 sbb     edx, 0
+.text:000000A4
+.text:000000A4 loc_A4:                                 ; CODE XREF: _alldiv+9Bj
+.text:000000A4                 pop     ebx
+.text:000000A5                 pop     esi
+.text:000000A6                 pop     edi
+.text:000000A7                 retn    10h
+.text:000000A7 _alldiv         endp
+.text:000000A7
+.text:000000A7 _text           ends
+.text:000000A7
+.text:000000A7
+.text:000000A7                 end
+</code></pre>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150809_windbg_k/">
+                        Windbg K命令分析
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20170101_fiddler/">
+                        使用Fiddler调试http/https协议
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    使用Fiddler调试http/https协议 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/win_posts/20170101_fiddler/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/win_posts/">Win_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/win_posts/20170101_fiddler/">使用Fiddler调试http/https协议</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">使用Fiddler调试http/https协议</h1>
+    
+    <p class="single-summary">使用Fiddler调试http/https协议</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2017-01-01T00:00:00&#43;00:00">January 1, 2017</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E6%8A%93%E5%8C%85/">#抓包</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#调试语法">调试语法</a></li>
+    <li><a href="#autoresponder">AutoResponder</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="调试语法">调试语法</h2>
+<p>  使用Fiddler调试http/https协议对于渗透测试，Fiddler的强大在于：</p>
+<ul>
+<li>
+<p>可以针对http/https协议；可以嗅探环回地址，这样方便测试渗透工具和进行攻防演练</p>
+</li>
+<li>
+<p>可以调试协议；何谓调试？能控制某一项复杂操作中的单个细节，并在这一点控制:暂停/查看/修改/执行即为调试。这样我们就可以任意修改浏览器发给服务器的数据，和服务器发给浏览器的数据了</p>
+</li>
+<li>
+<p>高亮显示文本</p>
+</li>
+</ul>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">    ?abc    高亮显示所有包含searchtext的URL
+    boldabc 加粗显示包含abc的url
+    bold    清除加粗
+</code></pre><ul>
+<li>会话筛选</li>
+</ul>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">    按大小[&gt;][&lt;][=]size
+        &gt;5k只显示大小大于5k的response包，&lt;/=同理
+    按状态=status
+        =301，只显示301重定向响应包
+    按方式=method
+        =POST，只显示POST请求包
+    按主机@host
+        @msn.com，只显示主机包含msn.com的请求
+    按Content-Type内容
+        selectimag，筛选Content-Type头包含image的会话             image/css/htm/..
+    selectui-comments slow，筛选存在于Header和SessionFlag的会话
+    select@Request.Accept html，选择所有Accept包含html的请求
+    select@Response.Set-Cookie domain，选择所有Set-Cookie包含domain的响应
+    allbutstr，保留Content-Type头包含str的会话，xml/java/..
+</code></pre><ul>
+<li>会话断点</li>
+</ul>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">    bpafterabc  在收到RequestURI包含abc的响应包时断下
+        bpafter /favicon.ico
+    bpafter     清除bpafter断点
+    bps404      在收到状态为404的响应包时断下
+    bps         清除bps断点
+    bpv/bpm ?   在发送指定类型(GETPOST ...)的请求包时断下
+    bpv         清除bpv断点
+    bpu  abc    在发送URI包含abc的请求时断下
+        bpu /myservice.asmx
+    bpu         清除bpu断点
+</code></pre><ul>
+<li>替换</li>
+</ul>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">    urlreplaceseekstr replacestr   替换任何URL中的seekstr为replacestr
+    urlreplace        清除urlreplace
+</code></pre><ul>
+<li>查询域名</li>
+</ul>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">    !dnswww.example.com 
+    !nslookupwww.example.com
+    !listen port [certhostname]
+    !listen8889
+    !listen4443 localhost
+    !listen444 secure.example.com   https认证服务器SubjectCN=secure.example.com
+</code></pre><ul>
+<li>其他功能</li>
+</ul>
+<pre tabindex="0"><code>cls         清除会话列表
+dump        保存所有回话到c:\下zip文件
+g/go        从断点恢复执行
+help        显示此帮助
+show/hide   显示/隐藏tray
+start /stop 注册/解除作为系统代理
+quit        退出
+</code></pre><h2 id="autoresponder">AutoResponder</h2>
+<p>简单用法:</p>
+<ul>
+<li>从左侧请求列表选择请求拖入AutoResponder表，根据需要修改Rule和Action</li>
+<li>右键Generate File，选择Edit response修改响应数据文件，选择enable rules等</li>
+<li>执行下次请求</li>
+</ul>
+<p>详细语法：</p>
+<p>Rule</p>
+<ul>
+<li>通配符：*</li>
+<li>限定符：NOT:    EXACT:    REGEX:</li>
+</ul>
+<p>Action</p>
+<ul>
+<li>本地文件路径(Generate File生成)</li>
+<li>http://???</li>
+<li>*redir:http://???</li>
+<li>*bpu                break on request</li>
+<li>*bpafter           break on response</li>
+<li>*delay:??         delay sending request by ?? milliseconds</li>
+<li>*header:Name=Value      set Header</li>
+<li>*flag:Name=Value           set Session Flag</li>
+<li>*drop</li>
+</ul>
+<p>burp类似功能位于Proxy-&gt;Options-&gt;Match and Replace<br>
+通过正则表达式替换请求和响应的header/body/param</p>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20151116_ntdll_staticlib/">
+                        提取动态链接库ntdll的函数到静态lib
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

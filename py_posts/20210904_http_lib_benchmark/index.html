@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    Python的几个http库性能测试 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/py_posts/20210904_http_lib_benchmark/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/py_posts/">Py_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/py_posts/20210904_http_lib_benchmark/">Python的几个http库性能测试</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">Python的几个http库性能测试</h1>
+    
+    <p class="single-summary">Python的几个http库性能测试</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2021-09-04T00:00:00&#43;00:00">September 4, 2021</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#环境准备">环境准备</a></li>
+    <li><a href="#测试结果">测试结果</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="环境准备">环境准备</h2>
+<ul>
+<li>python3环境，安装模块: httplib2 requests grequests pycurl</li>
+<li>本地http服务器，如<code>python3 -m http.server 80</code></li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Python" data-lang="Python"><span style="display:flex;"><span>#! /usr/bin/env python3
+</span></span><span style="display:flex;"><span># # -*- coding: utf-8 -*-
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">from</span> gevent <span style="color:#ec0000">import</span> monkey <span style="color:#ec0000">as</span> curious_george
+</span></span><span style="display:flex;"><span>curious_george<span style="color:#ec0000">.</span>patch_all(thread<span style="color:#ec0000">=</span><span style="color:#ec0000">False</span>, select<span style="color:#ec0000">=</span><span style="color:#ec0000">False</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">import</span> time
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">import</span> aiohttp
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">import</span> asyncio
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">import</span> grequests
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">import</span> http.client
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">import</span> httplib2
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">import</span> pycurl
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">import</span> requests
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">import</span> urllib
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">import</span> urllib3
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>N <span style="color:#ec0000">=</span> <span style="color:#008900">1000</span>
+</span></span><span style="display:flex;"><span>TMOUT <span style="color:#ec0000">=</span> <span style="color:#008900">2</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>t1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">for</span> i <span style="color:#ec0000">in</span> <span style="color:#ec0000">range</span>(N):
+</span></span><span style="display:flex;"><span>    con <span style="color:#ec0000">=</span> http<span style="color:#ec0000">.</span>client<span style="color:#ec0000">.</span>HTTPConnection(<span style="color:#008900">&#34;127.0.0.1&#34;</span>, port<span style="color:#ec0000">=</span><span style="color:#008900">80</span>, timeout<span style="color:#ec0000">=</span>TMOUT)
+</span></span><span style="display:flex;"><span>    con<span style="color:#ec0000">.</span>request(<span style="color:#008900">&#34;GET&#34;</span>, <span style="color:#008900">&#34;/&#34;</span>)
+</span></span><span style="display:flex;"><span>    con<span style="color:#ec0000">.</span>getresponse()<span style="color:#ec0000">.</span>read()
+</span></span><span style="display:flex;"><span>t2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">print</span>(<span style="color:#008900">&#34;http.client </span><span style="color:#008900">%d</span><span style="color:#008900">ms for </span><span style="color:#008900">%d</span><span style="color:#008900"> packet&#34;</span> <span style="color:#ec0000">%</span> ((t2 <span style="color:#ec0000">-</span> t1), N))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>t1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">for</span> i <span style="color:#ec0000">in</span> <span style="color:#ec0000">range</span>(N):
+</span></span><span style="display:flex;"><span>    httplib2<span style="color:#ec0000">.</span>Http(cache<span style="color:#ec0000">=</span><span style="color:#ec0000">None</span>, timeout<span style="color:#ec0000">=</span>TMOUT)<span style="color:#ec0000">.</span>request(<span style="color:#008900">&#34;http://127.0.0.1:80/&#34;</span>, <span style="color:#008900">&#34;GET&#34;</span>)
+</span></span><span style="display:flex;"><span>t2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">print</span>(<span style="color:#008900">&#34;httplib2 </span><span style="color:#008900">%d</span><span style="color:#008900">ms for </span><span style="color:#008900">%d</span><span style="color:#008900"> packet&#34;</span> <span style="color:#ec0000">%</span> ((t2 <span style="color:#ec0000">-</span> t1), N))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>t1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">for</span> i <span style="color:#ec0000">in</span> <span style="color:#ec0000">range</span>(N):
+</span></span><span style="display:flex;"><span>    requests<span style="color:#ec0000">.</span>get(<span style="color:#008900">&#34;http://127.0.0.1:80/&#34;</span>, timeout<span style="color:#ec0000">=</span>TMOUT)
+</span></span><span style="display:flex;"><span>t2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">print</span>(<span style="color:#008900">&#34;requests </span><span style="color:#008900">%d</span><span style="color:#008900">ms for </span><span style="color:#008900">%d</span><span style="color:#008900"> packet&#34;</span> <span style="color:#ec0000">%</span> ((t2 <span style="color:#ec0000">-</span> t1), N))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>t1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">for</span> i <span style="color:#ec0000">in</span> <span style="color:#ec0000">range</span>(N):
+</span></span><span style="display:flex;"><span>    urllib<span style="color:#ec0000">.</span>request<span style="color:#ec0000">.</span>urlopen(<span style="color:#008900">&#34;http://127.0.0.1:80/&#34;</span>, timeout<span style="color:#ec0000">=</span>TMOUT)<span style="color:#ec0000">.</span>read()
+</span></span><span style="display:flex;"><span>t2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">print</span>(<span style="color:#008900">&#34;urllib </span><span style="color:#008900">%d</span><span style="color:#008900">ms for </span><span style="color:#008900">%d</span><span style="color:#008900"> packet&#34;</span> <span style="color:#ec0000">%</span> ((t2 <span style="color:#ec0000">-</span> t1), N))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>t1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">for</span> i <span style="color:#ec0000">in</span> <span style="color:#ec0000">range</span>(N):
+</span></span><span style="display:flex;"><span>    urllib3<span style="color:#ec0000">.</span>PoolManager()<span style="color:#ec0000">.</span>request(<span style="color:#008900">&#34;GET&#34;</span>, <span style="color:#008900">&#34;http://127.0.0.1:80/&#34;</span>, timeout<span style="color:#ec0000">=</span>TMOUT)
+</span></span><span style="display:flex;"><span>t2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">print</span>(<span style="color:#008900">&#34;urllib3 </span><span style="color:#008900">%d</span><span style="color:#008900">ms for </span><span style="color:#008900">%d</span><span style="color:#008900"> packet&#34;</span> <span style="color:#ec0000">%</span> ((t2 <span style="color:#ec0000">-</span> t1), N))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>t1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">async</span> <span style="color:#ec0000">def</span> <span style="color:#5f5fff">test_aiohttp</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> i <span style="color:#ec0000">in</span> <span style="color:#ec0000">range</span>(N):
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">async</span> <span style="color:#ec0000">with</span> aiohttp<span style="color:#ec0000">.</span>ClientSession() <span style="color:#ec0000">as</span> session:
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">async</span> <span style="color:#ec0000">with</span> session<span style="color:#ec0000">.</span>get(<span style="color:#008900">&#34;http://127.0.0.1:80/&#34;</span>) <span style="color:#ec0000">as</span> response:
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">await</span> response<span style="color:#ec0000">.</span>text()
+</span></span><span style="display:flex;"><span>asyncio<span style="color:#ec0000">.</span>get_event_loop()<span style="color:#ec0000">.</span>run_until_complete(test_aiohttp())
+</span></span><span style="display:flex;"><span>t2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">print</span>(<span style="color:#008900">&#34;aiohttp </span><span style="color:#008900">%d</span><span style="color:#008900">ms for </span><span style="color:#008900">%d</span><span style="color:#008900"> packet&#34;</span> <span style="color:#ec0000">%</span> ((t2 <span style="color:#ec0000">-</span> t1), N))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>t1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span>grequests<span style="color:#ec0000">.</span>map([grequests<span style="color:#ec0000">.</span>get(<span style="color:#008900">&#34;http://127.0.0.1:80/&#34;</span>) <span style="color:#ec0000">for</span> i <span style="color:#ec0000">in</span> <span style="color:#ec0000">range</span>(N)])
+</span></span><span style="display:flex;"><span>t2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">print</span>(<span style="color:#008900">&#34;grequests </span><span style="color:#008900">%d</span><span style="color:#008900">ms for </span><span style="color:#008900">%d</span><span style="color:#008900"> packet&#34;</span> <span style="color:#ec0000">%</span> ((t2 <span style="color:#ec0000">-</span> t1), N))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>t1 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">for</span> i <span style="color:#ec0000">in</span> <span style="color:#ec0000">range</span>(N):
+</span></span><span style="display:flex;"><span>    curl <span style="color:#ec0000">=</span> pycurl<span style="color:#ec0000">.</span>Curl()
+</span></span><span style="display:flex;"><span>    curl<span style="color:#ec0000">.</span>setopt(pycurl<span style="color:#ec0000">.</span>CONNECTTIMEOUT, TMOUT)
+</span></span><span style="display:flex;"><span>    curl<span style="color:#ec0000">.</span>setopt(pycurl<span style="color:#ec0000">.</span>TIMEOUT, TMOUT)
+</span></span><span style="display:flex;"><span>    curl<span style="color:#ec0000">.</span>setopt(pycurl<span style="color:#ec0000">.</span>URL, <span style="color:#008900">&#34;http://127.0.0.1:80/&#34;</span>)
+</span></span><span style="display:flex;"><span>    curl<span style="color:#ec0000">.</span>setopt(pycurl<span style="color:#ec0000">.</span>WRITEFUNCTION, <span style="color:#ec0000">lambda</span> x: <span style="color:#ec0000">None</span>)
+</span></span><span style="display:flex;"><span>    curl<span style="color:#ec0000">.</span>perform()
+</span></span><span style="display:flex;"><span>t2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(time<span style="color:#ec0000">.</span>time() <span style="color:#ec0000">*</span> <span style="color:#008900">1000</span>)
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">print</span>(<span style="color:#008900">&#34;pycurl </span><span style="color:#008900">%d</span><span style="color:#008900">ms for </span><span style="color:#008900">%d</span><span style="color:#008900"> packet&#34;</span> <span style="color:#ec0000">%</span> ((t2 <span style="color:#ec0000">-</span> t1), N))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">def</span> <span style="color:#5f5fff">get_with_pycurl</span>(url, proxy<span style="color:#ec0000">=</span><span style="color:#ec0000">None</span>):
+</span></span><span style="display:flex;"><span>    curl <span style="color:#ec0000">=</span> pycurl<span style="color:#ec0000">.</span>Curl()
+</span></span><span style="display:flex;"><span>    buff <span style="color:#ec0000">=</span> io<span style="color:#ec0000">.</span>BytesIO()
+</span></span><span style="display:flex;"><span>    hdr <span style="color:#ec0000">=</span> io<span style="color:#ec0000">.</span>BytesIO()
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> proxy:
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> <span style="color:#ec0000">not</span> proxy<span style="color:#ec0000">.</span>startswith(<span style="color:#008900">&#34;http&#34;</span>):
+</span></span><span style="display:flex;"><span>            proxy <span style="color:#ec0000">=</span> <span style="color:#008900">&#34;http://&#34;</span> <span style="color:#ec0000">+</span> proxy
+</span></span><span style="display:flex;"><span>        curl<span style="color:#ec0000">.</span>setopt(pycurl<span style="color:#ec0000">.</span>PROXY, proxy)
+</span></span><span style="display:flex;"><span>        curl<span style="color:#ec0000">.</span>setopt(pycurl<span style="color:#ec0000">.</span>PROXYTYPE_HTTP, pycurl<span style="color:#ec0000">.</span>PROXYTYPE_HTTP)
+</span></span><span style="display:flex;"><span>    curl<span style="color:#ec0000">.</span>setopt(pycurl<span style="color:#ec0000">.</span>USERAGENT, tmp_ua)
+</span></span><span style="display:flex;"><span>    curl<span style="color:#ec0000">.</span>setopt(pycurl<span style="color:#ec0000">.</span>CONNECTTIMEOUT, TMOUT)
+</span></span><span style="display:flex;"><span>    curl<span style="color:#ec0000">.</span>setopt(pycurl<span style="color:#ec0000">.</span>TIMEOUT, TMOUT)
+</span></span><span style="display:flex;"><span>    curl<span style="color:#ec0000">.</span>setopt(pycurl<span style="color:#ec0000">.</span>URL, url)
+</span></span><span style="display:flex;"><span>    curl<span style="color:#ec0000">.</span>setopt(pycurl<span style="color:#ec0000">.</span>WRITEFUNCTION, buff<span style="color:#ec0000">.</span>write)
+</span></span><span style="display:flex;"><span>    curl<span style="color:#ec0000">.</span>setopt(pycurl<span style="color:#ec0000">.</span>WRITEHEADER, hdr)
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">try</span>:
+</span></span><span style="display:flex;"><span>        curl<span style="color:#ec0000">.</span>perform()
+</span></span><span style="display:flex;"><span>        curl<span style="color:#ec0000">.</span>close()
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">except</span>: # conn fail
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span> <span style="color:#ec0000">None</span>, <span style="color:#ec0000">None</span>
+</span></span><span style="display:flex;"><span>    curl<span style="color:#ec0000">.</span>close()
+</span></span><span style="display:flex;"><span>    status <span style="color:#ec0000">=</span> <span style="color:#ec0000">int</span>(hdr<span style="color:#ec0000">.</span>getvalue()<span style="color:#ec0000">.</span>decode()<span style="color:#ec0000">.</span>split(<span style="color:#008900">&#34;</span><span style="color:#008900">\r\n</span><span style="color:#008900">&#34;</span>)[<span style="color:#008900">0</span>]<span style="color:#ec0000">.</span>split(<span style="color:#008900">&#34; &#34;</span>)[<span style="color:#008900">1</span>])
+</span></span><span style="display:flex;"><span>    body <span style="color:#ec0000">=</span> buff<span style="color:#ec0000">.</span>getvalue()<span style="color:#ec0000">.</span>decode()
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> status, body
+</span></span></code></pre></div><h2 id="测试结果">测试结果</h2>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">库</th>
+          <th style="text-align: left">超时</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: left">pycurl</td>
+          <td style="text-align: left">1314ms</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">http.client</td>
+          <td style="text-align: left">1668ms</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">httplib2</td>
+          <td style="text-align: left">1675ms</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">urllib3</td>
+          <td style="text-align: left">1938ms</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">aiohttp</td>
+          <td style="text-align: left">2189ms</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">urllib</td>
+          <td style="text-align: left">2378ms</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">grequests</td>
+          <td style="text-align: left">3299ms</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">requests</td>
+          <td style="text-align: left">3985ms</td>
+      </tr>
+  </tbody>
+</table>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/py_posts/20190729_scrawler/">
+                        Python爬虫笔记
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/py_posts/20211019_serial_lib_benchmark/">
+                        常见的序列化方式性能测试
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    Windbg符号文件夹中像MD5的文件夹名如何生成 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/win_posts/20150224_windbg_dir/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/win_posts/">Win_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/win_posts/20150224_windbg_dir/">Windbg符号文件夹中像MD5的文件夹名如何生成</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">Windbg符号文件夹中像MD5的文件夹名如何生成</h1>
+    
+    <p class="single-summary">Windbg符号文件夹中像MD5的文件夹名如何生成</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2015-02-24T00:00:00&#43;00:00">February 24, 2015</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+
+  <div class="single-tags">
+    
+    <span>
+      <a href="https://lich4.github.io/tags/%E9%80%86%E5%90%91/">#逆向</a>
+    </span>
+    
+    
+  </div>
+
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#任务找到windbg-pdb符号对应文件夹名长串编码含义">任务：找到windbg pdb符号对应文件夹名长串编码含义？</a></li>
+    <li><a href="#解决问题">解决问题</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="任务找到windbg-pdb符号对应文件夹名长串编码含义">任务：找到windbg pdb符号对应文件夹名长串编码含义？</h2>
+<p>  解决方法是用windbg调试windbg，下断点:</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">bp kernelbase!CreateFileA &#34;da poi(esp+4);k;gc&#34;
+bp kernelbase!CreateFileW &#34;du poi(esp+4);k;gc&#34;
+</code></pre><p>得到如下记录：</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">0938e15c  &#34;d:\symbol\cmd.pdb\A609EC1CBCFF43&#34;
+0938e19c  &#34;43AEFC312495558D832\cmd.pdb&#34;
+ChildEBP RetAddr  
+04d6a670 70af02cb KERNELBASE!CreateFileW
+04d6a6ac 70af1a7e dbghelp!IStreamCRTFile::Create+0x8b
+04d6a6d4 70af08c5 dbghelp!MSF_HB::internalOpen+0x2e
+04d6a6f0 70ae8d47 dbghelp!MSF::Open+0x35
+04d6a724 70ae90df dbghelp!PDB1::OpenEx2W+0xc7
+04d6a74c 70af335f dbghelp!PDB::OpenEx2W+0x1f
+04d6a770 70a91294 dbghelp!PDBCommon::Open2W+0x1f
+04d6a794 70a3af14 dbghelp!CDiaDataSource::loadDataFromPdb+0x44
+04d6abf8 70a56f4c dbghelp!diaGetPdb+0x1fc
+04d6ae28 70a55bdd dbghelp!GetDebugData+0x230
+04d6b2c8 70a55885 dbghelp!modload+0x285
+04d6b2f4 70a4c177 dbghelp!LoadSymbols+0x355
+04d6b328 70a4d44d dbghelp!ModLoop+0x86
+04d6d2e4 70a50ef8 dbghelp!EnumSymbols+0xec
+04d6d318 70d0fabf dbghelp!SymEnumSymbolsExW+0x59
+04d6d480 70d0fbf7 dbgeng!EnumModuleTypedData+0xef
+04d6e170 70d1024c dbgeng!EnumAllModuleTypedData+0xf4
+04d6e3b8 70cca72b dbgeng!ParseExamine+0x504
+04d6e428 70cca955 dbgeng!ProcessCommands+0x11c3
+04d6e488 70c3cdd4 dbgeng!ProcessCommandsAndCatch+0x91
+04d6e8f4 70c3cfc5 dbgeng!Execute+0x226
+04d6e944 00dde653 dbgeng!DebugClient::ExecuteWide+0x8d
+04d6ed08 00ddea93 windbg!ProcessCommand+0x145
+04d6fd28 00de0275 windbg!ProcessEngineCommands+0xd1
+04d6fd40 7567919f windbg!EngineLoop+0x390
+04d6fd4c 77b0b5af KERNEL32!BaseThreadInitThunk+0xe
+04d6fd94 77b0b57a ntdll!__RtlUserThreadStart+0x2f
+04d6fda4 00000000 ntdll!_RtlUserThreadStart+0x1b
+</code></pre><p>  现在来被调试的windbg调试windows\syswow64\cmd.exe，由于有了pdb，分析过程变得极为容易，跟踪便可以知道modload中首次初始化路径cmd.pdb，而diaGetPdb中该地址最终变幻成<code>d:\symbol\cmd.pdb\A609EC1CBCFF4343AEFC312495558D832\cmd.pdb</code>，现在就是要知道A609EC1CBCFF4343AEFC312495558D832从何而来，因此从diaGetPdb入手，跟踪后可以发现dbghelpb把内存中PE的PROCESS_ENTRY结构和文件名以及符号服务器等传给了symsrv.dll，symsrv!SymbolServerWEx完成返回完整路径的任务，这个任务包括：</p>
+<ul>
+<li>TestParameters函数检测传入参数合法性</li>
+<li>SymbolServerGetIndexStringW函数返回index，也就是这里的A609EC1CBCFF4343AEFC312495558D832</li>
+<li>SymbolServerByIndexW根据index返回pdb完整路径</li>
+<li>解析出SymbolServerByIndexW的参数：WCHAR *srv, WCHAR *pdbname, BYTE *indexdata, int dword1, int dword2, WCHAR *outpath,PDWORD unknown</li>
+<li>解析出SymbolServerGetIndexStringW的参数：WCHAR* srv,WCHAR* pdbname(无路径),BYTE* index ,int dword1,int dword2,WCHAR* formatted,int len，发现index经过变换后即是结果，如wntdll.pdb。</li>
+</ul>
+<p>传入：8365a747 c534bc47 a03e6293 a78c675f<br>
+结果：47A76583 34C547BC A03E6293 A78C675F2</p>
+<p>现有任务变为2个：</p>
+<ul>
+<li>1.传入index源自何处？这需要向上层调用寻找</li>
+<li>2.末尾2如何计算？这需要分析SymbolServerGetIndexStringW</li>
+</ul>
+<h2 id="解决问题">解决问题</h2>
+<p>  逐层向上标记参数，<br>
+<code>symsrv_SymbolServerWEx —&gt; CallSymbolServerGetFile -&gt; symsrvGetFile -&gt; HandleLocatePdbInSymSrvOrLocalStore</code><br>
+  到这一层后发现参数只有类指针this，我们需要关注symsrvGetFile的对应参数indexdata,param1,param2，indexdata位于this+27780处，dword1为*(DWORD*)(this+24624)，dword2为0，需要了解这些位置在什么地方进行了改动，在往上层进入了线程回调函数 GetPdbThreadProc，这里需要看看哪里调用的线程，并找到传递的参数之前在哪里改变的，到了DiaLocatePdbMultiThread，伪代码：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span>v17 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(<span style="color:#ec0000">this</span> <span style="color:#ec0000">+</span> <span style="color:#008900">4052</span>);  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*</span>(v17 <span style="color:#ec0000">+</span> <span style="color:#008900">4</span>) <span style="color:#ec0000">!=</span> <span style="color:#008900">3</span> <span style="color:#ec0000">||</span> <span style="color:#ec0000">*</span>(v17 <span style="color:#ec0000">+</span> <span style="color:#008900">12</span>) <span style="color:#ec0000">!=</span> <span style="color:#008900">20</span> )  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>  dword1__________ <span style="color:#ec0000">=</span> param6;//GUID*  
+</span></span><span style="display:flex;"><span>  v18 <span style="color:#ec0000">=</span> param4;  
+</span></span><span style="display:flex;"><span>}  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">else</span> 
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>  v18 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(v17 <span style="color:#ec0000">+</span> <span style="color:#008900">8</span>);  
+</span></span><span style="display:flex;"><span>  dword1__________ <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(v18 <span style="color:#ec0000">+</span> <span style="color:#008900">4</span>);  
+</span></span><span style="display:flex;"><span>}  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">if</span> ( param5 )//GUID*  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>  indexdata <span style="color:#ec0000">=</span> param5;  
+</span></span><span style="display:flex;"><span>}  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">else</span> <span style="color:#5f5fff">if</span> ( v18 )  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>  indexdata <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>v18;//param+2180  
+</span></span><span style="display:flex;"><span>} 
+</span></span></code></pre></div><p>  再向上层看，diaGetPdb中</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">param4=this+2180 param5=*(this+2172) param6=*(this+2168)
+RetrievePdbInfo  
+this+2180 =&gt; thisb+4 
+this+2172 =&gt; 0
+this+2168 =&gt; thisb+20
+thisb=*(DWORD*)(this+3252)
+</code></pre><p>需要知道this+3252何时写入：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#ec0000">__fastcall</span> <span style="color:#5f5fff">ReadHeader</span>(<span style="color:#5f5fff">int</span> thisc, <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int32</span> a2)  
+</span></span><span style="display:flex;"><span>{  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int32</span> v2; // ebx@1  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v3; // esi@1  
+</span></span><span style="display:flex;"><span>  QWORD v5; // rax@5  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">struct</span> <span style="color:#5f5fff">_IMGHLP_DEBUG_DATA</span> <span style="color:#ec0000">*</span>pebegin2; // edi@5  
+</span></span><span style="display:flex;"><span>  DWORD filesize; // eax@5  
+</span></span><span style="display:flex;"><span>  BYTE <span style="color:#ec0000">*</span>v8; // eax@6  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>v9; // eax@7  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>v10; // ecx@7  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span> v11; // ST10_8@9  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span> v12; // ST10_8@13  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">__int16</span> v13; // cx@14  
+</span></span><span style="display:flex;"><span>  LPVOID v14; // eax@21  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v15; // edi@21  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v16; // ecx@22  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v17; // edx@24  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v18; // eax@24  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">char</span> v19; // di@24  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v20; // ecx@27  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span> v21; // ST10_8@31  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">struct</span> <span style="color:#5f5fff">_IMGHLP_DEBUG_DATA</span> <span style="color:#ec0000">*</span>v22; // edx@37  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span> v23; // ST10_8@42  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span> v24; // ST10_8@43  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">signed</span> <span style="color:#5f5fff">int</span> PESIG; // edx@44  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v26; // eax@45  
+</span></span><span style="display:flex;"><span>  LPVOID v27; // ecx@45  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span> v28; // ST10_8@47  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span> v29; // ST10_8@50  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span> v30; // ST10_8@61  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> imagesize; // eax@65  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>v32; // eax@74  
+</span></span><span style="display:flex;"><span>  LPVOID sectiondata; // eax@74  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v34; // ecx@75  
+</span></span><span style="display:flex;"><span>  BYTE <span style="color:#ec0000">*</span>v35; // ecx@76  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v36; // ecx@76  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">const</span> <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>secheader; // eax@76  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int32</span> v38; // edx@83  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span> v39; // ST10_8@84  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int32</span> v40; // eax@85  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span> v41; // ST10_8@88  
+</span></span><span style="display:flex;"><span>  LPVOID v42; // eax@98  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v43; // edx@116  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int32</span> v44; // [sp-4h] [bp-3A4h]@116  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>v45; // [sp+0h] [bp-3A0h]@0  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>v46; // [sp+0h] [bp-3A0h]@9  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int32</span> v47; // [sp+0h] [bp-3A0h]@13  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>v48; // [sp+0h] [bp-3A0h]@42  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int32</span> v49; // [sp+0h] [bp-3A0h]@43  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>v50; // [sp+0h] [bp-3A0h]@83  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">struct</span> <span style="color:#5f5fff">_IMAGE_SECTION_HEADER</span> <span style="color:#ec0000">*</span>v51; // [sp+0h] [bp-3A0h]@85  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> v52; // [sp+4h] [bp-39Ch]@0  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> v53; // [sp+4h] [bp-39Ch]@9  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int32</span> v54; // [sp+4h] [bp-39Ch]@13  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> v55; // [sp+4h] [bp-39Ch]@42  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int32</span> v56; // [sp+4h] [bp-39Ch]@43  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> v57; // [sp+4h] [bp-39Ch]@83  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">struct</span> <span style="color:#5f5fff">_IMAGE_DATA_DIRECTORY</span> <span style="color:#ec0000">*</span>v58; // [sp+4h] [bp-39Ch]@85  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v59; // [sp+14h] [bp-38Ch]@76  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> filesize2; // [sp+24h] [bp-37Ch]@74  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int32</span> filesize2a; // [sp+24h] [bp-37Ch]@87  
+</span></span><span style="display:flex;"><span>  DWORD filesize2_4; // [sp+28h] [bp-378h]@7  
+</span></span><span style="display:flex;"><span>  BYTE <span style="color:#ec0000">*</span>exportpos; // [sp+2Ch] [bp-374h]@1  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span> v64; // [sp+30h] [bp-370h]@1  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v65; // [sp+38h] [bp-368h]@9  
+</span></span><span style="display:flex;"><span>  BYTE <span style="color:#ec0000">*</span>v66; // [sp+3Ch] [bp-364h]@1  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> v67; // [sp+40h] [bp-360h]@1  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>sectiondata_1; // [sp+44h] [bp-35Ch]@21  
+</span></span><span style="display:flex;"><span>  LPVOID lpMem; // [sp+48h] [bp-358h]@1  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>v70; // [sp+4Ch] [bp-354h]@5  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v71; // [sp+50h] [bp-350h]@5  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">struct</span> <span style="color:#5f5fff">_IMGHLP_DEBUG_DATA</span> <span style="color:#ec0000">*</span>pebegin; // [sp+54h] [bp-34Ch]@5  
+</span></span><span style="display:flex;"><span>  BYTE v73[<span style="color:#008900">28</span>]; // [sp+58h] [bp-348h]@31  
+</span></span><span style="display:flex;"><span>  BYTE v74[<span style="color:#008900">264</span>]; // [sp+74h] [bp-32Ch]@61  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span> v75; // [sp+17Ch] [bp-224h]@88  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">char</span> v76; // [sp+18Ch] [bp-214h]@89  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v77; // [sp+1C0h] [bp-1E0h]@88  
+</span></span><span style="display:flex;"><span>  BYTE v78[<span style="color:#008900">248</span>]; // [sp+1C4h] [bp-1DCh]@1  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int16</span> v79[<span style="color:#008900">40</span>]; // [sp+2BCh] [bp-E4h]@50  
+</span></span><span style="display:flex;"><span>  BYTE Dst[<span style="color:#008900">64</span>]; // [sp+30Ch] [bp-94h]@1  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#ec0000">__int64</span> v81; // [sp+350h] [bp-50h]@13  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v82; // [sp+358h] [bp-48h]@17  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v83; // [sp+35Ch] [bp-44h]@17  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v84; // [sp+360h] [bp-40h]@18  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v85; // [sp+364h] [bp-3Ch]@20  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">void</span> <span style="color:#ec0000">*</span>v86; // [sp+368h] [bp-38h]@21  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v87; // [sp+36Ch] [bp-34h]@24  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">unsigned</span> <span style="color:#5f5fff">int</span> v88; // [sp+370h] [bp-30h]@23  
+</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">int</span> v89; // [sp+374h] [bp-2Ch]@17  
+</span></span><span style="display:flex;"><span>  CPPEH_RECORD ms_exc; // [sp+388h] [bp-18h]@9  
+</span></span><span style="display:flex;"><span>   
+</span></span><span style="display:flex;"><span>  v2 <span style="color:#ec0000">=</span> a2;  
+</span></span><span style="display:flex;"><span>  v3 <span style="color:#ec0000">=</span> thisc;  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">*</span>Dst <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>  memset(<span style="color:#ec0000">&amp;</span>Dst[<span style="color:#008900">2</span>], <span style="color:#008900">0</span>, <span style="color:#008900">0x3Eu</span>);  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">*</span>v78 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>  memset(<span style="color:#ec0000">&amp;</span>v78[<span style="color:#008900">4</span>], <span style="color:#008900">0</span>, <span style="color:#008900">0xF4u</span>);  
+</span></span><span style="display:flex;"><span>  lpMem <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>  v66 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>  HIDWORD(v64) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>  exportpos <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>  v67 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( v2 <span style="color:#ec0000">==</span> <span style="color:#008900">1</span> )  
+</span></span><span style="display:flex;"><span>  {  
+</span></span><span style="display:flex;"><span>    v9 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3412</span>);  
+</span></span><span style="display:flex;"><span>    v71 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3412</span>);  
+</span></span><span style="display:flex;"><span>    pebegin2 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">16</span>);  
+</span></span><span style="display:flex;"><span>    pebegin <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">16</span>);  
+</span></span><span style="display:flex;"><span>    v10 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">20</span>);  
+</span></span><span style="display:flex;"><span>    v70 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">20</span>);  
+</span></span><span style="display:flex;"><span>    filesize2_4 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3248</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">5</span>;  
+</span></span><span style="display:flex;"><span>  }  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">else</span> 
+</span></span><span style="display:flex;"><span>  {  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> ( v2 <span style="color:#ec0000">==</span> <span style="color:#008900">2</span> )  
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>      v71 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>      v8 <span style="color:#ec0000">=</span> MapItRO(<span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">1096</span>), <span style="color:#008900">0</span>);  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">1104</span>) <span style="color:#ec0000">=</span> v8;  
+</span></span><span style="display:flex;"><span>      pebegin2 <span style="color:#ec0000">=</span> v8;  
+</span></span><span style="display:flex;"><span>      v70 <span style="color:#ec0000">=</span> (v8 <span style="color:#ec0000">&gt;&gt;</span> <span style="color:#008900">32</span>);  
+</span></span><span style="display:flex;"><span>      pebegin <span style="color:#ec0000">=</span> v8;  
+</span></span><span style="display:flex;"><span>      filesize <span style="color:#ec0000">=</span> GetFileSize(<span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">1096</span>), <span style="color:#008900">0</span>);  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3248</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">2</span>;  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">else</span> 
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> ( v2 <span style="color:#ec0000">!=</span> <span style="color:#008900">3</span> )  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>      v71 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>      LODWORD(v5) <span style="color:#ec0000">=</span> MapItRO(<span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">2156</span>), <span style="color:#008900">0</span>);  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">2160</span>) <span style="color:#ec0000">=</span> v5;  
+</span></span><span style="display:flex;"><span>      pebegin2 <span style="color:#ec0000">=</span> v5;  
+</span></span><span style="display:flex;"><span>      v70 <span style="color:#ec0000">=</span> (v5 <span style="color:#ec0000">&gt;&gt;</span> <span style="color:#008900">32</span>);  
+</span></span><span style="display:flex;"><span>      pebegin <span style="color:#ec0000">=</span> v5;  
+</span></span><span style="display:flex;"><span>      filesize <span style="color:#ec0000">=</span> GetFileSize(<span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">2156</span>), <span style="color:#008900">0</span>);  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3248</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">3</span>;  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>    filesize2_4 <span style="color:#ec0000">=</span> filesize;  
+</span></span><span style="display:flex;"><span>    v9 <span style="color:#ec0000">=</span> v71;  
+</span></span><span style="display:flex;"><span>    v10 <span style="color:#ec0000">=</span> v70;  
+</span></span><span style="display:flex;"><span>  }  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">4024</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>  v65 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>  ms_exc.registration.TryLevel <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>  HIDWORD(v11) <span style="color:#ec0000">=</span> <span style="color:#008900">2</span>;  
+</span></span><span style="display:flex;"><span>  LODWORD(v11) <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>v64;  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>ReadImageData(v9, pebegin2, v10, <span style="color:#008900">0</span>i64, v11, v45, v52) )// 读取2个字节  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">goto</span> LABEL_10;  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3240</span>) <span style="color:#ec0000">=</span> v2;  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( v64 <span style="color:#ec0000">!=</span> <span style="color:#ec0000">&#39;</span>ID<span style="color:#ec0000">&#39;</span> )  
+</span></span><span style="display:flex;"><span>  {  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> ( v64 <span style="color:#ec0000">==</span> <span style="color:#ec0000">&#39;</span>ZM<span style="color:#ec0000">&#39;</span> )                          // 如果是MZ头  
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>      HIDWORD(v23) <span style="color:#ec0000">=</span> <span style="color:#008900">64</span>;  
+</span></span><span style="display:flex;"><span>      LODWORD(v23) <span style="color:#ec0000">=</span> Dst;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>ReadImageData(v71, pebegin2, v70, <span style="color:#008900">0</span>i64, v23, v46, v53) )// 读取64字节以取得PE头所在位置  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">goto</span> LABEL_10;  
+</span></span><span style="display:flex;"><span>      HIDWORD(v24) <span style="color:#ec0000">=</span> <span style="color:#008900">248</span>;  
+</span></span><span style="display:flex;"><span>      LODWORD(v24) <span style="color:#ec0000">=</span> v78;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>ReadImageData(v71, pebegin2, v70, <span style="color:#ec0000">*&amp;</span>Dst[<span style="color:#008900">60</span>], v24, v48, v55) )// 读取248字节到v93  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">goto</span> LABEL_10;  
+</span></span><span style="display:flex;"><span>      PESIG <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>v78;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*</span>v78 <span style="color:#ec0000">!=</span> <span style="color:#ec0000">&#39;</span>EP<span style="color:#ec0000">&#39;</span> )                       // 如果是PE头  
+</span></span><span style="display:flex;"><span>      {  
+</span></span><span style="display:flex;"><span>        v66 <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>v78[<span style="color:#008900">4</span>];  
+</span></span><span style="display:flex;"><span>        v26 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>v78[<span style="color:#008900">20</span>] <span style="color:#ec0000">+</span> <span style="color:#008900">24</span> <span style="color:#ec0000">+</span> <span style="color:#ec0000">*&amp;</span>Dst[<span style="color:#008900">60</span>];  
+</span></span><span style="display:flex;"><span>        v27 <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>v78[<span style="color:#008900">24</span>];  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_55</span>:  
+</span></span><span style="display:flex;"><span>        HIDWORD(v64) <span style="color:#ec0000">=</span> v26;  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">goto</span> LABEL_56;  
+</span></span><span style="display:flex;"><span>      }  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">else</span> 
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> ( v64 <span style="color:#ec0000">!=</span> <span style="color:#008900">0x14C</span> )  
+</span></span><span style="display:flex;"><span>      {  
+</span></span><span style="display:flex;"><span>        HIDWORD(v29) <span style="color:#ec0000">=</span> <span style="color:#008900">76</span>;  
+</span></span><span style="display:flex;"><span>        LODWORD(v29) <span style="color:#ec0000">=</span> v79;  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>ReadImageData(v71, pebegin2, v70, <span style="color:#008900">0</span>i64, v29, v46, v53) )  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">goto</span> LABEL_10;  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> ( v79[<span style="color:#008900">0</span>] <span style="color:#ec0000">!=</span> <span style="color:#008900">332</span> <span style="color:#ec0000">&amp;&amp;</span> v79[<span style="color:#008900">0</span>] <span style="color:#ec0000">!=</span> <span style="color:#008900">388</span> <span style="color:#ec0000">&amp;&amp;</span> v79[<span style="color:#008900">0</span>] <span style="color:#ec0000">!=</span> <span style="color:#008900">644</span> )  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">goto</span> LABEL_11;  
+</span></span><span style="display:flex;"><span>        v27 <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>v79[<span style="color:#008900">10</span>];  
+</span></span><span style="display:flex;"><span>        v66 <span style="color:#ec0000">=</span> v79;  
+</span></span><span style="display:flex;"><span>        v26 <span style="color:#ec0000">=</span> v79[<span style="color:#008900">8</span>] <span style="color:#ec0000">+</span> <span style="color:#008900">20</span>;  
+</span></span><span style="display:flex;"><span>        PESIG <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>v78;  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">goto</span> LABEL_55;  
+</span></span><span style="display:flex;"><span>      }  
+</span></span><span style="display:flex;"><span>      HIDWORD(v28) <span style="color:#ec0000">=</span> <span style="color:#008900">244</span>;  
+</span></span><span style="display:flex;"><span>      LODWORD(v28) <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>v78[<span style="color:#008900">4</span>];  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>ReadImageData(v71, pebegin2, v70, <span style="color:#008900">0</span>i64, v28, v46, v53) )  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">goto</span> LABEL_11;  
+</span></span><span style="display:flex;"><span>      PESIG <span style="color:#ec0000">=</span> <span style="color:#ec0000">&#39;</span>ROM <span style="color:#ec0000">&#39;</span>;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>v78 <span style="color:#ec0000">=</span> <span style="color:#ec0000">&#39;</span>ROM <span style="color:#ec0000">&#39;</span>;  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>    v27 <span style="color:#ec0000">=</span> lpMem;  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_56</span>:  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> ( v27 )  
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*</span>v27 <span style="color:#ec0000">!=</span> <span style="color:#008900">0x107</span> )  
+</span></span><span style="display:flex;"><span>      {  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">4592</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">11</span>;  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">goto</span> LABEL_11;  
+</span></span><span style="display:flex;"><span>      }  
+</span></span><span style="display:flex;"><span>      v19 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3400</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">1108</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>v27;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">24</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(v27 <span style="color:#ec0000">+</span> <span style="color:#008900">5</span>);  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">28</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">32</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(v27 <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>);  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">36</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">goto</span> LABEL_74;  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*&amp;</span>v78[<span style="color:#008900">24</span>] <span style="color:#ec0000">!=</span> <span style="color:#008900">0x20B</span> )                   // IMAGE_OPTIONAL_HEADER32.MAGIC=PE64  
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>      v66 <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>v78[<span style="color:#008900">4</span>];  
+</span></span><span style="display:flex;"><span>      exportpos <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>v78[<span style="color:#008900">120</span>];                    // 导出表位置  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">1108</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>v78[<span style="color:#008900">24</span>];  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> ( PESIG <span style="color:#ec0000">==</span> <span style="color:#ec0000">&#39;</span>ROM <span style="color:#ec0000">&#39;</span> )  
+</span></span><span style="display:flex;"><span>        HIDWORD(v64) <span style="color:#ec0000">=</span> <span style="color:#008900">244</span>;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">else</span> 
+</span></span><span style="display:flex;"><span>        HIDWORD(v64) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>Dst[<span style="color:#008900">60</span>] <span style="color:#ec0000">+</span> <span style="color:#008900">248</span>;         // 第一个节位置  
+</span></span><span style="display:flex;"><span>      v19 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> ( v2 <span style="color:#ec0000">==</span> <span style="color:#008900">2</span> <span style="color:#ec0000">||</span> v2 <span style="color:#ec0000">==</span> <span style="color:#008900">1</span> )  
+</span></span><span style="display:flex;"><span>      {  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">24</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>v78[<span style="color:#008900">52</span>];  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">28</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3392</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>v78[<span style="color:#008900">56</span>];  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">36</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>v78[<span style="color:#008900">88</span>];  
+</span></span><span style="display:flex;"><span>      }  
+</span></span><span style="display:flex;"><span>      imagesize <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>v78[<span style="color:#008900">80</span>];  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">goto</span> LABEL_73;  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>    HIDWORD(v30) <span style="color:#ec0000">=</span> <span style="color:#008900">264</span>;  
+</span></span><span style="display:flex;"><span>    LODWORD(v30) <span style="color:#ec0000">=</span> v74;  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> ( ReadImageData(v71, pebegin2, v70, <span style="color:#ec0000">*&amp;</span>Dst[<span style="color:#008900">60</span>], v30, v49, v56) )  
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>      v66 <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>v74[<span style="color:#008900">4</span>];  
+</span></span><span style="display:flex;"><span>      exportpos <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>v74[<span style="color:#008900">136</span>];  
+</span></span><span style="display:flex;"><span>      HIDWORD(v64) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>Dst[<span style="color:#008900">60</span>] <span style="color:#ec0000">+</span> <span style="color:#008900">264</span>;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">1108</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>v74[<span style="color:#008900">24</span>];  
+</span></span><span style="display:flex;"><span>      v19 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3396</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> ( v2 <span style="color:#ec0000">==</span> <span style="color:#008900">2</span> <span style="color:#ec0000">||</span> v2 <span style="color:#ec0000">==</span> <span style="color:#008900">1</span> )  
+</span></span><span style="display:flex;"><span>      {  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">24</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>v74[<span style="color:#008900">48</span>];  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">28</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>v74[<span style="color:#008900">52</span>];  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3392</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>v74[<span style="color:#008900">56</span>];  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">36</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>v74[<span style="color:#008900">88</span>];  
+</span></span><span style="display:flex;"><span>      }  
+</span></span><span style="display:flex;"><span>      imagesize <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>v74[<span style="color:#008900">80</span>];  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_73</span>:  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">32</span>) <span style="color:#ec0000">=</span> imagesize;  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_74</span>:  
+</span></span><span style="display:flex;"><span>      imgset(<span style="color:#008900">100</span>, <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">4036</span>), v2, v2, v49, v56);  
+</span></span><span style="display:flex;"><span>      v32 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(v66 <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>);                         // 得到节个数  
+</span></span><span style="display:flex;"><span>      lpMem <span style="color:#ec0000">=</span> v32;  
+</span></span><span style="display:flex;"><span>      filesize2 <span style="color:#ec0000">=</span> <span style="color:#008900">40</span> <span style="color:#ec0000">*</span> v32;  
+</span></span><span style="display:flex;"><span>      sectiondata <span style="color:#ec0000">=</span> pMemAlloc(<span style="color:#008900">40</span> <span style="color:#ec0000">*</span> v32);  
+</span></span><span style="display:flex;"><span>      sectiondata_1 <span style="color:#ec0000">=</span> sectiondata;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> ( sectiondata <span style="color:#ec0000">&amp;&amp;</span> ReadImageData(v71, pebegin, v70, HIDWORD(v64), __PAIR__(filesize2, sectiondata), v47, v54) )// 读取所有节数据  
+</span></span><span style="display:flex;"><span>      {  
+</span></span><span style="display:flex;"><span>        ImageHelpPointerWrapper<span style="color:#ec0000">&lt;</span>_IMAGE_SECTION_HEADER<span style="color:#ec0000">&gt;::</span>Assign((v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3352</span>), sectiondata_1, lpMem, v34);  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3340</span>) <span style="color:#ec0000">=</span> sectiondata_1;  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3380</span>) <span style="color:#ec0000">=</span> lpMem;  
+</span></span><span style="display:flex;"><span>        v35 <span style="color:#ec0000">=</span> v66;  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">48</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>v66;  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">40</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(v35 <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>);  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">44</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(v35 <span style="color:#ec0000">+</span> <span style="color:#008900">9</span>);  
+</span></span><span style="display:flex;"><span>        imgset(<span style="color:#008900">101</span>, <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">4036</span>), v2, v2, v47, v54);  
+</span></span><span style="display:flex;"><span>        v36 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>        v59 <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>        secheader <span style="color:#ec0000">=</span> sectiondata_1;  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">while</span> ( v36 <span style="color:#ec0000">&lt;</span> lpMem )  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3400</span>) <span style="color:#ec0000">&amp;&amp;</span> <span style="color:#ec0000">!</span>(<span style="color:#ec0000">*</span>(v66 <span style="color:#ec0000">+</span> <span style="color:#008900">9</span>) <span style="color:#ec0000">&amp;</span> <span style="color:#008900">0x200</span>) )  
+</span></span><span style="display:flex;"><span>          {  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>memcmp(secheader, <span style="color:#008900">&#34;.rdata&#34;</span>, <span style="color:#008900">7u</span>) )// 遇到.rdata不再读取节信息  
+</span></span><span style="display:flex;"><span>            {  
+</span></span><span style="display:flex;"><span>              v20 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;  
+</span></span><span style="display:flex;"><span>              v67 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;  
+</span></span><span style="display:flex;"><span>              v18 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(sectiondata_1 <span style="color:#ec0000">+</span> <span style="color:#008900">3</span>);  
+</span></span><span style="display:flex;"><span>              v65 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(sectiondata_1 <span style="color:#ec0000">+</span> <span style="color:#008900">3</span>);  
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">goto</span> LABEL_28;  
+</span></span><span style="display:flex;"><span>            }  
+</span></span><span style="display:flex;"><span>            secheader <span style="color:#ec0000">=</span> sectiondata_1;  
+</span></span><span style="display:flex;"><span>          }  
+</span></span><span style="display:flex;"><span>          v38 <span style="color:#ec0000">=</span> SectionContains(secheader, v71, exportpos, v47, v54);// 计算导出表在文件中的位置  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">if</span> ( v38 )  
+</span></span><span style="display:flex;"><span>          {  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3944</span>) <span style="color:#ec0000">=</span> v2;  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">4048</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(exportpos <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>);  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">4040</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>exportpos;  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">4044</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>            HIDWORD(v39) <span style="color:#ec0000">=</span> <span style="color:#008900">40</span>;  
+</span></span><span style="display:flex;"><span>            LODWORD(v39) <span style="color:#ec0000">=</span> v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3984</span>;  
+</span></span><span style="display:flex;"><span>            ReadImageData(v71, pebegin, v70, v38, v39, v50, v57);// 读40字节  
+</span></span><span style="display:flex;"><span>          }  
+</span></span><span style="display:flex;"><span>          v40 <span style="color:#ec0000">=</span> SectionContains(sectiondata_1, v71, exportpos <span style="color:#ec0000">+</span> <span style="color:#008900">12</span>, v50, v57);// 计算调试信息在文件中的位置  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">if</span> ( v40 )  
+</span></span><span style="display:flex;"><span>          {  
+</span></span><span style="display:flex;"><span>            v65 <span style="color:#ec0000">=</span> v40;                          // v65=调试信息偏移  
+</span></span><span style="display:flex;"><span>            v67 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*</span>(exportpos <span style="color:#ec0000">+</span> <span style="color:#008900">13</span>) <span style="color:#ec0000">/</span> <span style="color:#008900">28u</span>;      // 调试信息个数  
+</span></span><span style="display:flex;"><span>          }  
+</span></span><span style="display:flex;"><span>          filesize2a <span style="color:#ec0000">=</span> SectionContains(sectiondata_1, v71, exportpos <span style="color:#ec0000">+</span> <span style="color:#008900">28</span>, v51, v58);// 计算CLR信息在文件中的位置  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">if</span> ( filesize2a )  
+</span></span><span style="display:flex;"><span>          {  
+</span></span><span style="display:flex;"><span>            memset(<span style="color:#ec0000">&amp;</span>v75, <span style="color:#008900">0</span>, <span style="color:#008900">0x48u</span>);  
+</span></span><span style="display:flex;"><span>            HIDWORD(v41) <span style="color:#ec0000">=</span> <span style="color:#008900">72</span>;  
+</span></span><span style="display:flex;"><span>            LODWORD(v41) <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>v75;  
+</span></span><span style="display:flex;"><span>            ReadImageData(v71, pebegin, v70, filesize2a, v41, v47, v54);  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> ( v77 <span style="color:#ec0000">||</span> v76 <span style="color:#ec0000">&amp;</span> <span style="color:#008900">1</span> )  
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">4648</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;  
+</span></span><span style="display:flex;"><span>          }  
+</span></span><span style="display:flex;"><span>          v36 <span style="color:#ec0000">=</span> v59<span style="color:#ec0000">++</span> <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>;  
+</span></span><span style="display:flex;"><span>          secheader <span style="color:#ec0000">=</span> sectiondata_1 <span style="color:#ec0000">+</span> <span style="color:#008900">40</span>;       // 取下一个section头  
+</span></span><span style="display:flex;"><span>          sectiondata_1 <span style="color:#ec0000">=</span> sectiondata_1 <span style="color:#ec0000">+</span> <span style="color:#008900">40</span>;  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>      }  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">goto</span> LABEL_26;  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_10</span>:  
+</span></span><span style="display:flex;"><span>    dword_6BC5FB1C <span style="color:#ec0000">=</span> <span style="color:#008900">6</span>;  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_11</span>:  
+</span></span><span style="display:flex;"><span>    ms_exc.registration.TryLevel <span style="color:#ec0000">=</span> <span style="color:#ec0000">-</span><span style="color:#008900">2</span>;  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>  }  
+</span></span><span style="display:flex;"><span>  HIDWORD(v12) <span style="color:#ec0000">=</span> <span style="color:#008900">48</span>;  
+</span></span><span style="display:flex;"><span>  LODWORD(v12) <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>v81;  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>ReadImageData(v71, pebegin2, v70, <span style="color:#008900">0</span>i64, v12, v46, v53) )  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">goto</span> LABEL_11;  
+</span></span><span style="display:flex;"><span>  v13 <span style="color:#ec0000">=</span> WORD2(v81);  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( WORD2(v81) <span style="color:#ec0000">!=</span> <span style="color:#008900">332</span> <span style="color:#ec0000">&amp;&amp;</span> WORD2(v81) <span style="color:#ec0000">!=</span> <span style="color:#008900">388</span> )  
+</span></span><span style="display:flex;"><span>  {  
+</span></span><span style="display:flex;"><span>    UnmapViewOfFile(<span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">2160</span>));  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">2160</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">goto</span> LABEL_11;  
+</span></span><span style="display:flex;"><span>  }  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3392</span>) <span style="color:#ec0000">=</span> v89;  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">36</span>) <span style="color:#ec0000">=</span> v83;  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">48</span>) <span style="color:#ec0000">=</span> v13;  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">40</span>) <span style="color:#ec0000">=</span> v82;  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">44</span>) <span style="color:#ec0000">=</span> WORD3(v81);  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">24</span>) )  
+</span></span><span style="display:flex;"><span>  {  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">24</span>) <span style="color:#ec0000">=</span> v84;  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">28</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;  
+</span></span><span style="display:flex;"><span>  }  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">32</span>) )  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">32</span>) <span style="color:#ec0000">=</span> v85;  
+</span></span><span style="display:flex;"><span>  lpMem <span style="color:#ec0000">=</span> v86;  
+</span></span><span style="display:flex;"><span>  HIDWORD(v64) <span style="color:#ec0000">=</span> <span style="color:#008900">40</span> <span style="color:#ec0000">*</span> v86;  
+</span></span><span style="display:flex;"><span>  v14 <span style="color:#ec0000">=</span> pMemAlloc(<span style="color:#008900">40</span> <span style="color:#ec0000">*</span> v86);  
+</span></span><span style="display:flex;"><span>  v15 <span style="color:#ec0000">=</span> v14;  
+</span></span><span style="display:flex;"><span>  sectiondata_1 <span style="color:#ec0000">=</span> v14;  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( v14 )  
+</span></span><span style="display:flex;"><span>  {  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> ( ReadImageData(v71, pebegin, v70, <span style="color:#008900">0x30u</span>i64, __PAIR__(HIDWORD(v64), v14), v47, v54) )  
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>      ImageHelpPointerWrapper<span style="color:#ec0000">&lt;</span>_IMAGE_SECTION_HEADER<span style="color:#ec0000">&gt;::</span>Assign((v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3352</span>), v15, lpMem, v16);  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3344</span>) <span style="color:#ec0000">=</span> v15;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3384</span>) <span style="color:#ec0000">=</span> lpMem;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> ( v88 )  
+</span></span><span style="display:flex;"><span>      {  
+</span></span><span style="display:flex;"><span>        v67 <span style="color:#ec0000">=</span> v88 <span style="color:#ec0000">/</span> <span style="color:#008900">0x1C</span>;  
+</span></span><span style="display:flex;"><span>        v17 <span style="color:#ec0000">=</span> <span style="color:#008900">40</span> <span style="color:#ec0000">*</span> v86 <span style="color:#ec0000">+</span> <span style="color:#008900">48</span>;  
+</span></span><span style="display:flex;"><span>        v18 <span style="color:#ec0000">=</span> v17 <span style="color:#ec0000">+</span> v87;  
+</span></span><span style="display:flex;"><span>        v65 <span style="color:#ec0000">=</span> v17 <span style="color:#ec0000">+</span> v87;  
+</span></span><span style="display:flex;"><span>        v19 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">goto</span> LABEL_27;  
+</span></span><span style="display:flex;"><span>      }  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span>  }  
+</span></span><span style="display:flex;"><span>  v19 <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_26</span>:  
+</span></span><span style="display:flex;"><span>  v18 <span style="color:#ec0000">=</span> v65;  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_27</span>:  
+</span></span><span style="display:flex;"><span>  v20 <span style="color:#ec0000">=</span> v67;  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_28</span>:  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">if</span> ( v2 <span style="color:#ec0000">==</span> <span style="color:#008900">2</span> )  
+</span></span><span style="display:flex;"><span>  {  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3364</span>) <span style="color:#ec0000">=</span> v18;  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3368</span>) <span style="color:#ec0000">=</span> v20;  
+</span></span><span style="display:flex;"><span>  }  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">while</span> ( v20 )  
+</span></span><span style="display:flex;"><span>  {  
+</span></span><span style="display:flex;"><span>    HIDWORD(v21) <span style="color:#ec0000">=</span> <span style="color:#008900">28</span>;  
+</span></span><span style="display:flex;"><span>    LODWORD(v21) <span style="color:#ec0000">=</span> v73;  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>ReadImageData(v71, pebegin, v70, v18, v21, v47, v54) )// 逐个读取调试信息  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">goto</span> LABEL_11;  
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">16</span>] )                            // IMAGE_DEBUG_DIRECTORY.SizeOfData  
+</span></span><span style="display:flex;"><span>    {  
+</span></span><span style="display:flex;"><span>      imgset(<span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">12</span>], <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">4036</span>), v2, <span style="color:#008900">0</span>, v47, v54);  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">12</span>] <span style="color:#ec0000">==</span> <span style="color:#008900">1</span> )  
+</span></span><span style="display:flex;"><span>      {  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">24</span>] <span style="color:#ec0000">&lt;</span> filesize2_4 )  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>          ImageHelpPointerWrapper<span style="color:#ec0000">&lt;</span>_OMAP<span style="color:#ec0000">&gt;::</span>Assign((v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3264</span>), (pebegin <span style="color:#ec0000">+</span> <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">24</span>]), <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">16</span>], v19);  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3948</span>) <span style="color:#ec0000">=</span> v2;  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">goto</span> LABEL_95;  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">4024</span>) <span style="color:#ec0000">=</span> <span style="color:#008900">1</span>;  
+</span></span><span style="display:flex;"><span>      }  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">else</span> 
+</span></span><span style="display:flex;"><span>      {  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">12</span>] <span style="color:#ec0000">==</span> <span style="color:#008900">2</span> )  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">if</span> ( v71 )  
+</span></span><span style="display:flex;"><span>          {  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!*&amp;</span>v73[<span style="color:#008900">20</span>] )  
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">goto</span> LABEL_11;  
+</span></span><span style="display:flex;"><span>            v42 <span style="color:#ec0000">=</span> pMemAlloc(<span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">16</span>]);  
+</span></span><span style="display:flex;"><span>            lpMem <span style="color:#ec0000">=</span> v42;  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>v42 )  
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">goto</span> LABEL_108;  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!</span>ReadImageData(v71, pebegin, v70, <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">20</span>], __PAIR__(<span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">16</span>], v42), v47, v54) )  
+</span></span><span style="display:flex;"><span>            {  
+</span></span><span style="display:flex;"><span>              pMemFree(lpMem);  
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">goto</span> LABEL_11;  
+</span></span><span style="display:flex;"><span>            }  
+</span></span><span style="display:flex;"><span>            ImageHelpPointerWrapper<span style="color:#ec0000">&lt;</span>_OMAP<span style="color:#ec0000">&gt;::</span>Assign((v3 <span style="color:#ec0000">+</span> <span style="color:#008900">0xCB4</span>), lpMem, <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">16</span>], <span style="color:#008900">0</span>);  
+</span></span><span style="display:flex;"><span>          }  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">else</span> 
+</span></span><span style="display:flex;"><span>          {  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">24</span>] <span style="color:#ec0000">&gt;=</span> filesize2_4 )     // IMAGE_OPTIONAL_HEADER.PointerToRawData 此处就是我们要的数据了  
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">goto</span> LABEL_108;  
+</span></span><span style="display:flex;"><span>            ImageHelpPointerWrapper<span style="color:#ec0000">&lt;</span>_OMAP<span style="color:#ec0000">&gt;::</span>Assign((v3 <span style="color:#ec0000">+</span> <span style="color:#008900">0xCB4</span>), (pebegin <span style="color:#ec0000">+</span> <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">24</span>]), <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">16</span>], <span style="color:#008900">1</span>);  
+</span></span><span style="display:flex;"><span>          }  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3952</span>) <span style="color:#ec0000">=</span> v2;  
+</span></span><span style="display:flex;"><span>          RetrievePdbInfo(v3, v3);  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">goto</span> LABEL_95;  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">12</span>] <span style="color:#ec0000">!=</span> <span style="color:#008900">4</span> )  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">goto</span> LABEL_108;  
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">24</span>] <span style="color:#ec0000">&lt;</span> filesize2_4 )  
+</span></span><span style="display:flex;"><span>        {  
+</span></span><span style="display:flex;"><span>          v22 <span style="color:#ec0000">=</span> pebegin;  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*</span>(pebegin <span style="color:#ec0000">+</span> <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">24</span>]) <span style="color:#ec0000">!=</span> <span style="color:#008900">1</span> )  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">goto</span> LABEL_109;  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">if</span> ( v2 <span style="color:#ec0000">==</span> <span style="color:#008900">3</span> )  
+</span></span><span style="display:flex;"><span>          {  
+</span></span><span style="display:flex;"><span>            v22 <span style="color:#ec0000">=</span> pebegin;  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">!*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">572</span>) )  
+</span></span><span style="display:flex;"><span>            {  
+</span></span><span style="display:flex;"><span>              ansi2wcs(<span style="color:#008900">0x105</span>, v47, v54);  
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">goto</span> LABEL_108;  
+</span></span><span style="display:flex;"><span>            }  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_109</span>:  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">24</span>] <span style="color:#ec0000">&gt;=</span> filesize2_4 )  
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">goto</span> LABEL_120;  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">12</span>] <span style="color:#ec0000">!=</span> <span style="color:#008900">3</span> )  
+</span></span><span style="display:flex;"><span>            {  
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">12</span>] <span style="color:#ec0000">==</span> <span style="color:#008900">5</span> )  
+</span></span><span style="display:flex;"><span>              {  
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3972</span>) <span style="color:#ec0000">=</span> v2;  
+</span></span><span style="display:flex;"><span>                v44 <span style="color:#ec0000">=</span> v2;  
+</span></span><span style="display:flex;"><span>                v43 <span style="color:#ec0000">=</span> <span style="color:#008900">5</span>;  
+</span></span><span style="display:flex;"><span>              }  
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">else</span> 
+</span></span><span style="display:flex;"><span>              {  
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">12</span>] <span style="color:#ec0000">==</span> <span style="color:#008900">7</span> )  
+</span></span><span style="display:flex;"><span>                {  
+</span></span><span style="display:flex;"><span>                  ImageHelpPointerWrapper<span style="color:#ec0000">&lt;</span>_OMAP<span style="color:#ec0000">&gt;::</span>Assign((v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3316</span>), (v22 <span style="color:#ec0000">+</span> <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">24</span>]), <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">16</span>] <span style="color:#ec0000">&gt;&gt;</span> <span style="color:#008900">3</span>, v19);  
+</span></span><span style="display:flex;"><span>                  <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3964</span>) <span style="color:#ec0000">=</span> v2;  
+</span></span><span style="display:flex;"><span>                }  
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span> 
+</span></span><span style="display:flex;"><span>                {  
+</span></span><span style="display:flex;"><span>                  <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">12</span>] <span style="color:#ec0000">!=</span> <span style="color:#008900">8</span> )  
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">goto</span> LABEL_120;  
+</span></span><span style="display:flex;"><span>                  ImageHelpPointerWrapper<span style="color:#ec0000">&lt;</span>_OMAP<span style="color:#ec0000">&gt;::</span>Assign((v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3328</span>), (v22 <span style="color:#ec0000">+</span> <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">24</span>]), <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">16</span>] <span style="color:#ec0000">&gt;&gt;</span> <span style="color:#008900">3</span>, v19);  
+</span></span><span style="display:flex;"><span>                  <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3968</span>) <span style="color:#ec0000">=</span> v2;  
+</span></span><span style="display:flex;"><span>                }  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_118</span>:  
+</span></span><span style="display:flex;"><span>                v44 <span style="color:#ec0000">=</span> v2;  
+</span></span><span style="display:flex;"><span>                v43 <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">12</span>];  
+</span></span><span style="display:flex;"><span>              }  
+</span></span><span style="display:flex;"><span>              imgset(v43, <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">4036</span>), <span style="color:#008900">0</span>, v44, v47, v54);  
+</span></span><span style="display:flex;"><span>              <span style="color:#ec0000">goto</span> LABEL_120;  
+</span></span><span style="display:flex;"><span>            }  
+</span></span><span style="display:flex;"><span>            ImageHelpPointerWrapper<span style="color:#ec0000">&lt;</span>_OMAP<span style="color:#ec0000">&gt;::</span>Assign((v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3280</span>), (v22 <span style="color:#ec0000">+</span> <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">24</span>]), <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">16</span>] <span style="color:#ec0000">&gt;&gt;</span> <span style="color:#008900">4</span>, v19);  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">3960</span>) <span style="color:#ec0000">=</span> v2;  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">goto</span> LABEL_118;  
+</span></span><span style="display:flex;"><span>          }  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">if</span> ( <span style="color:#ec0000">*</span>(v66 <span style="color:#ec0000">+</span> <span style="color:#008900">9</span>) <span style="color:#ec0000">&amp;</span> <span style="color:#008900">0x200</span> )  
+</span></span><span style="display:flex;"><span>          {  
+</span></span><span style="display:flex;"><span>            ansi2wcs(<span style="color:#008900">0x105</span>, v47, v54);  
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">2164</span>) <span style="color:#ec0000">=</span> <span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">4</span>];  
+</span></span><span style="display:flex;"><span>          }  
+</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">else</span> 
+</span></span><span style="display:flex;"><span>          {  
+</span></span><span style="display:flex;"><span>            ansi2wcs(<span style="color:#008900">0x105</span>, v47, v54);  
+</span></span><span style="display:flex;"><span>          }  
+</span></span><span style="display:flex;"><span>        }  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_95</span>:  
+</span></span><span style="display:flex;"><span>        imgset(<span style="color:#ec0000">*&amp;</span>v73[<span style="color:#008900">12</span>], <span style="color:#ec0000">*</span>(v3 <span style="color:#ec0000">+</span> <span style="color:#008900">4036</span>), <span style="color:#008900">0</span>, v2, v47, v54);  
+</span></span><span style="display:flex;"><span>      }  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_108</span>:  
+</span></span><span style="display:flex;"><span>      v22 <span style="color:#ec0000">=</span> pebegin;  
+</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">goto</span> LABEL_109;  
+</span></span><span style="display:flex;"><span>    }  
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">LABEL_120</span>:  
+</span></span><span style="display:flex;"><span>    v18 <span style="color:#ec0000">=</span> v65 <span style="color:#ec0000">+</span> <span style="color:#008900">28</span>;  
+</span></span><span style="display:flex;"><span>    v65 <span style="color:#ec0000">+=</span> <span style="color:#008900">28</span>;  
+</span></span><span style="display:flex;"><span>    v20 <span style="color:#ec0000">=</span> v67<span style="color:#ec0000">--</span> <span style="color:#ec0000">-</span> <span style="color:#008900">1</span>;  
+</span></span><span style="display:flex;"><span>  }  
+</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">return</span> <span style="color:#008900">1</span>;  
+</span></span><span style="display:flex;"><span>} 
+</span></span></code></pre></div><p>  可以看到dbghelp!ReadHeader读取文件，解析PE格式，然后提取其中的debug区信息，标志RSDS后存放的GUID即为我们要找的数据</p>
+<pre tabindex="0"><code class="language-Txt" data-lang="Txt">0293cbd4  52 53 44 53 83 65 a7 47-c5 34 bc 47 a0 3e 62 93  RSDS.e.G.4.G.&gt;b.
+0293cbe4  a7 8c 67 5f 02 00 00 00-77 6e 74 64 6c 6c 2e 70  ..g_....wntdll.p
+0293cbf4  64 62 00 00 00 00 00 00-00 00 00 00 f6 c1 03 75  db.............u
+0293cc04  0d 39 71 0c 75 08 8b 41-04 3b 46 08 74 4d 83 26  .9q.u..A.;F.tM.&amp;
+0293cc14  00 83 66 04 00 eb 42 90-90 90 90 90 8b ff 55 8b  ..f...B.......U.
+0293cc24  ec 51 53 8b 5d 08 57 8b-7d 0c 3b 7b 10 0f 87 02  .QS.].W.}.;{....
+0293cc34  01 00 00 8b 43 0c 56 8d-73 20 3b c7 73 0e 83 c6  ....C.V.s ;.s...
+0293cc44  10 03 c0 eb f5 90 90 90-90 90 90 90 8b ce e8 99  ................
+</code></pre><p>  解决任务2的重点在于SymbolServerGetIndexStringW，来看他的内部调用:</p>
+<ul>
+<li>CatStrID 将前面BYTE* index经过一定变换转换成字符串</li>
+<li>CatStrDWORD 将前面int dword1添加到字符串结尾</li>
+<li>CatStrDWORD 将前面int dword2添加到字符串结尾</li>
+</ul>
+<p>CatStrID中实现大概是这样：</p>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-C++" data-lang="C++"><span style="display:flex;"><span><span style="color:#ec0000">switch</span>(gptype)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">case</span> <span style="color:#008900">2</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>                CatStrDWORD(buf,id);
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">case</span> <span style="color:#008900">4</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>                CatStrDWORD(buf,<span style="color:#ec0000">*</span>(DWORD<span style="color:#ec0000">*</span>)id);
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">case</span> <span style="color:#008900">8</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>                CatStrGUID(buf,id);//我们用到的case
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">case</span> <span style="color:#008900">0x10</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>                CatStrOldGUID(buf,id);
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">case</span> <span style="color:#008900">0x400000</span><span style="color:#ec0000">:</span>
+</span></span><span style="display:flex;"><span>                wcscpy_s(buf,id);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>CatStrDWORD中实现大概是这样<span style="color:#ec0000">：</span>
+</span></span><span style="display:flex;"><span><span style="color:#ec0000">if</span>(dwordn)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>        sprintf(buf,<span style="color:#008900">&#34;%s%d&#34;</span>,index,dwordn);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div>
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150222_fastdns/">
+                        对彗星DNS加速器的分析
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+            <div class="single-pagination-container-next">
+                <div class="single-pagination-text">
+                    <a href="/win_posts/20150429_ntquerysystem/">
+                        NtQuerySystemInformation用法
+                    </a>
+                </div>
+                <div class="single-pagination-text">→</div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>
