@@ -139,10 +139,8 @@
     <li><a href="#llvm-pass">LLVM Pass</a>
       <ul>
         <li><a href="#简介">简介</a></li>
-        <li><a href="#什么情况下使用llvm-pass">什么情况下使用LLVM Pass</a></li>
         <li><a href="#编码">编码</a></li>
         <li><a href="#测试">测试</a></li>
-        <li><a href="#appleclang的pass">AppleClang的Pass</a></li>
         <li><a href="#pass加载时机">Pass加载时机</a></li>
       </ul>
     </li>
@@ -151,7 +149,7 @@
         <li><a href="#现存ollvm项目汇总">现存OLLVM项目汇总</a></li>
         <li><a href="#混淆控制方式">混淆控制方式</a></li>
         <li><a href="#字符串加密模块分析">字符串加密模块分析</a></li>
-        <li><a href="#实验将静态字符串转换为栈字符串">实验:将静态字符串转换为栈字符串</a></li>
+        <li><a href="#平坦化模块分析">平坦化模块分析</a></li>
       </ul>
     </li>
   </ul>
@@ -555,13 +553,16 @@ attributes #1 = { &#34;frame-pointer&#34;=&#34;non-leaf&#34; &#34;no-trapping-ma
 <li>一个Instruction即为一条IR指令, 最终会编译为一条或多条汇编指令, 继承过程: Instruction - User - Value</li>
 <li>GlobalVariable继承过程: GlobalVariable - GlobalObject - GlobalValue - Constant - User - Value</li>
 </ul>
-<h3 id="什么情况下使用llvm-pass">什么情况下使用LLVM Pass</h3>
-<p>  如第一篇所述, LLVM衍生出众多编译器前端, 如clang, swiftc, rustc等. 目前第三方代码嵌入LLVM有如下三种方式:</p>
+<p>什么情况下使用LLVM Pass?
+  如第一篇所述, LLVM衍生出众多编译器前端, 如clang, swiftc, rustc等. 目前第三方代码嵌入LLVM有如下三种方式:</p>
 <ul>
 <li>动态Pass方式, 前端运行时动态加载Pass, 开发成本最低</li>
 <li>静态Pass方式, 编译时静态链接Pass</li>
 <li>修改LLVM源码强行嵌入, 是大部分Ollvm采用的方式; 如果编译器前端不支持Pass则是唯一选择</li>
 </ul>
+<p>AppleClang的Pass
+  AppleClang, 即XCode自带的Clang, 苹果因为安全性考虑阉割掉了LLVM Pass, 因此常规方法并不能加载起来.
+当然如果如果逆向技术过关, 也很容易将Pass改为兼容AppleClang的.</p>
 <h3 id="编码">编码</h3>
 <p>  只需要<code>demo.cpp</code>和<code>CMakeLists.txt</code>两个文件. 因为LLVM的版本较多, 网上开源的LLVM Pass项目只支持部分版本, 笔者根据刚学习的CMake将其改造为兼容LLVM8-18.</p>
 <p>项目地址:<a href="https://github.com/lich4/llvm-pass-hikari">https://github.com/lich4/llvm-pass-hikari</a></p>
@@ -704,11 +705,8 @@ attributes #1 = { &#34;frame-pointer&#34;=&#34;non-leaf&#34; &#34;no-trapping-ma
 </span></span></code></pre></div><p>opt支持ll需要llvm&gt;=15</p>
 <div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>llvm15/build/bin/opt --O3 -S -o /tmp/test_new.ll /tmp/test.ll 
 </span></span><span style="display:flex;"><span>llvm15/build/bin/opt -load-pass-plugin build/MyPassDemo15.dylib -passes all -S -o /tmp/test_new.ll /tmp/test.ll 
-</span></span></code></pre></div><p>[color=Red]经过测试可以发现, Pass的LLVM版本需要和LLVM大版本一致, 否则也会产生错误, 但总体来说Pass解决了LLVM编译代码量过大的问题, 所以仍然值得采用[/color], 测试结果:
+</span></span></code></pre></div><p>经过测试可以发现, Pass的LLVM版本需要和LLVM大版本一致, 否则也会产生错误, 但总体来说Pass解决了LLVM编译代码量过大的问题, 所以仍然值得采用, 测试结果:
 <code>hello MyPassDemo</code></p>
-<h3 id="appleclang的pass">AppleClang的Pass</h3>
-<p>  AppleClang, 即XCode自带的Clang, 苹果因为安全性考虑阉割掉了LLVM Pass, 因此常规方法并不能加载起来.
-当然如果如果逆向技术过关, 也很容易将Pass改为兼容AppleClang的.</p>
 <h3 id="pass加载时机">Pass加载时机</h3>
 <div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>// EP_Peephole                  PeepholeEPCallbacks
 </span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">registerPeepholeEPCallback</span>(<span style="color:#ec0000">const</span> std<span style="color:#ec0000">::</span>function<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">void</span>(FunctionPassManager<span style="color:#ec0000">&amp;</span>, OptimizationLevel)<span style="color:#ec0000">&gt;&amp;</span>);
@@ -941,234 +939,392 @@ attributes #1 = { &#34;frame-pointer&#34;=&#34;non-leaf&#34; &#34;no-trapping-ma
 </ul>
 <h3 id="字符串加密模块分析">字符串加密模块分析</h3>
 <h4 id="hikari源码">Hikari源码</h4>
-<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#ec0000">struct</span> <span style="color:#5f5fff">StringEncryption</span> <span style="color:#ec0000">:</span> <span style="color:#ec0000">public</span> ModulePass {
-</span></span><span style="display:flex;"><span>  <span style="color:#ec0000">static</span> <span style="color:#5f5fff">char</span> ID;
-</span></span><span style="display:flex;"><span>  map<span style="color:#ec0000">&lt;</span>Function <span style="color:#ec0000">*</span> /*Function*/, GlobalVariable <span style="color:#ec0000">*</span> /*Decryption Status*/<span style="color:#ec0000">&gt;</span>
-</span></span><span style="display:flex;"><span>      encstatus;
-</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">bool</span> flag;
-</span></span><span style="display:flex;"><span>  StringEncryption() <span style="color:#ec0000">:</span> ModulePass(ID) { <span style="color:#ec0000">this</span><span style="color:#ec0000">-&gt;</span>flag <span style="color:#ec0000">=</span> <span style="color:#ec0000">true</span>; }
-</span></span><span style="display:flex;"><span>  StringEncryption(<span style="color:#5f5fff">bool</span> flag) <span style="color:#ec0000">:</span> ModulePass(ID) { <span style="color:#ec0000">this</span><span style="color:#ec0000">-&gt;</span>flag <span style="color:#ec0000">=</span> flag; }
-</span></span><span style="display:flex;"><span>  StringRef <span style="color:#5f5fff">getPassName</span>() <span style="color:#ec0000">const</span> <span style="color:#ec0000">override</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> StringRef(<span style="color:#008900">&#34;StringEncryption&#34;</span>);
-</span></span><span style="display:flex;"><span>  }
-</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">bool</span> <span style="color:#5f5fff">runOnModule</span>(Module <span style="color:#ec0000">&amp;</span>M) <span style="color:#ec0000">override</span> {
-</span></span><span style="display:flex;"><span>    // in runOnModule. We simple iterate function list and dispatch functions
-</span></span><span style="display:flex;"><span>    // to handlers
-</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (Module<span style="color:#ec0000">::</span>iterator iter <span style="color:#ec0000">=</span> M.begin(); iter <span style="color:#ec0000">!=</span> M.end(); iter<span style="color:#ec0000">++</span>) {
-</span></span><span style="display:flex;"><span>      Function <span style="color:#ec0000">*</span>F <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>(<span style="color:#ec0000">*</span>iter);
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> (toObfuscate(flag, F, <span style="color:#008900">&#34;strenc&#34;</span>)) {
-</span></span><span style="display:flex;"><span>        errs() <span style="color:#ec0000">&lt;&lt;</span> <span style="color:#008900">&#34;Running StringEncryption On &#34;</span> <span style="color:#ec0000">&lt;&lt;</span> F<span style="color:#ec0000">-&gt;</span>getName() <span style="color:#ec0000">&lt;&lt;</span> <span style="color:#008900">&#34;</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>;
-</span></span><span style="display:flex;"><span>        Constant <span style="color:#ec0000">*</span>S <span style="color:#ec0000">=</span> ConstantInt<span style="color:#ec0000">::</span>get(Type<span style="color:#ec0000">::</span>getInt32Ty(M.getContext()), <span style="color:#008900">0</span>);
-</span></span><span style="display:flex;"><span>        GlobalVariable <span style="color:#ec0000">*</span>GV <span style="color:#ec0000">=</span> <span style="color:#ec0000">new</span> GlobalVariable(
-</span></span><span style="display:flex;"><span>            M, S<span style="color:#ec0000">-&gt;</span>getType(), <span style="color:#ec0000">false</span>, GlobalValue<span style="color:#ec0000">::</span>LinkageTypes<span style="color:#ec0000">::</span>PrivateLinkage,
-</span></span><span style="display:flex;"><span>            S, <span style="color:#008900">&#34;&#34;</span>);
-</span></span><span style="display:flex;"><span>        encstatus[F] <span style="color:#ec0000">=</span> GV;
-</span></span><span style="display:flex;"><span>        HandleFunction(F);
-</span></span><span style="display:flex;"><span>      }
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> <span style="color:#ec0000">true</span>;
-</span></span><span style="display:flex;"><span>  } // End runOnModule
-</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">void</span> <span style="color:#5f5fff">HandleFunction</span>(Function <span style="color:#ec0000">*</span>Func) {
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">HandleFunction</span>(Function <span style="color:#ec0000">*</span>Func)
+</span></span><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    FixFunctionConstantExpr(Func);
-</span></span><span style="display:flex;"><span>    set<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*&gt;</span> Globals;
-</span></span><span style="display:flex;"><span>    set<span style="color:#ec0000">&lt;</span>User <span style="color:#ec0000">*&gt;</span> Users;
-</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (BasicBlock <span style="color:#ec0000">&amp;</span><span style="color:#ec0000">BB</span> : <span style="color:#ec0000">*</span>Func) {
-</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">for</span> (Instruction <span style="color:#ec0000">&amp;</span><span style="color:#ec0000">I</span> : BB) {
-</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span> (Value <span style="color:#ec0000">*</span><span style="color:#ec0000">Op</span> : I.operands()) {
-</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">if</span> (GlobalVariable <span style="color:#ec0000">*</span>G <span style="color:#ec0000">=</span> dyn_cast<span style="color:#ec0000">&lt;</span>GlobalVariable<span style="color:#ec0000">&gt;</span>(Op<span style="color:#ec0000">-&gt;</span>stripPointerCasts())) {
-</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span>(User<span style="color:#ec0000">*</span> U<span style="color:#ec0000">=</span>dyn_cast<span style="color:#ec0000">&lt;</span>User<span style="color:#ec0000">&gt;</span>(Op)){
-</span></span><span style="display:flex;"><span>              Users.insert(U);
+</span></span><span style="display:flex;"><span>    SmallVector<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span>, <span style="color:#008900">32</span><span style="color:#ec0000">&gt;</span> Globals;
+</span></span><span style="display:flex;"><span>    std<span style="color:#ec0000">::</span>set<span style="color:#ec0000">&lt;</span>User <span style="color:#ec0000">*&gt;</span> Users;
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        std<span style="color:#ec0000">::</span>unordered_set<span style="color:#ec0000">&lt;</span>User <span style="color:#ec0000">*&gt;</span> VisitedUsers;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span> (Instruction <span style="color:#ec0000">&amp;</span><span style="color:#ec0000">I</span> : instructions(Func))
+</span></span><span style="display:flex;"><span>            HandleUser(<span style="color:#ec0000">&amp;</span>I, Globals, Users, VisitedUsers);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    std<span style="color:#ec0000">::</span>set<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*&gt;</span> rawStrings;
+</span></span><span style="display:flex;"><span>    std<span style="color:#ec0000">::</span>set<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*&gt;</span> objCStrings;
+</span></span><span style="display:flex;"><span>    std<span style="color:#ec0000">::</span>unordered_map<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span>,
+</span></span><span style="display:flex;"><span>                       std<span style="color:#ec0000">::</span>pair<span style="color:#ec0000">&lt;</span>Constant <span style="color:#ec0000">*</span>, GlobalVariable <span style="color:#ec0000">*&gt;&gt;</span>
+</span></span><span style="display:flex;"><span>        GV2Keys;
+</span></span><span style="display:flex;"><span>    std<span style="color:#ec0000">::</span>unordered_map<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span> /*old*/,
+</span></span><span style="display:flex;"><span>                       std<span style="color:#ec0000">::</span>pair<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span> /*encrypted*/,
+</span></span><span style="display:flex;"><span>                                 GlobalVariable <span style="color:#ec0000">*</span> /*decrypt space*/<span style="color:#ec0000">&gt;&gt;</span>
+</span></span><span style="display:flex;"><span>        old2new;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">auto</span> end <span style="color:#ec0000">=</span> Globals.end();
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (<span style="color:#ec0000">auto</span> it <span style="color:#ec0000">=</span> Globals.begin(); it <span style="color:#ec0000">!=</span> end; <span style="color:#ec0000">++</span>it)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        end <span style="color:#ec0000">=</span> std<span style="color:#ec0000">::</span>remove(it <span style="color:#ec0000">+</span> <span style="color:#008900">1</span>, end, <span style="color:#ec0000">*</span>it);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    Globals.erase(end, Globals.end());
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    Module <span style="color:#ec0000">*</span>M <span style="color:#ec0000">=</span> Func<span style="color:#ec0000">-&gt;</span>getParent();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    SmallVector<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span>, <span style="color:#008900">32</span><span style="color:#ec0000">&gt;</span> transedGlobals, unhandleablegvs;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">do</span>
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span> (GlobalVariable <span style="color:#ec0000">*</span><span style="color:#ec0000">GV</span> : Globals)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> (std<span style="color:#ec0000">::</span>find(transedGlobals.begin(), transedGlobals.end(), GV) <span style="color:#ec0000">==</span>
+</span></span><span style="display:flex;"><span>                transedGlobals.end())
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#5f5fff">bool</span> breakThisFor <span style="color:#ec0000">=</span> <span style="color:#ec0000">false</span>;
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> (handleableGV(GV))
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">if</span> (GlobalVariable <span style="color:#ec0000">*</span>CastedGV <span style="color:#ec0000">=</span> dyn_cast<span style="color:#ec0000">&lt;</span>GlobalVariable<span style="color:#ec0000">&gt;</span>(
+</span></span><span style="display:flex;"><span>                            GV<span style="color:#ec0000">-&gt;</span>getInitializer()<span style="color:#ec0000">-&gt;</span>stripPointerCasts()))
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">if</span> (std<span style="color:#ec0000">::</span>find(Globals.begin(), Globals.end(), CastedGV) <span style="color:#ec0000">==</span>
+</span></span><span style="display:flex;"><span>                            Globals.end())
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                            Globals.emplace_back(CastedGV);
+</span></span><span style="display:flex;"><span>                            ConstantExpr <span style="color:#ec0000">*</span>CE <span style="color:#ec0000">=</span> dyn_cast<span style="color:#ec0000">&lt;</span>ConstantExpr<span style="color:#ec0000">&gt;</span>(GV<span style="color:#ec0000">-&gt;</span>getInitializer());
+</span></span><span style="display:flex;"><span>                            Users.insert(CE <span style="color:#ec0000">?</span> <span style="color:#ec0000">CE</span> : GV<span style="color:#ec0000">-&gt;</span>getInitializer());
+</span></span><span style="display:flex;"><span>                            breakThisFor <span style="color:#ec0000">=</span> <span style="color:#ec0000">true</span>;
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">if</span> (GV<span style="color:#ec0000">-&gt;</span>getInitializer()<span style="color:#ec0000">-&gt;</span>getType() <span style="color:#ec0000">==</span>
+</span></span><span style="display:flex;"><span>                        StructType<span style="color:#ec0000">::</span>getTypeByName(M<span style="color:#ec0000">-&gt;</span>getContext(),
+</span></span><span style="display:flex;"><span>                                                  <span style="color:#008900">&#34;struct.__NSConstantString_tag&#34;</span>))
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        objCStrings.insert(GV);
+</span></span><span style="display:flex;"><span>                        rawStrings.insert(cast<span style="color:#ec0000">&lt;</span>GlobalVariable<span style="color:#ec0000">&gt;</span>(
+</span></span><span style="display:flex;"><span>                            cast<span style="color:#ec0000">&lt;</span>ConstantStruct<span style="color:#ec0000">&gt;</span>(GV<span style="color:#ec0000">-&gt;</span>getInitializer())
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">2</span>)
+</span></span><span style="display:flex;"><span>                                <span style="color:#ec0000">-&gt;</span>stripPointerCasts()));
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (isa<span style="color:#ec0000">&lt;</span>ConstantDataSequential<span style="color:#ec0000">&gt;</span>(GV<span style="color:#ec0000">-&gt;</span>getInitializer()))
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        rawStrings.insert(GV);
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (ConstantAggregate <span style="color:#ec0000">*</span>CA <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                                 dyn_cast<span style="color:#ec0000">&lt;</span>ConstantAggregate<span style="color:#ec0000">&gt;</span>(GV<span style="color:#ec0000">-&gt;</span>getInitializer()))
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        processConstantAggregate(GV, CA, <span style="color:#ec0000">&amp;</span>rawStrings, <span style="color:#ec0000">&amp;</span>unhandleablegvs,
+</span></span><span style="display:flex;"><span>                                                 <span style="color:#ec0000">&amp;</span>Globals, <span style="color:#ec0000">&amp;</span>Users, <span style="color:#ec0000">&amp;</span>breakThisFor);
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    unhandleablegvs.emplace_back(GV);
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                transedGlobals.emplace_back(GV);
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> (breakThisFor)
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">break</span>;
 </span></span><span style="display:flex;"><span>            }
-</span></span><span style="display:flex;"><span>            Users.insert(<span style="color:#ec0000">&amp;</span>I);
-</span></span><span style="display:flex;"><span>            Globals.insert(G);
-</span></span><span style="display:flex;"><span>          }
+</span></span><span style="display:flex;"><span>        } // foreach loop
+</span></span><span style="display:flex;"><span>    } <span style="color:#ec0000">while</span> (transedGlobals.size() <span style="color:#ec0000">!=</span> Globals.size());
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (GlobalVariable <span style="color:#ec0000">*</span><span style="color:#ec0000">ugv</span> : unhandleablegvs)
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (std<span style="color:#ec0000">::</span>find(genedgv.begin(), genedgv.end(), ugv) <span style="color:#ec0000">!=</span> genedgv.end())
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            std<span style="color:#ec0000">::</span>pair<span style="color:#ec0000">&lt;</span>Constant <span style="color:#ec0000">*</span>, GlobalVariable <span style="color:#ec0000">*&gt;</span> mgv2keysval <span style="color:#ec0000">=</span> mgv2keys[ugv];
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> (ugv<span style="color:#ec0000">-&gt;</span>getInitializer()<span style="color:#ec0000">-&gt;</span>getType() <span style="color:#ec0000">==</span>
+</span></span><span style="display:flex;"><span>                StructType<span style="color:#ec0000">::</span>getTypeByName(M<span style="color:#ec0000">-&gt;</span>getContext(),
+</span></span><span style="display:flex;"><span>                                          <span style="color:#008900">&#34;struct.__NSConstantString_tag&#34;</span>))
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                GlobalVariable <span style="color:#ec0000">*</span>rawgv <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                    cast<span style="color:#ec0000">&lt;</span>GlobalVariable<span style="color:#ec0000">&gt;</span>(cast<span style="color:#ec0000">&lt;</span>ConstantStruct<span style="color:#ec0000">&gt;</span>(ugv<span style="color:#ec0000">-&gt;</span>getInitializer())
+</span></span><span style="display:flex;"><span>                                             <span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">2</span>)
+</span></span><span style="display:flex;"><span>                                             <span style="color:#ec0000">-&gt;</span>stripPointerCasts());
+</span></span><span style="display:flex;"><span>                mgv2keysval <span style="color:#ec0000">=</span> mgv2keys[rawgv];
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> (mgv2keysval.first <span style="color:#ec0000">&amp;&amp;</span> mgv2keysval.second)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    GV2Keys[rawgv] <span style="color:#ec0000">=</span> mgv2keysval;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (mgv2keysval.first <span style="color:#ec0000">&amp;&amp;</span> mgv2keysval.second)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                GV2Keys[ugv] <span style="color:#ec0000">=</span> mgv2keysval;
+</span></span><span style="display:flex;"><span>            }
 </span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>      }
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>    set<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*&gt;</span> rawStrings;
-</span></span><span style="display:flex;"><span>    set<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*&gt;</span> objCStrings;
-</span></span><span style="display:flex;"><span>    map<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span>, pair<span style="color:#ec0000">&lt;</span>Constant <span style="color:#ec0000">*</span>, GlobalVariable <span style="color:#ec0000">*&gt;&gt;</span> GV2Keys;
-</span></span><span style="display:flex;"><span>    map<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span> /*old*/, pair<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span> /*encrypted*/, GlobalVariable <span style="color:#ec0000">*</span> /*decrypt space*/<span style="color:#ec0000">&gt;&gt;</span> old2new;
-</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (GlobalVariable <span style="color:#ec0000">*</span><span style="color:#ec0000">GV</span> : Globals) {
-</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> (GV<span style="color:#ec0000">-&gt;</span>hasInitializer() <span style="color:#ec0000">&amp;&amp;</span>
-</span></span><span style="display:flex;"><span>          GV<span style="color:#ec0000">-&gt;</span>getSection() <span style="color:#ec0000">!=</span> StringRef(<span style="color:#008900">&#34;llvm.metadata&#34;</span>) <span style="color:#ec0000">&amp;&amp;</span>
-</span></span><span style="display:flex;"><span>          GV<span style="color:#ec0000">-&gt;</span>getSection().find(StringRef(<span style="color:#008900">&#34;__objc&#34;</span>)) <span style="color:#ec0000">==</span> string<span style="color:#ec0000">::</span>npos <span style="color:#ec0000">&amp;&amp;</span>
-</span></span><span style="display:flex;"><span>          GV<span style="color:#ec0000">-&gt;</span>getName().find(<span style="color:#008900">&#34;OBJC&#34;</span>) <span style="color:#ec0000">==</span> string<span style="color:#ec0000">::</span>npos) {
-</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (GV<span style="color:#ec0000">-&gt;</span>getInitializer()<span style="color:#ec0000">-&gt;</span>getType() <span style="color:#ec0000">==</span>
-</span></span><span style="display:flex;"><span>            Func<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getTypeByName(<span style="color:#008900">&#34;struct.__NSConstantString_tag&#34;</span>)) {
-</span></span><span style="display:flex;"><span>          objCStrings.insert(GV);
-</span></span><span style="display:flex;"><span>          rawStrings.insert(
-</span></span><span style="display:flex;"><span>              cast<span style="color:#ec0000">&lt;</span>GlobalVariable<span style="color:#ec0000">&gt;</span>(cast<span style="color:#ec0000">&lt;</span>ConstantStruct<span style="color:#ec0000">&gt;</span>(GV<span style="color:#ec0000">-&gt;</span>getInitializer())
-</span></span><span style="display:flex;"><span>                                       <span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">2</span>)
-</span></span><span style="display:flex;"><span>                                       <span style="color:#ec0000">-&gt;</span>stripPointerCasts()));
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>        } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (isa<span style="color:#ec0000">&lt;</span>ConstantDataSequential<span style="color:#ec0000">&gt;</span>(GV<span style="color:#ec0000">-&gt;</span>getInitializer())) {
-</span></span><span style="display:flex;"><span>          rawStrings.insert(GV);
-</span></span><span style="display:flex;"><span>        }<span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span>(isa<span style="color:#ec0000">&lt;</span>ConstantArray<span style="color:#ec0000">&gt;</span>(GV<span style="color:#ec0000">-&gt;</span>getInitializer())){
-</span></span><span style="display:flex;"><span>           ConstantArray<span style="color:#ec0000">*</span> CA<span style="color:#ec0000">=</span>cast<span style="color:#ec0000">&lt;</span>ConstantArray<span style="color:#ec0000">&gt;</span>(GV<span style="color:#ec0000">-&gt;</span>getInitializer());
-</span></span><span style="display:flex;"><span>           <span style="color:#ec0000">for</span>(<span style="color:#5f5fff">unsigned</span> i<span style="color:#ec0000">=</span><span style="color:#008900">0</span>;i<span style="color:#ec0000">&lt;</span>CA<span style="color:#ec0000">-&gt;</span>getNumOperands();i<span style="color:#ec0000">++</span>){
-</span></span><span style="display:flex;"><span>             Value<span style="color:#ec0000">*</span> op<span style="color:#ec0000">=</span>CA<span style="color:#ec0000">-&gt;</span>getOperand(i)<span style="color:#ec0000">-&gt;</span>stripPointerCasts();
-</span></span><span style="display:flex;"><span>             <span style="color:#ec0000">if</span>(GlobalVariable<span style="color:#ec0000">*</span> GV<span style="color:#ec0000">=</span>dyn_cast<span style="color:#ec0000">&lt;</span>GlobalVariable<span style="color:#ec0000">&gt;</span>(op)){
-</span></span><span style="display:flex;"><span>               Globals.insert(GV);
-</span></span><span style="display:flex;"><span>             }
-</span></span><span style="display:flex;"><span>           }
-</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (GlobalVariable <span style="color:#ec0000">*</span><span style="color:#ec0000">GV</span> : rawStrings)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (GV<span style="color:#ec0000">-&gt;</span>getInitializer()<span style="color:#ec0000">-&gt;</span>isZeroValue() <span style="color:#ec0000">||</span>
+</span></span><span style="display:flex;"><span>            GV<span style="color:#ec0000">-&gt;</span>getInitializer()<span style="color:#ec0000">-&gt;</span>isNullValue())
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">continue</span>;
+</span></span><span style="display:flex;"><span>        ConstantDataSequential <span style="color:#ec0000">*</span>CDS <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>            dyn_cast<span style="color:#ec0000">&lt;</span>ConstantDataSequential<span style="color:#ec0000">&gt;</span>(GV<span style="color:#ec0000">-&gt;</span>getInitializer());
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">bool</span> rust_string <span style="color:#ec0000">=</span> <span style="color:#ec0000">!</span>CDS;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (rust_string)
+</span></span><span style="display:flex;"><span>            CDS <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>ConstantDataSequential<span style="color:#ec0000">&gt;</span>(
+</span></span><span style="display:flex;"><span>                cast<span style="color:#ec0000">&lt;</span>ConstantAggregate<span style="color:#ec0000">&gt;</span>(GV<span style="color:#ec0000">-&gt;</span>getInitializer())<span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">0</span>));
+</span></span><span style="display:flex;"><span>        Type <span style="color:#ec0000">*</span>ElementTy <span style="color:#ec0000">=</span> CDS<span style="color:#ec0000">-&gt;</span>getElementType();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (<span style="color:#ec0000">!</span>ElementTy<span style="color:#ec0000">-&gt;</span>isIntegerTy())
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">continue</span>;
 </span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>      }
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (GlobalVariable <span style="color:#ec0000">*</span><span style="color:#ec0000">GV</span> : rawStrings) {
-</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> (GV<span style="color:#ec0000">-&gt;</span>getInitializer()<span style="color:#ec0000">-&gt;</span>isZeroValue() <span style="color:#ec0000">||</span>
-</span></span><span style="display:flex;"><span>          GV<span style="color:#ec0000">-&gt;</span>getInitializer()<span style="color:#ec0000">-&gt;</span>isNullValue()) {
-</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">continue</span>;
-</span></span><span style="display:flex;"><span>      }
-</span></span><span style="display:flex;"><span>      ConstantDataSequential <span style="color:#ec0000">*</span>CDS <span style="color:#ec0000">=</span>
-</span></span><span style="display:flex;"><span>          cast<span style="color:#ec0000">&lt;</span>ConstantDataSequential<span style="color:#ec0000">&gt;</span>(GV<span style="color:#ec0000">-&gt;</span>getInitializer());
-</span></span><span style="display:flex;"><span>      Type <span style="color:#ec0000">*</span>memberType <span style="color:#ec0000">=</span> CDS<span style="color:#ec0000">-&gt;</span>getElementType();
-</span></span><span style="display:flex;"><span>      // Ignore non-IntegerType
-</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> (<span style="color:#ec0000">!</span>isa<span style="color:#ec0000">&lt;</span>IntegerType<span style="color:#ec0000">&gt;</span>(memberType)) {
-</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">continue</span>;
-</span></span><span style="display:flex;"><span>      }
-</span></span><span style="display:flex;"><span>      IntegerType <span style="color:#ec0000">*</span>intType <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>IntegerType<span style="color:#ec0000">&gt;</span>(memberType);
-</span></span><span style="display:flex;"><span>      Constant <span style="color:#ec0000">*</span>KeyConst <span style="color:#ec0000">=</span> <span style="color:#ec0000">NULL</span>;
-</span></span><span style="display:flex;"><span>      Constant <span style="color:#ec0000">*</span>EncryptedConst <span style="color:#ec0000">=</span> <span style="color:#ec0000">NULL</span>;
-</span></span><span style="display:flex;"><span>      Constant <span style="color:#ec0000">*</span>DummyConst <span style="color:#ec0000">=</span> <span style="color:#ec0000">NULL</span>;
-</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> (intType <span style="color:#ec0000">==</span> Type<span style="color:#ec0000">::</span>getInt8Ty(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext())) {
-</span></span><span style="display:flex;"><span>        vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint8_t</span><span style="color:#ec0000">&gt;</span> keys;
-</span></span><span style="display:flex;"><span>        vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint8_t</span><span style="color:#ec0000">&gt;</span> encry;
-</span></span><span style="display:flex;"><span>        vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint8_t</span><span style="color:#ec0000">&gt;</span> dummy;
-</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span> (<span style="color:#5f5fff">unsigned</span> i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> CDS<span style="color:#ec0000">-&gt;</span>getNumElements(); i<span style="color:#ec0000">++</span>) {
-</span></span><span style="display:flex;"><span>          <span style="color:#5f5fff">uint8_t</span> K <span style="color:#ec0000">=</span> cryptoutils<span style="color:#ec0000">-&gt;</span>get_uint8_t();
-</span></span><span style="display:flex;"><span>          <span style="color:#5f5fff">uint64_t</span> V <span style="color:#ec0000">=</span> CDS<span style="color:#ec0000">-&gt;</span>getElementAsInteger(i);
-</span></span><span style="display:flex;"><span>          keys.push_back(K);
-</span></span><span style="display:flex;"><span>          encry.push_back(K <span style="color:#ec0000">^</span> V);
-</span></span><span style="display:flex;"><span>          dummy.push_back(rand());
+</span></span><span style="display:flex;"><span>        IntegerType <span style="color:#ec0000">*</span>intType <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>IntegerType<span style="color:#ec0000">&gt;</span>(ElementTy);
+</span></span><span style="display:flex;"><span>        Constant <span style="color:#ec0000">*</span>KeyConst, <span style="color:#ec0000">*</span>EncryptedConst, <span style="color:#ec0000">*</span>DummyConst <span style="color:#ec0000">=</span> <span style="color:#ec0000">nullptr</span>;
+</span></span><span style="display:flex;"><span>        unencryptedindex[GV] <span style="color:#ec0000">=</span> {};
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (intType <span style="color:#ec0000">==</span> Type<span style="color:#ec0000">::</span>getInt8Ty(M<span style="color:#ec0000">-&gt;</span>getContext()))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            std<span style="color:#ec0000">::</span>vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint8_t</span><span style="color:#ec0000">&gt;</span> keys, encry, dummy;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">for</span> (<span style="color:#5f5fff">unsigned</span> i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> CDS<span style="color:#ec0000">-&gt;</span>getNumElements(); i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> (cryptoutils<span style="color:#ec0000">-&gt;</span>get_range(<span style="color:#008900">100</span>) <span style="color:#ec0000">&gt;=</span> ElementEncryptProbTemp)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    unencryptedindex[GV].emplace_back(i);
+</span></span><span style="display:flex;"><span>                    keys.emplace_back(<span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>                    dummy.emplace_back(CDS<span style="color:#ec0000">-&gt;</span>getElementAsInteger(i));
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">continue</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">const</span> <span style="color:#5f5fff">uint8_t</span> K <span style="color:#ec0000">=</span> cryptoutils<span style="color:#ec0000">-&gt;</span>get_uint8_t();
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">const</span> <span style="color:#5f5fff">uint64_t</span> V <span style="color:#ec0000">=</span> CDS<span style="color:#ec0000">-&gt;</span>getElementAsInteger(i);
+</span></span><span style="display:flex;"><span>                keys.emplace_back(K);
+</span></span><span style="display:flex;"><span>                encry.emplace_back(K <span style="color:#ec0000">^</span> V);
+</span></span><span style="display:flex;"><span>                dummy.emplace_back(cryptoutils<span style="color:#ec0000">-&gt;</span>get_uint8_t());
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            KeyConst <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                ConstantDataArray<span style="color:#ec0000">::</span>get(M<span style="color:#ec0000">-&gt;</span>getContext(), ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint8_t</span><span style="color:#ec0000">&gt;</span>(keys));
+</span></span><span style="display:flex;"><span>            EncryptedConst <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                ConstantDataArray<span style="color:#ec0000">::</span>get(M<span style="color:#ec0000">-&gt;</span>getContext(), ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint8_t</span><span style="color:#ec0000">&gt;</span>(encry));
+</span></span><span style="display:flex;"><span>            DummyConst <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                ConstantDataArray<span style="color:#ec0000">::</span>get(M<span style="color:#ec0000">-&gt;</span>getContext(), ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint8_t</span><span style="color:#ec0000">&gt;</span>(dummy));
 </span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>        KeyConst <span style="color:#ec0000">=</span> ConstantDataArray<span style="color:#ec0000">::</span>get(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext(),
-</span></span><span style="display:flex;"><span>                                          ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint8_t</span><span style="color:#ec0000">&gt;</span>(keys));
-</span></span><span style="display:flex;"><span>        EncryptedConst <span style="color:#ec0000">=</span> ConstantDataArray<span style="color:#ec0000">::</span>get(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext(),
-</span></span><span style="display:flex;"><span>                                                ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint8_t</span><span style="color:#ec0000">&gt;</span>(encry));
-</span></span><span style="display:flex;"><span>        DummyConst <span style="color:#ec0000">=</span> ConstantDataArray<span style="color:#ec0000">::</span>get(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext(),
-</span></span><span style="display:flex;"><span>                                                ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint8_t</span><span style="color:#ec0000">&gt;</span>(dummy));
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>      } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (intType <span style="color:#ec0000">==</span> Type<span style="color:#ec0000">::</span>getInt16Ty(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext())) {
-</span></span><span style="display:flex;"><span>        vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint16_t</span><span style="color:#ec0000">&gt;</span> keys;
-</span></span><span style="display:flex;"><span>        vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint16_t</span><span style="color:#ec0000">&gt;</span> encry;
-</span></span><span style="display:flex;"><span>        vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint16_t</span><span style="color:#ec0000">&gt;</span> dummy;
-</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span> (<span style="color:#5f5fff">unsigned</span> i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> CDS<span style="color:#ec0000">-&gt;</span>getNumElements(); i<span style="color:#ec0000">++</span>) {
-</span></span><span style="display:flex;"><span>          <span style="color:#5f5fff">uint16_t</span> K <span style="color:#ec0000">=</span> cryptoutils<span style="color:#ec0000">-&gt;</span>get_uint16_t();
-</span></span><span style="display:flex;"><span>          <span style="color:#5f5fff">uint64_t</span> V <span style="color:#ec0000">=</span> CDS<span style="color:#ec0000">-&gt;</span>getElementAsInteger(i);
-</span></span><span style="display:flex;"><span>          keys.push_back(K);
-</span></span><span style="display:flex;"><span>          encry.push_back(K <span style="color:#ec0000">^</span> V);
-</span></span><span style="display:flex;"><span>          dummy.push_back(rand());
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (intType <span style="color:#ec0000">==</span> Type<span style="color:#ec0000">::</span>getInt16Ty(M<span style="color:#ec0000">-&gt;</span>getContext()))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            std<span style="color:#ec0000">::</span>vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint16_t</span><span style="color:#ec0000">&gt;</span> keys, encry, dummy;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">for</span> (<span style="color:#5f5fff">unsigned</span> i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> CDS<span style="color:#ec0000">-&gt;</span>getNumElements(); i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> (cryptoutils<span style="color:#ec0000">-&gt;</span>get_range(<span style="color:#008900">100</span>) <span style="color:#ec0000">&gt;=</span> ElementEncryptProbTemp)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    unencryptedindex[GV].emplace_back(i);
+</span></span><span style="display:flex;"><span>                    keys.emplace_back(<span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>                    dummy.emplace_back(CDS<span style="color:#ec0000">-&gt;</span>getElementAsInteger(i));
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">continue</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">const</span> <span style="color:#5f5fff">uint16_t</span> K <span style="color:#ec0000">=</span> cryptoutils<span style="color:#ec0000">-&gt;</span>get_uint16_t();
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">const</span> <span style="color:#5f5fff">uint64_t</span> V <span style="color:#ec0000">=</span> CDS<span style="color:#ec0000">-&gt;</span>getElementAsInteger(i);
+</span></span><span style="display:flex;"><span>                keys.emplace_back(K);
+</span></span><span style="display:flex;"><span>                encry.emplace_back(K <span style="color:#ec0000">^</span> V);
+</span></span><span style="display:flex;"><span>                dummy.emplace_back(cryptoutils<span style="color:#ec0000">-&gt;</span>get_uint16_t());
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            KeyConst <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                ConstantDataArray<span style="color:#ec0000">::</span>get(M<span style="color:#ec0000">-&gt;</span>getContext(), ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint16_t</span><span style="color:#ec0000">&gt;</span>(keys));
+</span></span><span style="display:flex;"><span>            EncryptedConst <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                ConstantDataArray<span style="color:#ec0000">::</span>get(M<span style="color:#ec0000">-&gt;</span>getContext(), ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint16_t</span><span style="color:#ec0000">&gt;</span>(encry));
+</span></span><span style="display:flex;"><span>            DummyConst <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                ConstantDataArray<span style="color:#ec0000">::</span>get(M<span style="color:#ec0000">-&gt;</span>getContext(), ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint16_t</span><span style="color:#ec0000">&gt;</span>(dummy));
 </span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>        KeyConst <span style="color:#ec0000">=</span> ConstantDataArray<span style="color:#ec0000">::</span>get(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext(),
-</span></span><span style="display:flex;"><span>                                          ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint16_t</span><span style="color:#ec0000">&gt;</span>(keys));
-</span></span><span style="display:flex;"><span>        EncryptedConst <span style="color:#ec0000">=</span> ConstantDataArray<span style="color:#ec0000">::</span>get(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext(),
-</span></span><span style="display:flex;"><span>                                                ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint16_t</span><span style="color:#ec0000">&gt;</span>(encry));
-</span></span><span style="display:flex;"><span>        DummyConst <span style="color:#ec0000">=</span> ConstantDataArray<span style="color:#ec0000">::</span>get(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext(),
-</span></span><span style="display:flex;"><span>                                                ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint16_t</span><span style="color:#ec0000">&gt;</span>(dummy));
-</span></span><span style="display:flex;"><span>      } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (intType <span style="color:#ec0000">==</span> Type<span style="color:#ec0000">::</span>getInt32Ty(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext())) {
-</span></span><span style="display:flex;"><span>        vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint32_t</span><span style="color:#ec0000">&gt;</span> keys;
-</span></span><span style="display:flex;"><span>        vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint32_t</span><span style="color:#ec0000">&gt;</span> encry;
-</span></span><span style="display:flex;"><span>        vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint32_t</span><span style="color:#ec0000">&gt;</span> dummy;
-</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span> (<span style="color:#5f5fff">unsigned</span> i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> CDS<span style="color:#ec0000">-&gt;</span>getNumElements(); i<span style="color:#ec0000">++</span>) {
-</span></span><span style="display:flex;"><span>          <span style="color:#5f5fff">uint32_t</span> K <span style="color:#ec0000">=</span> cryptoutils<span style="color:#ec0000">-&gt;</span>get_uint32_t();
-</span></span><span style="display:flex;"><span>          <span style="color:#5f5fff">uint64_t</span> V <span style="color:#ec0000">=</span> CDS<span style="color:#ec0000">-&gt;</span>getElementAsInteger(i);
-</span></span><span style="display:flex;"><span>          keys.push_back(K);
-</span></span><span style="display:flex;"><span>          encry.push_back(K <span style="color:#ec0000">^</span> V);
-</span></span><span style="display:flex;"><span>          dummy.push_back(rand());
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (intType <span style="color:#ec0000">==</span> Type<span style="color:#ec0000">::</span>getInt32Ty(M<span style="color:#ec0000">-&gt;</span>getContext()))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            std<span style="color:#ec0000">::</span>vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint32_t</span><span style="color:#ec0000">&gt;</span> keys, encry, dummy;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">for</span> (<span style="color:#5f5fff">unsigned</span> i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> CDS<span style="color:#ec0000">-&gt;</span>getNumElements(); i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> (cryptoutils<span style="color:#ec0000">-&gt;</span>get_range(<span style="color:#008900">100</span>) <span style="color:#ec0000">&gt;=</span> ElementEncryptProbTemp)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    unencryptedindex[GV].emplace_back(i);
+</span></span><span style="display:flex;"><span>                    keys.emplace_back(<span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>                    dummy.emplace_back(CDS<span style="color:#ec0000">-&gt;</span>getElementAsInteger(i));
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">continue</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">const</span> <span style="color:#5f5fff">uint32_t</span> K <span style="color:#ec0000">=</span> cryptoutils<span style="color:#ec0000">-&gt;</span>get_uint32_t();
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">const</span> <span style="color:#5f5fff">uint64_t</span> V <span style="color:#ec0000">=</span> CDS<span style="color:#ec0000">-&gt;</span>getElementAsInteger(i);
+</span></span><span style="display:flex;"><span>                keys.emplace_back(K);
+</span></span><span style="display:flex;"><span>                encry.emplace_back(K <span style="color:#ec0000">^</span> V);
+</span></span><span style="display:flex;"><span>                dummy.emplace_back(cryptoutils<span style="color:#ec0000">-&gt;</span>get_uint32_t());
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            KeyConst <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                ConstantDataArray<span style="color:#ec0000">::</span>get(M<span style="color:#ec0000">-&gt;</span>getContext(), ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint32_t</span><span style="color:#ec0000">&gt;</span>(keys));
+</span></span><span style="display:flex;"><span>            EncryptedConst <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                ConstantDataArray<span style="color:#ec0000">::</span>get(M<span style="color:#ec0000">-&gt;</span>getContext(), ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint32_t</span><span style="color:#ec0000">&gt;</span>(encry));
+</span></span><span style="display:flex;"><span>            DummyConst <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                ConstantDataArray<span style="color:#ec0000">::</span>get(M<span style="color:#ec0000">-&gt;</span>getContext(), ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint32_t</span><span style="color:#ec0000">&gt;</span>(dummy));
 </span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>        KeyConst <span style="color:#ec0000">=</span> ConstantDataArray<span style="color:#ec0000">::</span>get(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext(),
-</span></span><span style="display:flex;"><span>                                          ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint32_t</span><span style="color:#ec0000">&gt;</span>(keys));
-</span></span><span style="display:flex;"><span>        EncryptedConst <span style="color:#ec0000">=</span> ConstantDataArray<span style="color:#ec0000">::</span>get(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext(),
-</span></span><span style="display:flex;"><span>                                                ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint32_t</span><span style="color:#ec0000">&gt;</span>(encry));
-</span></span><span style="display:flex;"><span>        DummyConst <span style="color:#ec0000">=</span> ConstantDataArray<span style="color:#ec0000">::</span>get(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext(),
-</span></span><span style="display:flex;"><span>                                                ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint32_t</span><span style="color:#ec0000">&gt;</span>(dummy));
-</span></span><span style="display:flex;"><span>      } <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (intType <span style="color:#ec0000">==</span> Type<span style="color:#ec0000">::</span>getInt64Ty(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext())) {
-</span></span><span style="display:flex;"><span>        vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint64_t</span><span style="color:#ec0000">&gt;</span> keys;
-</span></span><span style="display:flex;"><span>        vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint64_t</span><span style="color:#ec0000">&gt;</span> encry;
-</span></span><span style="display:flex;"><span>        vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint64_t</span><span style="color:#ec0000">&gt;</span> dummy;
-</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span> (<span style="color:#5f5fff">unsigned</span> i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> CDS<span style="color:#ec0000">-&gt;</span>getNumElements(); i<span style="color:#ec0000">++</span>) {
-</span></span><span style="display:flex;"><span>          <span style="color:#5f5fff">uint64_t</span> K <span style="color:#ec0000">=</span> cryptoutils<span style="color:#ec0000">-&gt;</span>get_uint64_t();
-</span></span><span style="display:flex;"><span>          <span style="color:#5f5fff">uint64_t</span> V <span style="color:#ec0000">=</span> CDS<span style="color:#ec0000">-&gt;</span>getElementAsInteger(i);
-</span></span><span style="display:flex;"><span>          keys.push_back(K);
-</span></span><span style="display:flex;"><span>          encry.push_back(K <span style="color:#ec0000">^</span> V);
-</span></span><span style="display:flex;"><span>          dummy.push_back(rand());
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (intType <span style="color:#ec0000">==</span> Type<span style="color:#ec0000">::</span>getInt64Ty(M<span style="color:#ec0000">-&gt;</span>getContext()))
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            std<span style="color:#ec0000">::</span>vector<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint64_t</span><span style="color:#ec0000">&gt;</span> keys, encry, dummy;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">for</span> (<span style="color:#5f5fff">unsigned</span> i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> CDS<span style="color:#ec0000">-&gt;</span>getNumElements(); i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> (cryptoutils<span style="color:#ec0000">-&gt;</span>get_range(<span style="color:#008900">100</span>) <span style="color:#ec0000">&gt;=</span> ElementEncryptProbTemp)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    unencryptedindex[GV].emplace_back(i);
+</span></span><span style="display:flex;"><span>                    keys.emplace_back(<span style="color:#008900">1</span>);
+</span></span><span style="display:flex;"><span>                    dummy.emplace_back(CDS<span style="color:#ec0000">-&gt;</span>getElementAsInteger(i));
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">continue</span>;
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">const</span> <span style="color:#5f5fff">uint64_t</span> K <span style="color:#ec0000">=</span> cryptoutils<span style="color:#ec0000">-&gt;</span>get_uint64_t();
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">const</span> <span style="color:#5f5fff">uint64_t</span> V <span style="color:#ec0000">=</span> CDS<span style="color:#ec0000">-&gt;</span>getElementAsInteger(i);
+</span></span><span style="display:flex;"><span>                keys.emplace_back(K);
+</span></span><span style="display:flex;"><span>                encry.emplace_back(K <span style="color:#ec0000">^</span> V);
+</span></span><span style="display:flex;"><span>                dummy.emplace_back(cryptoutils<span style="color:#ec0000">-&gt;</span>get_uint64_t());
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            KeyConst <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                ConstantDataArray<span style="color:#ec0000">::</span>get(M<span style="color:#ec0000">-&gt;</span>getContext(), ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint64_t</span><span style="color:#ec0000">&gt;</span>(keys));
+</span></span><span style="display:flex;"><span>            EncryptedConst <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                ConstantDataArray<span style="color:#ec0000">::</span>get(M<span style="color:#ec0000">-&gt;</span>getContext(), ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint64_t</span><span style="color:#ec0000">&gt;</span>(encry));
+</span></span><span style="display:flex;"><span>            DummyConst <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                ConstantDataArray<span style="color:#ec0000">::</span>get(M<span style="color:#ec0000">-&gt;</span>getContext(), ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint64_t</span><span style="color:#ec0000">&gt;</span>(dummy));
 </span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>        KeyConst <span style="color:#ec0000">=</span> ConstantDataArray<span style="color:#ec0000">::</span>get(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext(),
-</span></span><span style="display:flex;"><span>                                          ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint64_t</span><span style="color:#ec0000">&gt;</span>(keys));
-</span></span><span style="display:flex;"><span>        EncryptedConst <span style="color:#ec0000">=</span> ConstantDataArray<span style="color:#ec0000">::</span>get(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext(),
-</span></span><span style="display:flex;"><span>                                                ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint64_t</span><span style="color:#ec0000">&gt;</span>(encry));
-</span></span><span style="display:flex;"><span>        DummyConst <span style="color:#ec0000">=</span> ConstantDataArray<span style="color:#ec0000">::</span>get(GV<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getContext(),
-</span></span><span style="display:flex;"><span>                                                ArrayRef<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint64_t</span><span style="color:#ec0000">&gt;</span>(dummy));
-</span></span><span style="display:flex;"><span>      } <span style="color:#ec0000">else</span> {
-</span></span><span style="display:flex;"><span>        errs() <span style="color:#ec0000">&lt;&lt;</span> <span style="color:#008900">&#34;Unsupported CDS Type</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>;
-</span></span><span style="display:flex;"><span>        abort();
-</span></span><span style="display:flex;"><span>      }
-</span></span><span style="display:flex;"><span>      // Prepare new rawGV
-</span></span><span style="display:flex;"><span>      GlobalVariable <span style="color:#ec0000">*</span>EncryptedRawGV <span style="color:#ec0000">=</span> <span style="color:#ec0000">new</span> GlobalVariable(
-</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">*</span>(GV<span style="color:#ec0000">-&gt;</span>getParent()), EncryptedConst<span style="color:#ec0000">-&gt;</span>getType(), <span style="color:#ec0000">false</span>,
-</span></span><span style="display:flex;"><span>          GV<span style="color:#ec0000">-&gt;</span>getLinkage(), EncryptedConst, <span style="color:#008900">&#34;EncryptedString&#34;</span>, <span style="color:#ec0000">nullptr</span>,
-</span></span><span style="display:flex;"><span>          GV<span style="color:#ec0000">-&gt;</span>getThreadLocalMode(), GV<span style="color:#ec0000">-&gt;</span>getType()<span style="color:#ec0000">-&gt;</span>getAddressSpace());
-</span></span><span style="display:flex;"><span>      GlobalVariable <span style="color:#ec0000">*</span>DecryptSpaceGV <span style="color:#ec0000">=</span> <span style="color:#ec0000">new</span> GlobalVariable(
-</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">*</span>(GV<span style="color:#ec0000">-&gt;</span>getParent()), DummyConst<span style="color:#ec0000">-&gt;</span>getType(), <span style="color:#ec0000">false</span>,
-</span></span><span style="display:flex;"><span>          GV<span style="color:#ec0000">-&gt;</span>getLinkage(), DummyConst, <span style="color:#008900">&#34;DecryptSpace&#34;</span>, <span style="color:#ec0000">nullptr</span>,
-</span></span><span style="display:flex;"><span>          GV<span style="color:#ec0000">-&gt;</span>getThreadLocalMode(), GV<span style="color:#ec0000">-&gt;</span>getType()<span style="color:#ec0000">-&gt;</span>getAddressSpace());
-</span></span><span style="display:flex;"><span>      old2new[GV] <span style="color:#ec0000">=</span> make_pair(EncryptedRawGV, DecryptSpaceGV);
-</span></span><span style="display:flex;"><span>      GV2Keys[DecryptSpaceGV] <span style="color:#ec0000">=</span> make_pair(KeyConst, EncryptedRawGV);
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            llvm_unreachable(<span style="color:#008900">&#34;Unsupported CDS Type&#34;</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        // Prepare new rawGV
+</span></span><span style="display:flex;"><span>        GlobalVariable <span style="color:#ec0000">*</span>EncryptedRawGV <span style="color:#ec0000">=</span> <span style="color:#ec0000">new</span> GlobalVariable(
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">*</span>M, EncryptedConst<span style="color:#ec0000">-&gt;</span>getType(), <span style="color:#ec0000">false</span>, GV<span style="color:#ec0000">-&gt;</span>getLinkage(),
+</span></span><span style="display:flex;"><span>            EncryptedConst, <span style="color:#008900">&#34;EncryptedString&#34;</span>, <span style="color:#ec0000">nullptr</span>, GV<span style="color:#ec0000">-&gt;</span>getThreadLocalMode(),
+</span></span><span style="display:flex;"><span>            GV<span style="color:#ec0000">-&gt;</span>getType()<span style="color:#ec0000">-&gt;</span>getAddressSpace());
+</span></span><span style="display:flex;"><span>        genedgv.emplace_back(EncryptedRawGV);
+</span></span><span style="display:flex;"><span>        GlobalVariable <span style="color:#ec0000">*</span>DecryptSpaceGV;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (rust_string)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            ConstantAggregate <span style="color:#ec0000">*</span>CA <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>ConstantAggregate<span style="color:#ec0000">&gt;</span>(GV<span style="color:#ec0000">-&gt;</span>getInitializer());
+</span></span><span style="display:flex;"><span>            CA<span style="color:#ec0000">-&gt;</span>setOperand(<span style="color:#008900">0</span>, DummyConst);
+</span></span><span style="display:flex;"><span>            DecryptSpaceGV <span style="color:#ec0000">=</span> <span style="color:#ec0000">new</span> GlobalVariable(
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">*</span>M, GV<span style="color:#ec0000">-&gt;</span>getValueType(), <span style="color:#ec0000">false</span>, GV<span style="color:#ec0000">-&gt;</span>getLinkage(), CA,
+</span></span><span style="display:flex;"><span>                <span style="color:#008900">&#34;DecryptSpaceRust&#34;</span>, <span style="color:#ec0000">nullptr</span>, GV<span style="color:#ec0000">-&gt;</span>getThreadLocalMode(),
+</span></span><span style="display:flex;"><span>                GV<span style="color:#ec0000">-&gt;</span>getType()<span style="color:#ec0000">-&gt;</span>getAddressSpace());
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            DecryptSpaceGV <span style="color:#ec0000">=</span> <span style="color:#ec0000">new</span> GlobalVariable(
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">*</span>M, DummyConst<span style="color:#ec0000">-&gt;</span>getType(), <span style="color:#ec0000">false</span>, GV<span style="color:#ec0000">-&gt;</span>getLinkage(), DummyConst,
+</span></span><span style="display:flex;"><span>                <span style="color:#008900">&#34;DecryptSpace&#34;</span>, <span style="color:#ec0000">nullptr</span>, GV<span style="color:#ec0000">-&gt;</span>getThreadLocalMode(),
+</span></span><span style="display:flex;"><span>                GV<span style="color:#ec0000">-&gt;</span>getType()<span style="color:#ec0000">-&gt;</span>getAddressSpace());
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        genedgv.emplace_back(DecryptSpaceGV);
+</span></span><span style="display:flex;"><span>        old2new[GV] <span style="color:#ec0000">=</span> std<span style="color:#ec0000">::</span>make_pair(EncryptedRawGV, DecryptSpaceGV);
+</span></span><span style="display:flex;"><span>        GV2Keys[DecryptSpaceGV] <span style="color:#ec0000">=</span> std<span style="color:#ec0000">::</span>make_pair(KeyConst, EncryptedRawGV);
+</span></span><span style="display:flex;"><span>        mgv2keys[DecryptSpaceGV] <span style="color:#ec0000">=</span> GV2Keys[DecryptSpaceGV];
+</span></span><span style="display:flex;"><span>        unencryptedindex[KeyConst] <span style="color:#ec0000">=</span> unencryptedindex[GV];
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>    // Now prepare ObjC new GV
-</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (GlobalVariable <span style="color:#ec0000">*</span><span style="color:#ec0000">GV</span> : objCStrings) {
-</span></span><span style="display:flex;"><span>      ConstantStruct <span style="color:#ec0000">*</span>CS <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>ConstantStruct<span style="color:#ec0000">&gt;</span>(GV<span style="color:#ec0000">-&gt;</span>getInitializer());
-</span></span><span style="display:flex;"><span>      GlobalVariable <span style="color:#ec0000">*</span>oldrawString <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>GlobalVariable<span style="color:#ec0000">&gt;</span>(CS<span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">2</span>)<span style="color:#ec0000">-&gt;</span>stripPointerCasts());
-</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> (old2new.find(oldrawString) <span style="color:#ec0000">==</span> old2new.end()) { // Filter out zero initializers
-</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">continue</span>;
-</span></span><span style="display:flex;"><span>      }
-</span></span><span style="display:flex;"><span>      GlobalVariable <span style="color:#ec0000">*</span>EncryptedOCGV <span style="color:#ec0000">=</span> ObjectivCString(GV, <span style="color:#008900">&#34;EncryptedStringObjC&#34;</span>, oldrawString, old2new[oldrawString].first, CS);
-</span></span><span style="display:flex;"><span>      GlobalVariable <span style="color:#ec0000">*</span>DecryptSpaceOCGV <span style="color:#ec0000">=</span> ObjectivCString(GV, <span style="color:#008900">&#34;DecryptSpaceObjC&#34;</span>, oldrawString, old2new[oldrawString].second, CS);
-</span></span><span style="display:flex;"><span>      old2new[GV] <span style="color:#ec0000">=</span> make_pair(EncryptedOCGV, DecryptSpaceOCGV);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (GlobalVariable <span style="color:#ec0000">*</span><span style="color:#ec0000">GV</span> : objCStrings)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        ConstantStruct <span style="color:#ec0000">*</span>CS <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>ConstantStruct<span style="color:#ec0000">&gt;</span>(GV<span style="color:#ec0000">-&gt;</span>getInitializer());
+</span></span><span style="display:flex;"><span>        GlobalVariable <span style="color:#ec0000">*</span>oldrawString <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>            cast<span style="color:#ec0000">&lt;</span>GlobalVariable<span style="color:#ec0000">&gt;</span>(CS<span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">2</span>)<span style="color:#ec0000">-&gt;</span>stripPointerCasts());
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (old2new.find(oldrawString) <span style="color:#ec0000">==</span>
+</span></span><span style="display:flex;"><span>            old2new.end()) // Filter out zero initializers
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">continue</span>;
+</span></span><span style="display:flex;"><span>        GlobalVariable <span style="color:#ec0000">*</span>EncryptedOCGV <span style="color:#ec0000">=</span> ObjectiveCString(
+</span></span><span style="display:flex;"><span>            GV, <span style="color:#008900">&#34;EncryptedStringObjC&#34;</span>, old2new[oldrawString].first, CS);
+</span></span><span style="display:flex;"><span>        genedgv.emplace_back(EncryptedOCGV);
+</span></span><span style="display:flex;"><span>        GlobalVariable <span style="color:#ec0000">*</span>DecryptSpaceOCGV <span style="color:#ec0000">=</span> ObjectiveCString(
+</span></span><span style="display:flex;"><span>            GV, <span style="color:#008900">&#34;DecryptSpaceObjC&#34;</span>, old2new[oldrawString].second, CS);
+</span></span><span style="display:flex;"><span>        genedgv.emplace_back(DecryptSpaceOCGV);
+</span></span><span style="display:flex;"><span>        old2new[GV] <span style="color:#ec0000">=</span> std<span style="color:#ec0000">::</span>make_pair(EncryptedOCGV, DecryptSpaceOCGV);
 </span></span><span style="display:flex;"><span>    } // End prepare ObjC new GV
-</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span>(old2new.empty() <span style="color:#ec0000">||</span> GV2Keys.empty())
-</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (GV2Keys.empty())
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span>;
 </span></span><span style="display:flex;"><span>    // Replace Uses
-</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (User <span style="color:#ec0000">*</span><span style="color:#ec0000">U</span> : Users) {
-</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">for</span> (map<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span>, pair<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span>, GlobalVariable <span style="color:#ec0000">*&gt;&gt;::</span>iterator iter <span style="color:#ec0000">=</span>
-</span></span><span style="display:flex;"><span>               old2new.begin();
-</span></span><span style="display:flex;"><span>           iter <span style="color:#ec0000">!=</span> old2new.end(); <span style="color:#ec0000">++</span>iter) {
-</span></span><span style="display:flex;"><span>        U<span style="color:#ec0000">-&gt;</span>replaceUsesOfWith(iter<span style="color:#ec0000">-&gt;</span>first, iter<span style="color:#ec0000">-&gt;</span>second.second);
-</span></span><span style="display:flex;"><span>        iter<span style="color:#ec0000">-&gt;</span>first<span style="color:#ec0000">-&gt;</span>removeDeadConstantUsers();
-</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (User <span style="color:#ec0000">*</span><span style="color:#ec0000">U</span> : Users)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span> (std<span style="color:#ec0000">::</span>unordered_map<span style="color:#ec0000">&lt;</span>
+</span></span><span style="display:flex;"><span>                 GlobalVariable <span style="color:#ec0000">*</span>,
+</span></span><span style="display:flex;"><span>                 std<span style="color:#ec0000">::</span>pair<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span>, GlobalVariable <span style="color:#ec0000">*&gt;&gt;::</span>iterator iter <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                 old2new.begin();
+</span></span><span style="display:flex;"><span>             iter <span style="color:#ec0000">!=</span> old2new.end(); <span style="color:#ec0000">++</span>iter)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> (isa<span style="color:#ec0000">&lt;</span>Constant<span style="color:#ec0000">&gt;</span>(U) <span style="color:#ec0000">&amp;&amp;</span> <span style="color:#ec0000">!</span>isa<span style="color:#ec0000">&lt;</span>GlobalValue<span style="color:#ec0000">&gt;</span>(U))
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                Constant <span style="color:#ec0000">*</span>C <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>Constant<span style="color:#ec0000">&gt;</span>(U);
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">for</span> (Value <span style="color:#ec0000">*</span><span style="color:#ec0000">Op</span> : C<span style="color:#ec0000">-&gt;</span>operands())
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">if</span> (Op <span style="color:#ec0000">==</span> iter<span style="color:#ec0000">-&gt;</span>first)
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        C<span style="color:#ec0000">-&gt;</span>handleOperandChange(iter<span style="color:#ec0000">-&gt;</span>first, iter<span style="color:#ec0000">-&gt;</span>second.second);
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">break</span>;
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">else</span>
+</span></span><span style="display:flex;"><span>                U<span style="color:#ec0000">-&gt;</span>replaceUsesOfWith(iter<span style="color:#ec0000">-&gt;</span>first, iter<span style="color:#ec0000">-&gt;</span>second.second);
+</span></span><span style="display:flex;"><span>            iter<span style="color:#ec0000">-&gt;</span>first<span style="color:#ec0000">-&gt;</span>removeDeadConstantUsers();
+</span></span><span style="display:flex;"><span>        }
 </span></span><span style="display:flex;"><span>    } // End Replace Uses
 </span></span><span style="display:flex;"><span>    // CleanUp Old ObjC GVs
-</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (GlobalVariable <span style="color:#ec0000">*</span><span style="color:#ec0000">GV</span> : objCStrings) {
-</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> (GV<span style="color:#ec0000">-&gt;</span>getNumUses() <span style="color:#ec0000">==</span> <span style="color:#008900">0</span>) {
-</span></span><span style="display:flex;"><span>        GV<span style="color:#ec0000">-&gt;</span>dropAllReferences();
-</span></span><span style="display:flex;"><span>        old2new.erase(GV);
-</span></span><span style="display:flex;"><span>        GV<span style="color:#ec0000">-&gt;</span>eraseFromParent();
-</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (GlobalVariable <span style="color:#ec0000">*</span><span style="color:#ec0000">GV</span> : objCStrings)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        GlobalVariable <span style="color:#ec0000">*</span>PtrauthGV <span style="color:#ec0000">=</span> <span style="color:#ec0000">nullptr</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (appleptrauth)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            Constant <span style="color:#ec0000">*</span>C <span style="color:#ec0000">=</span> dyn_cast_or_null<span style="color:#ec0000">&lt;</span>Constant<span style="color:#ec0000">&gt;</span>(
+</span></span><span style="display:flex;"><span>                opaquepointers
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">?</span> GV<span style="color:#ec0000">-&gt;</span>getInitializer()
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">:</span> cast<span style="color:#ec0000">&lt;</span>ConstantExpr<span style="color:#ec0000">&gt;</span>(GV<span style="color:#ec0000">-&gt;</span>getInitializer()<span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">0</span>)));
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> (C)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                PtrauthGV <span style="color:#ec0000">=</span> dyn_cast<span style="color:#ec0000">&lt;</span>GlobalVariable<span style="color:#ec0000">&gt;</span>(C<span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">0</span>));
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">if</span> (PtrauthGV<span style="color:#ec0000">-&gt;</span>getSection() <span style="color:#ec0000">==</span> <span style="color:#008900">&#34;llvm.ptrauth&#34;</span>)
+</span></span><span style="display:flex;"><span>                {
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">if</span> (ConstantExpr <span style="color:#ec0000">*</span>CE <span style="color:#ec0000">=</span> dyn_cast<span style="color:#ec0000">&lt;</span>ConstantExpr<span style="color:#ec0000">&gt;</span>(
+</span></span><span style="display:flex;"><span>                            PtrauthGV<span style="color:#ec0000">-&gt;</span>getInitializer()<span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">2</span>)))
+</span></span><span style="display:flex;"><span>                    {
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">if</span> (GlobalVariable <span style="color:#ec0000">*</span>GV2 <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                                dyn_cast<span style="color:#ec0000">&lt;</span>GlobalVariable<span style="color:#ec0000">&gt;</span>(CE<span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">0</span>)))
+</span></span><span style="display:flex;"><span>                        {
+</span></span><span style="display:flex;"><span>                            <span style="color:#ec0000">if</span> (GV<span style="color:#ec0000">-&gt;</span>getNumUses() <span style="color:#ec0000">&lt;=</span> <span style="color:#008900">1</span> <span style="color:#ec0000">&amp;&amp;</span>
+</span></span><span style="display:flex;"><span>                                GV2<span style="color:#ec0000">-&gt;</span>getGlobalIdentifier() <span style="color:#ec0000">==</span> GV<span style="color:#ec0000">-&gt;</span>getGlobalIdentifier())
+</span></span><span style="display:flex;"><span>                                PtrauthGV<span style="color:#ec0000">-&gt;</span>getInitializer()<span style="color:#ec0000">-&gt;</span>setOperand(
+</span></span><span style="display:flex;"><span>                                    <span style="color:#008900">2</span>, ConstantExpr<span style="color:#ec0000">::</span>getPtrToInt(
+</span></span><span style="display:flex;"><span>                                           M<span style="color:#ec0000">-&gt;</span>getGlobalVariable(
+</span></span><span style="display:flex;"><span>                                               <span style="color:#008900">&#34;__CFConstantStringClassReference&#34;</span>),
+</span></span><span style="display:flex;"><span>                                           Type<span style="color:#ec0000">::</span>getInt64Ty(M<span style="color:#ec0000">-&gt;</span>getContext())));
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">else</span> <span style="color:#ec0000">if</span> (GlobalVariable <span style="color:#ec0000">*</span>GV2 <span style="color:#ec0000">=</span> dyn_cast<span style="color:#ec0000">&lt;</span>GlobalVariable<span style="color:#ec0000">&gt;</span>(
+</span></span><span style="display:flex;"><span>                                 PtrauthGV<span style="color:#ec0000">-&gt;</span>getInitializer()<span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">2</span>)))
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">if</span> (GV<span style="color:#ec0000">-&gt;</span>getNumUses() <span style="color:#ec0000">&lt;=</span> <span style="color:#008900">1</span> <span style="color:#ec0000">&amp;&amp;</span>
+</span></span><span style="display:flex;"><span>                            GV2<span style="color:#ec0000">-&gt;</span>getGlobalIdentifier() <span style="color:#ec0000">==</span> GV<span style="color:#ec0000">-&gt;</span>getGlobalIdentifier())
+</span></span><span style="display:flex;"><span>                            PtrauthGV<span style="color:#ec0000">-&gt;</span>getInitializer()<span style="color:#ec0000">-&gt;</span>setOperand(
+</span></span><span style="display:flex;"><span>                                <span style="color:#008900">2</span>, ConstantExpr<span style="color:#ec0000">::</span>getPtrToInt(
+</span></span><span style="display:flex;"><span>                                       M<span style="color:#ec0000">-&gt;</span>getGlobalVariable(
+</span></span><span style="display:flex;"><span>                                           <span style="color:#008900">&#34;__CFConstantStringClassReference&#34;</span>),
+</span></span><span style="display:flex;"><span>                                       Type<span style="color:#ec0000">::</span>getInt64Ty(M<span style="color:#ec0000">-&gt;</span>getContext())));
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        GV<span style="color:#ec0000">-&gt;</span>removeDeadConstantUsers();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (GV<span style="color:#ec0000">-&gt;</span>getNumUses() <span style="color:#ec0000">==</span> <span style="color:#008900">0</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            GV<span style="color:#ec0000">-&gt;</span>dropAllReferences();
+</span></span><span style="display:flex;"><span>            old2new.erase(GV);
+</span></span><span style="display:flex;"><span>            GV<span style="color:#ec0000">-&gt;</span>eraseFromParent();
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (PtrauthGV)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            PtrauthGV<span style="color:#ec0000">-&gt;</span>removeDeadConstantUsers();
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> (PtrauthGV<span style="color:#ec0000">-&gt;</span>getNumUses() <span style="color:#ec0000">==</span> <span style="color:#008900">0</span>)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                PtrauthGV<span style="color:#ec0000">-&gt;</span>dropAllReferences();
+</span></span><span style="display:flex;"><span>                PtrauthGV<span style="color:#ec0000">-&gt;</span>eraseFromParent();
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>    // CleanUp Old Raw GVs
-</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (map<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span>, pair<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span>, GlobalVariable <span style="color:#ec0000">*&gt;&gt;::</span>iterator iter <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (std<span style="color:#ec0000">::</span>unordered_map<span style="color:#ec0000">&lt;</span>
+</span></span><span style="display:flex;"><span>             GlobalVariable <span style="color:#ec0000">*</span>,
+</span></span><span style="display:flex;"><span>             std<span style="color:#ec0000">::</span>pair<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span>, GlobalVariable <span style="color:#ec0000">*&gt;&gt;::</span>iterator iter <span style="color:#ec0000">=</span>
 </span></span><span style="display:flex;"><span>             old2new.begin();
-</span></span><span style="display:flex;"><span>         iter <span style="color:#ec0000">!=</span> old2new.end(); <span style="color:#ec0000">++</span>iter) {
-</span></span><span style="display:flex;"><span>      GlobalVariable <span style="color:#ec0000">*</span>toDelete <span style="color:#ec0000">=</span> iter<span style="color:#ec0000">-&gt;</span>first;
-</span></span><span style="display:flex;"><span>      toDelete<span style="color:#ec0000">-&gt;</span>removeDeadConstantUsers();
-</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> (toDelete<span style="color:#ec0000">-&gt;</span>getNumUses() <span style="color:#ec0000">==</span> <span style="color:#008900">0</span>) {
-</span></span><span style="display:flex;"><span>        toDelete<span style="color:#ec0000">-&gt;</span>dropAllReferences();
-</span></span><span style="display:flex;"><span>        toDelete<span style="color:#ec0000">-&gt;</span>eraseFromParent();
-</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>         iter <span style="color:#ec0000">!=</span> old2new.end(); <span style="color:#ec0000">++</span>iter)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        GlobalVariable <span style="color:#ec0000">*</span>toDelete <span style="color:#ec0000">=</span> iter<span style="color:#ec0000">-&gt;</span>first;
+</span></span><span style="display:flex;"><span>        toDelete<span style="color:#ec0000">-&gt;</span>removeDeadConstantUsers();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (toDelete<span style="color:#ec0000">-&gt;</span>getNumUses() <span style="color:#ec0000">==</span> <span style="color:#008900">0</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            toDelete<span style="color:#ec0000">-&gt;</span>dropAllReferences();
+</span></span><span style="display:flex;"><span>            toDelete<span style="color:#ec0000">-&gt;</span>eraseFromParent();
+</span></span><span style="display:flex;"><span>        }
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>    GlobalVariable <span style="color:#ec0000">*</span>StatusGV <span style="color:#ec0000">=</span> encstatus[Func];
 </span></span><span style="display:flex;"><span>    /*
-</span></span><span style="display:flex;"><span>      - Split Original EntryPoint BB into A and C.
-</span></span><span style="display:flex;"><span>      - Create new BB as Decryption BB between A and C. Adjust the terminators
-</span></span><span style="display:flex;"><span>      into: A (Alloca a new array containing all)
-</span></span><span style="display:flex;"><span>              |
-</span></span><span style="display:flex;"><span>              B(If not decrypted)
-</span></span><span style="display:flex;"><span>              |
-</span></span><span style="display:flex;"><span>              C
-</span></span><span style="display:flex;"><span>    */
+</span></span><span style="display:flex;"><span>       - Split Original EntryPoint BB into A and C.
+</span></span><span style="display:flex;"><span>       - Create new BB as Decryption BB between A and C. Adjust the terminators
+</span></span><span style="display:flex;"><span>         into: A (Alloca a new array containing all)
+</span></span><span style="display:flex;"><span>               |
+</span></span><span style="display:flex;"><span>               B(If not decrypted)
+</span></span><span style="display:flex;"><span>               |
+</span></span><span style="display:flex;"><span>               C
+</span></span><span style="display:flex;"><span>     */
 </span></span><span style="display:flex;"><span>    BasicBlock <span style="color:#ec0000">*</span>A <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;</span>(Func<span style="color:#ec0000">-&gt;</span>getEntryBlock());
 </span></span><span style="display:flex;"><span>    BasicBlock <span style="color:#ec0000">*</span>C <span style="color:#ec0000">=</span> A<span style="color:#ec0000">-&gt;</span>splitBasicBlock(A<span style="color:#ec0000">-&gt;</span>getFirstNonPHIOrDbgOrLifetime());
 </span></span><span style="display:flex;"><span>    C<span style="color:#ec0000">-&gt;</span>setName(<span style="color:#008900">&#34;PrecedingBlock&#34;</span>);
@@ -1178,87 +1334,94 @@ attributes #1 = { &#34;frame-pointer&#34;=&#34;non-leaf&#34; &#34;no-trapping-ma
 </span></span><span style="display:flex;"><span>    // We&#39;ll add new terminator to jump C later
 </span></span><span style="display:flex;"><span>    BranchInst <span style="color:#ec0000">*</span>newBr <span style="color:#ec0000">=</span> BranchInst<span style="color:#ec0000">::</span>Create(B);
 </span></span><span style="display:flex;"><span>    ReplaceInstWithInst(A<span style="color:#ec0000">-&gt;</span>getTerminator(), newBr);
-</span></span><span style="display:flex;"><span>    IRBuilder<span style="color:#ec0000">&lt;&gt;</span> IRB(A<span style="color:#ec0000">-&gt;</span>getFirstNonPHIOrDbgOrLifetime());
 </span></span><span style="display:flex;"><span>    // Insert DecryptionCode
 </span></span><span style="display:flex;"><span>    HandleDecryptionBlock(B, C, GV2Keys);
+</span></span><span style="display:flex;"><span>    IRBuilder<span style="color:#ec0000">&lt;&gt;</span> IRB(A<span style="color:#ec0000">-&gt;</span>getFirstNonPHIOrDbgOrLifetime());
 </span></span><span style="display:flex;"><span>    // Add atomic load checking status in A
-</span></span><span style="display:flex;"><span>    LoadInst <span style="color:#ec0000">*</span>LI <span style="color:#ec0000">=</span> IRB.CreateLoad(StatusGV, <span style="color:#008900">&#34;LoadEncryptionStatus&#34;</span>);
-</span></span><span style="display:flex;"><span>    LI<span style="color:#ec0000">-&gt;</span>setAtomic(AtomicOrdering<span style="color:#ec0000">::</span>Acquire); // Will be released at the start of
-</span></span><span style="display:flex;"><span>                                            // C
-</span></span><span style="display:flex;"><span>    LI<span style="color:#ec0000">-&gt;</span>setAlignment(<span style="color:#008900">4</span>);
+</span></span><span style="display:flex;"><span>    LoadInst <span style="color:#ec0000">*</span>LI <span style="color:#ec0000">=</span> IRB.CreateLoad(StatusGV<span style="color:#ec0000">-&gt;</span>getValueType(), StatusGV,
+</span></span><span style="display:flex;"><span>                                  <span style="color:#008900">&#34;LoadEncryptionStatus&#34;</span>);
+</span></span><span style="display:flex;"><span>    LI<span style="color:#ec0000">-&gt;</span>setAtomic(
+</span></span><span style="display:flex;"><span>        AtomicOrdering<span style="color:#ec0000">::</span>Acquire); // Will be released at the start of C
+</span></span><span style="display:flex;"><span>    LI<span style="color:#ec0000">-&gt;</span>setAlignment(Align(<span style="color:#008900">4</span>));
 </span></span><span style="display:flex;"><span>    Value <span style="color:#ec0000">*</span>condition <span style="color:#ec0000">=</span> IRB.CreateICmpEQ(
 </span></span><span style="display:flex;"><span>        LI, ConstantInt<span style="color:#ec0000">::</span>get(Type<span style="color:#ec0000">::</span>getInt32Ty(Func<span style="color:#ec0000">-&gt;</span>getContext()), <span style="color:#008900">0</span>));
 </span></span><span style="display:flex;"><span>    A<span style="color:#ec0000">-&gt;</span>getTerminator()<span style="color:#ec0000">-&gt;</span>eraseFromParent();
 </span></span><span style="display:flex;"><span>    BranchInst<span style="color:#ec0000">::</span>Create(B, C, condition, A);
 </span></span><span style="display:flex;"><span>    // Add StoreInst atomically in C start
 </span></span><span style="display:flex;"><span>    // No matter control flow is coming from A or B, the GVs must be decrypted
-</span></span><span style="display:flex;"><span>    IRBuilder<span style="color:#ec0000">&lt;&gt;</span> IRBC(C<span style="color:#ec0000">-&gt;</span>getFirstNonPHIOrDbgOrLifetime());
-</span></span><span style="display:flex;"><span>    StoreInst <span style="color:#ec0000">*</span>SI <span style="color:#ec0000">=</span> IRBC.CreateStore(
-</span></span><span style="display:flex;"><span>        ConstantInt<span style="color:#ec0000">::</span>get(Type<span style="color:#ec0000">::</span>getInt32Ty(Func<span style="color:#ec0000">-&gt;</span>getContext()), <span style="color:#008900">1</span>), StatusGV);
-</span></span><span style="display:flex;"><span>    SI<span style="color:#ec0000">-&gt;</span>setAlignment(<span style="color:#008900">4</span>);
+</span></span><span style="display:flex;"><span>    StoreInst <span style="color:#ec0000">*</span>SI <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">new</span> StoreInst(ConstantInt<span style="color:#ec0000">::</span>get(Type<span style="color:#ec0000">::</span>getInt32Ty(Func<span style="color:#ec0000">-&gt;</span>getContext()), <span style="color:#008900">1</span>),
+</span></span><span style="display:flex;"><span>                      StatusGV, C<span style="color:#ec0000">-&gt;</span>getFirstNonPHIOrDbgOrLifetime());
+</span></span><span style="display:flex;"><span>    SI<span style="color:#ec0000">-&gt;</span>setAlignment(Align(<span style="color:#008900">4</span>));
 </span></span><span style="display:flex;"><span>    SI<span style="color:#ec0000">-&gt;</span>setAtomic(AtomicOrdering<span style="color:#ec0000">::</span>Release); // Release the lock acquired in LI
+</span></span><span style="display:flex;"><span>} // End of HandleFunction
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>  } // End of HandleFunction
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>  GlobalVariable <span style="color:#ec0000">*</span><span style="color:#5f5fff">ObjectivCString</span>(GlobalVariable <span style="color:#ec0000">*</span>GV, string name, GlobalVariable <span style="color:#ec0000">*</span>oldrawString, GlobalVariable <span style="color:#ec0000">*</span>newString, ConstantStruct <span style="color:#ec0000">*</span>CS) {
-</span></span><span style="display:flex;"><span>      Value <span style="color:#ec0000">*</span>zero <span style="color:#ec0000">=</span> ConstantInt<span style="color:#ec0000">::</span>get(Type<span style="color:#ec0000">::</span>getInt32Ty(GV<span style="color:#ec0000">-&gt;</span>getContext()), <span style="color:#008900">0</span>);
-</span></span><span style="display:flex;"><span>      vector<span style="color:#ec0000">&lt;</span>Constant <span style="color:#ec0000">*&gt;</span> vals;
-</span></span><span style="display:flex;"><span>      vals.push_back(CS<span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">0</span>));
-</span></span><span style="display:flex;"><span>      vals.push_back(CS<span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">1</span>));
-</span></span><span style="display:flex;"><span>      Constant <span style="color:#ec0000">*</span>GEPed <span style="color:#ec0000">=</span> ConstantExpr<span style="color:#ec0000">::</span>getInBoundsGetElementPtr(<span style="color:#ec0000">nullptr</span>, newString, {zero, zero});
-</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">if</span> (GEPed<span style="color:#ec0000">-&gt;</span>getType() <span style="color:#ec0000">==</span> CS<span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">2</span>)<span style="color:#ec0000">-&gt;</span>getType()) {
-</span></span><span style="display:flex;"><span>        vals.push_back(GEPed);
-</span></span><span style="display:flex;"><span>      } <span style="color:#ec0000">else</span> {
-</span></span><span style="display:flex;"><span>        Constant <span style="color:#ec0000">*</span>BitCasted <span style="color:#ec0000">=</span> ConstantExpr<span style="color:#ec0000">::</span>getBitCast(newString, CS<span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">2</span>)<span style="color:#ec0000">-&gt;</span>getType());
-</span></span><span style="display:flex;"><span>        vals.push_back(BitCasted);
-</span></span><span style="display:flex;"><span>      }
-</span></span><span style="display:flex;"><span>      vals.push_back(CS<span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">3</span>));
-</span></span><span style="display:flex;"><span>      Constant <span style="color:#ec0000">*</span>newCS <span style="color:#ec0000">=</span> ConstantStruct<span style="color:#ec0000">::</span>get(CS<span style="color:#ec0000">-&gt;</span>getType(), ArrayRef<span style="color:#ec0000">&lt;</span>Constant <span style="color:#ec0000">*&gt;</span>(vals));
-</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">return</span> <span style="color:#ec0000">new</span> GlobalVariable(
-</span></span><span style="display:flex;"><span>          <span style="color:#ec0000">*</span>(GV<span style="color:#ec0000">-&gt;</span>getParent()), newCS<span style="color:#ec0000">-&gt;</span>getType(), <span style="color:#ec0000">false</span>, GV<span style="color:#ec0000">-&gt;</span>getLinkage(), newCS,
-</span></span><span style="display:flex;"><span>          name.c_str(), <span style="color:#ec0000">nullptr</span>, GV<span style="color:#ec0000">-&gt;</span>getThreadLocalMode(),
-</span></span><span style="display:flex;"><span>          GV<span style="color:#ec0000">-&gt;</span>getType()<span style="color:#ec0000">-&gt;</span>getAddressSpace());
-</span></span><span style="display:flex;"><span>  }
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">void</span> <span style="color:#5f5fff">HandleDecryptionBlock</span>(BasicBlock <span style="color:#ec0000">*</span>B, BasicBlock <span style="color:#ec0000">*</span>C,
-</span></span><span style="display:flex;"><span>                             map<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span>, pair<span style="color:#ec0000">&lt;</span>Constant <span style="color:#ec0000">*</span>, GlobalVariable <span style="color:#ec0000">*&gt;&gt;</span> <span style="color:#ec0000">&amp;</span>GV2Keys) {
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">void</span> <span style="color:#5f5fff">HandleDecryptionBlock</span>(
+</span></span><span style="display:flex;"><span>    BasicBlock <span style="color:#ec0000">*</span>B, BasicBlock <span style="color:#ec0000">*</span>C,
+</span></span><span style="display:flex;"><span>    std<span style="color:#ec0000">::</span>unordered_map<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span>,
+</span></span><span style="display:flex;"><span>                       std<span style="color:#ec0000">::</span>pair<span style="color:#ec0000">&lt;</span>Constant <span style="color:#ec0000">*</span>, GlobalVariable <span style="color:#ec0000">*&gt;&gt;</span> <span style="color:#ec0000">&amp;</span>GV2Keys)
+</span></span><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    IRBuilder<span style="color:#ec0000">&lt;&gt;</span> IRB(B);
 </span></span><span style="display:flex;"><span>    Value <span style="color:#ec0000">*</span>zero <span style="color:#ec0000">=</span> ConstantInt<span style="color:#ec0000">::</span>get(Type<span style="color:#ec0000">::</span>getInt32Ty(B<span style="color:#ec0000">-&gt;</span>getContext()), <span style="color:#008900">0</span>);
-</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (map<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span>, pair<span style="color:#ec0000">&lt;</span>Constant <span style="color:#ec0000">*</span>, GlobalVariable <span style="color:#ec0000">*&gt;&gt;::</span>iterator iter <span style="color:#ec0000">=</span> GV2Keys.begin();
-</span></span><span style="display:flex;"><span>         iter <span style="color:#ec0000">!=</span> GV2Keys.end(); <span style="color:#ec0000">++</span>iter) {
-</span></span><span style="display:flex;"><span>      ConstantDataArray <span style="color:#ec0000">*</span>CastedCDA <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>ConstantDataArray<span style="color:#ec0000">&gt;</span>(iter<span style="color:#ec0000">-&gt;</span>second.first);
-</span></span><span style="display:flex;"><span>      // Prevent optimization of encrypted data
-</span></span><span style="display:flex;"><span>      appendToCompilerUsed(<span style="color:#ec0000">*</span>iter<span style="color:#ec0000">-&gt;</span>second.second<span style="color:#ec0000">-&gt;</span>getParent(),
-</span></span><span style="display:flex;"><span>                           {iter<span style="color:#ec0000">-&gt;</span>second.second});
-</span></span><span style="display:flex;"><span>      // Element-By-Element XOR so the fucking verifier won&#39;t complain
-</span></span><span style="display:flex;"><span>      // Also, this hides keys
-</span></span><span style="display:flex;"><span>      <span style="color:#ec0000">for</span> (<span style="color:#5f5fff">unsigned</span> i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> CastedCDA<span style="color:#ec0000">-&gt;</span>getType()<span style="color:#ec0000">-&gt;</span>getNumElements(); i<span style="color:#ec0000">++</span>) {
-</span></span><span style="display:flex;"><span>        Value <span style="color:#ec0000">*</span>offset <span style="color:#ec0000">=</span> ConstantInt<span style="color:#ec0000">::</span>get(Type<span style="color:#ec0000">::</span>getInt32Ty(B<span style="color:#ec0000">-&gt;</span>getContext()), i);
-</span></span><span style="display:flex;"><span>        Value <span style="color:#ec0000">*</span>EncryptedGEP <span style="color:#ec0000">=</span> IRB.CreateGEP(iter<span style="color:#ec0000">-&gt;</span>second.second, {zero, offset});
-</span></span><span style="display:flex;"><span>        Value <span style="color:#ec0000">*</span>DecryptedGEP <span style="color:#ec0000">=</span> IRB.CreateGEP(iter<span style="color:#ec0000">-&gt;</span>first, {zero, offset});
-</span></span><span style="display:flex;"><span>        LoadInst <span style="color:#ec0000">*</span>LI <span style="color:#ec0000">=</span> IRB.CreateLoad(EncryptedGEP, <span style="color:#008900">&#34;EncryptedChar&#34;</span>);
-</span></span><span style="display:flex;"><span>        Value <span style="color:#ec0000">*</span>XORed <span style="color:#ec0000">=</span> IRB.CreateXor(LI, CastedCDA<span style="color:#ec0000">-&gt;</span>getElementAsConstant(i));
-</span></span><span style="display:flex;"><span>        IRB.CreateStore(XORed, DecryptedGEP);
-</span></span><span style="display:flex;"><span>      }
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (std<span style="color:#ec0000">::</span>unordered_map<span style="color:#ec0000">&lt;</span>GlobalVariable <span style="color:#ec0000">*</span>,
+</span></span><span style="display:flex;"><span>                            std<span style="color:#ec0000">::</span>pair<span style="color:#ec0000">&lt;</span>Constant <span style="color:#ec0000">*</span>, GlobalVariable <span style="color:#ec0000">*&gt;&gt;::</span>iterator
+</span></span><span style="display:flex;"><span>             iter <span style="color:#ec0000">=</span> GV2Keys.begin();
+</span></span><span style="display:flex;"><span>         iter <span style="color:#ec0000">!=</span> GV2Keys.end(); <span style="color:#ec0000">++</span>iter)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">bool</span> rust_string <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">!</span>isa<span style="color:#ec0000">&lt;</span>ConstantDataSequential<span style="color:#ec0000">&gt;</span>(iter<span style="color:#ec0000">-&gt;</span>first<span style="color:#ec0000">-&gt;</span>getInitializer());
+</span></span><span style="display:flex;"><span>        ConstantAggregate <span style="color:#ec0000">*</span>CA <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>            rust_string <span style="color:#ec0000">?</span> cast<span style="color:#ec0000">&lt;</span>ConstantAggregate<span style="color:#ec0000">&gt;</span>(iter<span style="color:#ec0000">-&gt;</span>first<span style="color:#ec0000">-&gt;</span>getInitializer())
+</span></span><span style="display:flex;"><span>                        <span style="color:#ec0000">:</span> <span style="color:#ec0000">nullptr</span>;
+</span></span><span style="display:flex;"><span>        Constant <span style="color:#ec0000">*</span>KeyConst <span style="color:#ec0000">=</span> iter<span style="color:#ec0000">-&gt;</span>second.first;
+</span></span><span style="display:flex;"><span>        ConstantDataArray <span style="color:#ec0000">*</span>CastedCDA <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>ConstantDataArray<span style="color:#ec0000">&gt;</span>(KeyConst);
+</span></span><span style="display:flex;"><span>        // Prevent optimization of encrypted data
+</span></span><span style="display:flex;"><span>        appendToCompilerUsed(<span style="color:#ec0000">*</span>iter<span style="color:#ec0000">-&gt;</span>second.second<span style="color:#ec0000">-&gt;</span>getParent(),
+</span></span><span style="display:flex;"><span>                             {iter<span style="color:#ec0000">-&gt;</span>second.second});
+</span></span><span style="display:flex;"><span>        // Element-By-Element XOR so the fucking verifier won&#39;t complain
+</span></span><span style="display:flex;"><span>        // Also, this hides keys
+</span></span><span style="display:flex;"><span>        <span style="color:#5f5fff">uint64_t</span> realkeyoff <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">for</span> (<span style="color:#5f5fff">uint64_t</span> i <span style="color:#ec0000">=</span> <span style="color:#008900">0</span>; i <span style="color:#ec0000">&lt;</span> CastedCDA<span style="color:#ec0000">-&gt;</span>getType()<span style="color:#ec0000">-&gt;</span>getNumElements(); i<span style="color:#ec0000">++</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> (unencryptedindex[KeyConst].size() <span style="color:#ec0000">&amp;&amp;</span>
+</span></span><span style="display:flex;"><span>                std<span style="color:#ec0000">::</span>find(unencryptedindex[KeyConst].begin(),
+</span></span><span style="display:flex;"><span>                          unencryptedindex[KeyConst].end(),
+</span></span><span style="display:flex;"><span>                          i) <span style="color:#ec0000">!=</span> unencryptedindex[KeyConst].end())
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">continue</span>;
+</span></span><span style="display:flex;"><span>            Value <span style="color:#ec0000">*</span>offset <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                ConstantInt<span style="color:#ec0000">::</span>get(Type<span style="color:#ec0000">::</span>getInt64Ty(B<span style="color:#ec0000">-&gt;</span>getContext()), realkeyoff);
+</span></span><span style="display:flex;"><span>            Value <span style="color:#ec0000">*</span>offset2 <span style="color:#ec0000">=</span> ConstantInt<span style="color:#ec0000">::</span>get(Type<span style="color:#ec0000">::</span>getInt64Ty(B<span style="color:#ec0000">-&gt;</span>getContext()), i);
+</span></span><span style="display:flex;"><span>            Value <span style="color:#ec0000">*</span>EncryptedGEP <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                IRB.CreateGEP(iter<span style="color:#ec0000">-&gt;</span>second.second<span style="color:#ec0000">-&gt;</span>getValueType(),
+</span></span><span style="display:flex;"><span>                              iter<span style="color:#ec0000">-&gt;</span>second.second, {zero, offset});
+</span></span><span style="display:flex;"><span>            Value <span style="color:#ec0000">*</span>DecryptedGEP <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                rust_string
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">?</span> IRB.CreateGEP(
+</span></span><span style="display:flex;"><span>                          CA<span style="color:#ec0000">-&gt;</span>getOperand(<span style="color:#008900">0</span>)<span style="color:#ec0000">-&gt;</span>getType(),
+</span></span><span style="display:flex;"><span>                          IRB.CreateGEP(
+</span></span><span style="display:flex;"><span>                              CA<span style="color:#ec0000">-&gt;</span>getType(), iter<span style="color:#ec0000">-&gt;</span>first,
+</span></span><span style="display:flex;"><span>                              {zero, ConstantInt<span style="color:#ec0000">::</span>getNullValue(
+</span></span><span style="display:flex;"><span>                                         Type<span style="color:#ec0000">::</span>getInt64Ty(B<span style="color:#ec0000">-&gt;</span>getContext()))}),
+</span></span><span style="display:flex;"><span>                          {zero, offset2})
+</span></span><span style="display:flex;"><span>                    <span style="color:#ec0000">:</span> IRB.CreateGEP(iter<span style="color:#ec0000">-&gt;</span>first<span style="color:#ec0000">-&gt;</span>getValueType(), iter<span style="color:#ec0000">-&gt;</span>first,
+</span></span><span style="display:flex;"><span>                                    {zero, offset2});
+</span></span><span style="display:flex;"><span>            LoadInst <span style="color:#ec0000">*</span>LI <span style="color:#ec0000">=</span> IRB.CreateLoad(CastedCDA<span style="color:#ec0000">-&gt;</span>getElementType(), EncryptedGEP,
+</span></span><span style="display:flex;"><span>                                          <span style="color:#008900">&#34;EncryptedChar&#34;</span>);
+</span></span><span style="display:flex;"><span>            Value <span style="color:#ec0000">*</span>XORed <span style="color:#ec0000">=</span> IRB.CreateXor(LI, CastedCDA<span style="color:#ec0000">-&gt;</span>getElementAsConstant(i));
+</span></span><span style="display:flex;"><span>            IRB.CreateStore(XORed, DecryptedGEP);
+</span></span><span style="display:flex;"><span>            realkeyoff<span style="color:#ec0000">++</span>;
+</span></span><span style="display:flex;"><span>        }
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>    IRB.CreateBr(C);
-</span></span><span style="display:flex;"><span>  } // End of HandleDecryptionBlock
-</span></span><span style="display:flex;"><span>  <span style="color:#5f5fff">bool</span> <span style="color:#5f5fff">doFinalization</span>(Module <span style="color:#ec0000">&amp;</span>M) <span style="color:#ec0000">override</span> {
-</span></span><span style="display:flex;"><span>    encstatus.clear();
-</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">return</span> <span style="color:#ec0000">false</span>;
-</span></span><span style="display:flex;"><span>  }
-</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>}
 </span></span></code></pre></div><h4 id="hikari测试">Hikari测试</h4>
-<p>Bitcode</p>
-<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>// 1.cpp
-</span></span><span style="display:flex;"><span>#include &lt;stdio.h&gt;
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>#include &lt;stdio.h&gt;
 </span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">main</span>(<span style="color:#5f5fff">int</span> argc, <span style="color:#5f5fff">char</span><span style="color:#ec0000">**</span> argv) {
 </span></span><span style="display:flex;"><span>	puts(<span style="color:#008900">&#34;hello&#34;</span>);
 </span></span><span style="display:flex;"><span>	<span style="color:#ec0000">return</span> <span style="color:#008900">0</span>;
 </span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span># 生成未混淆Bitcode
-</span></span><span style="display:flex;"><span>build/bin/clang -isysroot <span style="color:#008900">`</span>xcrun --sdk macosx --show-sdk-path<span style="color:#008900">`</span> -arch x86_64 -emit-llvm -S -o /tmp/12.ll /tmp/1.cpp
-</span></span></code></pre></div><pre tabindex="0"><code class="language-IR" data-lang="IR">@.str = private unnamed_addr constant [6 x i8] c&#34;hello\00&#34;, align 1
+</span></span></code></pre></div><p>未混淆IR</p>
+<pre tabindex="0"><code class="language-IR" data-lang="IR">@.str = private unnamed_addr constant [6 x i8] c&#34;hello\00&#34;, align 1
 
 define i32 @main(i32 %argc, i8** %argv) #0 {
 entry:
@@ -1272,9 +1435,8 @@ entry:
   ret i32 0
 }
 declare i32 @puts(i8*) #1
-</code></pre><div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span># 生成混淆Bitcode
-</span></span><span style="display:flex;"><span>build/bin/clang -isysroot <span style="color:#008900">`</span>xcrun --sdk macosx --show-sdk-path<span style="color:#008900">`</span> -arch x86_64 -emit-llvm -S -mllvm -enable-strcry -o /tmp/12.ll /tmp/1.cpp
-</span></span></code></pre></div><pre tabindex="0"><code class="language-IR" data-lang="IR">@0 = private global i32 0
+</code></pre><p>已混淆IR</p>
+<pre tabindex="0"><code class="language-IR" data-lang="IR">@0 = private global i32 0
 @EncryptedString = private global [6 x i8] c&#34;*d\D2\15-A&#34;
 @DecryptSpace = private global [6 x i8] c&#34;\A7\F1\D9*\82\C8&#34;
 @llvm.compiler.used = appending global [1 x i8*] [i8* getelementptr inbounds ([6 x i8], [6 x i8]* @EncryptedString, i32 0, i32 0)], section &#34;llvm.metadata&#34;
@@ -1320,7 +1482,12 @@ PrecedingBlock:                                   ; preds = %entry, %StringDecry
 }
 
 declare i32 @puts(i8*) #1
-</code></pre><h4 id="hikari分析">Hikari分析</h4>
+</code></pre><pre class="mermaid">flowchart LR
+A([entry]) --> B([StringDecryptionBB])
+A([entry]) --> C([PrecedingBlock])
+B([StringDecryptionBB]) --> C([PrecedingBlock])
+</pre>
+<h4 id="hikari分析">Hikari分析</h4>
 <p>  Hikari是用异或方式将静态区字符串在编译期加密，并在函数入口处动态解密到预分配的静态区，支持C/OC字符串</p>
 <ul>
 <li>因为字符串属于模块范围可操作的元素而非函数, 因此需要注册为ModulePass, 入口点为runOnModule</li>
@@ -1339,8 +1506,8 @@ declare i32 @puts(i8*) #1
 <li>异或加密简单可靠，兼容性较强</li>
 <li>异或加密算法较简单；执行一次函数即可在静态内存取获取解密的字符串</li>
 </ul>
-<h3 id="实验将静态字符串转换为栈字符串">实验:将静态字符串转换为栈字符串</h3>
-<p>以下代码在LLVM8-18下测试, 仅使用NewPass. 注意本节只是为了验证静态转栈的可行性, 不推荐实际使用.</p>
+<h4 id="实验将静态字符串转换为栈字符串">实验:将静态字符串转换为栈字符串</h4>
+<p>  以下代码在LLVM8-18下测试, 仅使用NewPass. 注意本节只是为了验证静态转栈的可行性, 不推荐实际使用.</p>
 <div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>#include &#34;llvm/IR/IRBuilder.h&#34;
 </span></span><span style="display:flex;"><span>#include &#34;llvm/IR/LegacyPassManager.h&#34;
 </span></span><span style="display:flex;"><span>#include &#34;llvm/Pass.h&#34;
@@ -1465,7 +1632,11 @@ declare i32 @puts(i8*) #1
 </span></span><span style="display:flex;"><span>        inst<span style="color:#ec0000">-&gt;</span>setOperand(idx, alloca);
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><h4 id="测试-1">测试</h4>
+</span></span></code></pre></div><blockquote>
+<p> <br>
+测试<br>
+ </p>
+</blockquote>
 <div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>// /tmp/1.cpp
 </span></span><span style="display:flex;"><span>#include &lt;stdio.h&gt;
 </span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">main</span>(<span style="color:#5f5fff">int</span> argc, <span style="color:#5f5fff">char</span><span style="color:#ec0000">**</span> argv) {
@@ -1638,10 +1809,334 @@ declare i32 @puts(i8*) #1
 </span></span><span style="display:flex;"><span>    __stack_chk_fail();
 </span></span><span style="display:flex;"><span>  <span style="color:#ec0000">return</span> <span style="color:#008900">0</span>;
 </span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div>
+</span></span></code></pre></div><h3 id="平坦化模块分析">平坦化模块分析</h3>
+<h4 id="hikari源码-1">Hikari源码</h4>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#5f5fff">void</span> Flattening<span style="color:#ec0000">::</span>flatten(Function <span style="color:#ec0000">*</span>f)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    SmallVector<span style="color:#ec0000">&lt;</span>BasicBlock <span style="color:#ec0000">*</span>, <span style="color:#008900">8</span><span style="color:#ec0000">&gt;</span> origBB;
+</span></span><span style="display:flex;"><span>    BasicBlock <span style="color:#ec0000">*</span>loopEntry, <span style="color:#ec0000">*</span>loopEnd;
+</span></span><span style="display:flex;"><span>    LoadInst <span style="color:#ec0000">*</span>load;
+</span></span><span style="display:flex;"><span>    SwitchInst <span style="color:#ec0000">*</span>switchI;
+</span></span><span style="display:flex;"><span>    AllocaInst <span style="color:#ec0000">*</span>switchVar, <span style="color:#ec0000">*</span>switchVarAddr;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">const</span> DataLayout <span style="color:#ec0000">&amp;</span>DL <span style="color:#ec0000">=</span> f<span style="color:#ec0000">-&gt;</span>getParent()<span style="color:#ec0000">-&gt;</span>getDataLayout();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    // SCRAMBLER
+</span></span><span style="display:flex;"><span>    std<span style="color:#ec0000">::</span>unordered_map<span style="color:#ec0000">&lt;</span><span style="color:#5f5fff">uint32_t</span>, <span style="color:#5f5fff">uint32_t</span><span style="color:#ec0000">&gt;</span> scrambling_key;
+</span></span><span style="display:flex;"><span>    // END OF SCRAMBLER
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    PassBuilder PB;
+</span></span><span style="display:flex;"><span>    FunctionAnalysisManager FAM;
+</span></span><span style="display:flex;"><span>    FunctionPassManager FPM;
+</span></span><span style="display:flex;"><span>    PB.registerFunctionAnalyses(FAM);
+</span></span><span style="display:flex;"><span>    FPM.addPass(LowerSwitchPass());
+</span></span><span style="display:flex;"><span>    FPM.run(<span style="color:#ec0000">*</span>f, FAM);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (BasicBlock <span style="color:#ec0000">&amp;</span><span style="color:#ec0000">BB</span> : <span style="color:#ec0000">*</span>f)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (BB.isEHPad() <span style="color:#ec0000">||</span> BB.isLandingPad())
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            errs() <span style="color:#ec0000">&lt;&lt;</span> f<span style="color:#ec0000">-&gt;</span>getName()
+</span></span><span style="display:flex;"><span>                   <span style="color:#ec0000">&lt;&lt;</span> <span style="color:#008900">&#34; Contains Exception Handing Instructions and is unsupported &#34;</span>
+</span></span><span style="display:flex;"><span>                      <span style="color:#008900">&#34;for flattening in the open-source version of Hikari.</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (<span style="color:#ec0000">!</span>isa<span style="color:#ec0000">&lt;</span>BranchInst<span style="color:#ec0000">&gt;</span>(BB.getTerminator()) <span style="color:#ec0000">&amp;&amp;</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">!</span>isa<span style="color:#ec0000">&lt;</span>ReturnInst<span style="color:#ec0000">&gt;</span>(BB.getTerminator()))
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>        origBB.emplace_back(<span style="color:#ec0000">&amp;</span>BB);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    // Nothing to flatten
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (origBB.size() <span style="color:#ec0000">&lt;=</span> <span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">return</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    // Remove first BB
+</span></span><span style="display:flex;"><span>    origBB.erase(origBB.begin());
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    // Get a pointer on the first BB
+</span></span><span style="display:flex;"><span>    Function<span style="color:#ec0000">::</span>iterator tmp <span style="color:#ec0000">=</span> f<span style="color:#ec0000">-&gt;</span>begin();
+</span></span><span style="display:flex;"><span>    BasicBlock <span style="color:#ec0000">*</span>insert <span style="color:#ec0000">=</span> <span style="color:#ec0000">&amp;*</span>tmp;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    // If main begin with an if
+</span></span><span style="display:flex;"><span>    BranchInst <span style="color:#ec0000">*</span>br <span style="color:#ec0000">=</span> <span style="color:#ec0000">nullptr</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (isa<span style="color:#ec0000">&lt;</span>BranchInst<span style="color:#ec0000">&gt;</span>(insert<span style="color:#ec0000">-&gt;</span>getTerminator()))
+</span></span><span style="display:flex;"><span>        br <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>BranchInst<span style="color:#ec0000">&gt;</span>(insert<span style="color:#ec0000">-&gt;</span>getTerminator());
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> ((br <span style="color:#ec0000">&amp;&amp;</span> br<span style="color:#ec0000">-&gt;</span>isConditional()) <span style="color:#ec0000">||</span>
+</span></span><span style="display:flex;"><span>        insert<span style="color:#ec0000">-&gt;</span>getTerminator()<span style="color:#ec0000">-&gt;</span>getNumSuccessors() <span style="color:#ec0000">&gt;</span> <span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        BasicBlock<span style="color:#ec0000">::</span>iterator i <span style="color:#ec0000">=</span> insert<span style="color:#ec0000">-&gt;</span>end();
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">--</span>i;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (insert<span style="color:#ec0000">-&gt;</span>size() <span style="color:#ec0000">&gt;</span> <span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">--</span>i;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        BasicBlock <span style="color:#ec0000">*</span>tmpBB <span style="color:#ec0000">=</span> insert<span style="color:#ec0000">-&gt;</span>splitBasicBlock(i, <span style="color:#008900">&#34;first&#34;</span>);
+</span></span><span style="display:flex;"><span>        origBB.insert(origBB.begin(), tmpBB);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    // Remove jump
+</span></span><span style="display:flex;"><span>    Instruction <span style="color:#ec0000">*</span>oldTerm <span style="color:#ec0000">=</span> insert<span style="color:#ec0000">-&gt;</span>getTerminator();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    // Create switch variable and set as it
+</span></span><span style="display:flex;"><span>    switchVar <span style="color:#ec0000">=</span> <span style="color:#ec0000">new</span> AllocaInst(Type<span style="color:#ec0000">::</span>getInt32Ty(f<span style="color:#ec0000">-&gt;</span>getContext()),
+</span></span><span style="display:flex;"><span>                               DL.getAllocaAddrSpace(), <span style="color:#008900">&#34;switchVar&#34;</span>, oldTerm);
+</span></span><span style="display:flex;"><span>    switchVarAddr <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">new</span> AllocaInst(Type<span style="color:#ec0000">::</span>getInt32Ty(f<span style="color:#ec0000">-&gt;</span>getContext())<span style="color:#ec0000">-&gt;</span>getPointerTo(),
+</span></span><span style="display:flex;"><span>                       DL.getAllocaAddrSpace(), <span style="color:#008900">&#34;&#34;</span>, oldTerm);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    // Remove jump
+</span></span><span style="display:flex;"><span>    oldTerm<span style="color:#ec0000">-&gt;</span>eraseFromParent();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">new</span> <span style="color:#5f5fff">StoreInst</span>(ConstantInt<span style="color:#ec0000">::</span>get(Type<span style="color:#ec0000">::</span>getInt32Ty(f<span style="color:#ec0000">-&gt;</span>getContext()),
+</span></span><span style="display:flex;"><span>                                   cryptoutils<span style="color:#ec0000">-&gt;</span>scramble32(<span style="color:#008900">0</span>, scrambling_key)),
+</span></span><span style="display:flex;"><span>                  switchVar, insert);
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">new</span> <span style="color:#5f5fff">StoreInst</span>(switchVar, switchVarAddr, insert);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    // Create main loop
+</span></span><span style="display:flex;"><span>    loopEntry <span style="color:#ec0000">=</span> BasicBlock<span style="color:#ec0000">::</span>Create(f<span style="color:#ec0000">-&gt;</span>getContext(), <span style="color:#008900">&#34;loopEntry&#34;</span>, f, insert);
+</span></span><span style="display:flex;"><span>    loopEnd <span style="color:#ec0000">=</span> BasicBlock<span style="color:#ec0000">::</span>Create(f<span style="color:#ec0000">-&gt;</span>getContext(), <span style="color:#008900">&#34;loopEnd&#34;</span>, f, insert);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    load <span style="color:#ec0000">=</span> <span style="color:#ec0000">new</span> LoadInst(switchVar<span style="color:#ec0000">-&gt;</span>getAllocatedType(), switchVar, <span style="color:#008900">&#34;switchVar&#34;</span>,
+</span></span><span style="display:flex;"><span>                        loopEntry);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    // Move first BB on top
+</span></span><span style="display:flex;"><span>    insert<span style="color:#ec0000">-&gt;</span>moveBefore(loopEntry);
+</span></span><span style="display:flex;"><span>    BranchInst<span style="color:#ec0000">::</span>Create(loopEntry, insert);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    // loopEnd jump to loopEntry
+</span></span><span style="display:flex;"><span>    BranchInst<span style="color:#ec0000">::</span>Create(loopEntry, loopEnd);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    BasicBlock <span style="color:#ec0000">*</span>swDefault <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>        BasicBlock<span style="color:#ec0000">::</span>Create(f<span style="color:#ec0000">-&gt;</span>getContext(), <span style="color:#008900">&#34;switchDefault&#34;</span>, f, loopEnd);
+</span></span><span style="display:flex;"><span>    BranchInst<span style="color:#ec0000">::</span>Create(loopEnd, swDefault);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    // Create switch instruction itself and set condition
+</span></span><span style="display:flex;"><span>    switchI <span style="color:#ec0000">=</span> SwitchInst<span style="color:#ec0000">::</span>Create(<span style="color:#ec0000">&amp;*</span>f<span style="color:#ec0000">-&gt;</span>begin(), swDefault, <span style="color:#008900">0</span>, loopEntry);
+</span></span><span style="display:flex;"><span>    switchI<span style="color:#ec0000">-&gt;</span>setCondition(load);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    // Remove branch jump from 1st BB and make a jump to the while
+</span></span><span style="display:flex;"><span>    f<span style="color:#ec0000">-&gt;</span>begin()<span style="color:#ec0000">-&gt;</span>getTerminator()<span style="color:#ec0000">-&gt;</span>eraseFromParent();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    BranchInst<span style="color:#ec0000">::</span>Create(loopEntry, <span style="color:#ec0000">&amp;*</span>f<span style="color:#ec0000">-&gt;</span>begin());
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    // Put BB in the switch
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (BasicBlock <span style="color:#ec0000">*</span><span style="color:#ec0000">i</span> : origBB)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        ConstantInt <span style="color:#ec0000">*</span>numCase <span style="color:#ec0000">=</span> <span style="color:#ec0000">nullptr</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        // Move the BB inside the switch (only visual, no code logic)
+</span></span><span style="display:flex;"><span>        i<span style="color:#ec0000">-&gt;</span>moveBefore(loopEnd);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        // Add case to switch
+</span></span><span style="display:flex;"><span>        numCase <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>ConstantInt<span style="color:#ec0000">&gt;</span>(ConstantInt<span style="color:#ec0000">::</span>get(
+</span></span><span style="display:flex;"><span>            switchI<span style="color:#ec0000">-&gt;</span>getCondition()<span style="color:#ec0000">-&gt;</span>getType(),
+</span></span><span style="display:flex;"><span>            cryptoutils<span style="color:#ec0000">-&gt;</span>scramble32(switchI<span style="color:#ec0000">-&gt;</span>getNumCases(), scrambling_key)));
+</span></span><span style="display:flex;"><span>        switchI<span style="color:#ec0000">-&gt;</span>addCase(numCase, i);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    // Recalculate switchVar
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">for</span> (BasicBlock <span style="color:#ec0000">*</span><span style="color:#ec0000">i</span> : origBB)
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        ConstantInt <span style="color:#ec0000">*</span>numCase <span style="color:#ec0000">=</span> <span style="color:#ec0000">nullptr</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        // If it&#39;s a non-conditional jump
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (i<span style="color:#ec0000">-&gt;</span>getTerminator()<span style="color:#ec0000">-&gt;</span>getNumSuccessors() <span style="color:#ec0000">==</span> <span style="color:#008900">1</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            // Get successor and delete terminator
+</span></span><span style="display:flex;"><span>            BasicBlock <span style="color:#ec0000">*</span>succ <span style="color:#ec0000">=</span> i<span style="color:#ec0000">-&gt;</span>getTerminator()<span style="color:#ec0000">-&gt;</span>getSuccessor(<span style="color:#008900">0</span>);
+</span></span><span style="display:flex;"><span>            i<span style="color:#ec0000">-&gt;</span>getTerminator()<span style="color:#ec0000">-&gt;</span>eraseFromParent();
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            // Get next case
+</span></span><span style="display:flex;"><span>            numCase <span style="color:#ec0000">=</span> switchI<span style="color:#ec0000">-&gt;</span>findCaseDest(succ);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            // If next case == default case (switchDefault)
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> (<span style="color:#ec0000">!</span>numCase)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                numCase <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>ConstantInt<span style="color:#ec0000">&gt;</span>(
+</span></span><span style="display:flex;"><span>                    ConstantInt<span style="color:#ec0000">::</span>get(switchI<span style="color:#ec0000">-&gt;</span>getCondition()<span style="color:#ec0000">-&gt;</span>getType(),
+</span></span><span style="display:flex;"><span>                                     cryptoutils<span style="color:#ec0000">-&gt;</span>scramble32(switchI<span style="color:#ec0000">-&gt;</span>getNumCases() <span style="color:#ec0000">-</span> <span style="color:#008900">1</span>,
+</span></span><span style="display:flex;"><span>                                                             scrambling_key)));
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            // Update switchVar and jump to the end of loop
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">new</span> <span style="color:#5f5fff">StoreInst</span>(
+</span></span><span style="display:flex;"><span>                numCase,
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">new</span> LoadInst(switchVarAddr<span style="color:#ec0000">-&gt;</span>getAllocatedType(), switchVarAddr, <span style="color:#008900">&#34;&#34;</span>, i),
+</span></span><span style="display:flex;"><span>                i);
+</span></span><span style="display:flex;"><span>            BranchInst<span style="color:#ec0000">::</span>Create(loopEnd, i);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">continue</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        // If it&#39;s a conditional jump
+</span></span><span style="display:flex;"><span>        <span style="color:#ec0000">if</span> (i<span style="color:#ec0000">-&gt;</span>getTerminator()<span style="color:#ec0000">-&gt;</span>getNumSuccessors() <span style="color:#ec0000">==</span> <span style="color:#008900">2</span>)
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            // Get next cases
+</span></span><span style="display:flex;"><span>            ConstantInt <span style="color:#ec0000">*</span>numCaseTrue <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                switchI<span style="color:#ec0000">-&gt;</span>findCaseDest(i<span style="color:#ec0000">-&gt;</span>getTerminator()<span style="color:#ec0000">-&gt;</span>getSuccessor(<span style="color:#008900">0</span>));
+</span></span><span style="display:flex;"><span>            ConstantInt <span style="color:#ec0000">*</span>numCaseFalse <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                switchI<span style="color:#ec0000">-&gt;</span>findCaseDest(i<span style="color:#ec0000">-&gt;</span>getTerminator()<span style="color:#ec0000">-&gt;</span>getSuccessor(<span style="color:#008900">1</span>));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            // Check if next case == default case (switchDefault)
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> (<span style="color:#ec0000">!</span>numCaseTrue)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                numCaseTrue <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>ConstantInt<span style="color:#ec0000">&gt;</span>(
+</span></span><span style="display:flex;"><span>                    ConstantInt<span style="color:#ec0000">::</span>get(switchI<span style="color:#ec0000">-&gt;</span>getCondition()<span style="color:#ec0000">-&gt;</span>getType(),
+</span></span><span style="display:flex;"><span>                                     cryptoutils<span style="color:#ec0000">-&gt;</span>scramble32(switchI<span style="color:#ec0000">-&gt;</span>getNumCases() <span style="color:#ec0000">-</span> <span style="color:#008900">1</span>,
+</span></span><span style="display:flex;"><span>                                                             scrambling_key)));
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">if</span> (<span style="color:#ec0000">!</span>numCaseFalse)
+</span></span><span style="display:flex;"><span>            {
+</span></span><span style="display:flex;"><span>                numCaseFalse <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>ConstantInt<span style="color:#ec0000">&gt;</span>(
+</span></span><span style="display:flex;"><span>                    ConstantInt<span style="color:#ec0000">::</span>get(switchI<span style="color:#ec0000">-&gt;</span>getCondition()<span style="color:#ec0000">-&gt;</span>getType(),
+</span></span><span style="display:flex;"><span>                                     cryptoutils<span style="color:#ec0000">-&gt;</span>scramble32(switchI<span style="color:#ec0000">-&gt;</span>getNumCases() <span style="color:#ec0000">-</span> <span style="color:#008900">1</span>,
+</span></span><span style="display:flex;"><span>                                                             scrambling_key)));
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            // Create a SelectInst
+</span></span><span style="display:flex;"><span>            BranchInst <span style="color:#ec0000">*</span>br <span style="color:#ec0000">=</span> cast<span style="color:#ec0000">&lt;</span>BranchInst<span style="color:#ec0000">&gt;</span>(i<span style="color:#ec0000">-&gt;</span>getTerminator());
+</span></span><span style="display:flex;"><span>            SelectInst <span style="color:#ec0000">*</span>sel <span style="color:#ec0000">=</span>
+</span></span><span style="display:flex;"><span>                SelectInst<span style="color:#ec0000">::</span>Create(br<span style="color:#ec0000">-&gt;</span>getCondition(), numCaseTrue, numCaseFalse, <span style="color:#008900">&#34;&#34;</span>,
+</span></span><span style="display:flex;"><span>                                   i<span style="color:#ec0000">-&gt;</span>getTerminator());
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            // Erase terminator
+</span></span><span style="display:flex;"><span>            i<span style="color:#ec0000">-&gt;</span>getTerminator()<span style="color:#ec0000">-&gt;</span>eraseFromParent();
+</span></span><span style="display:flex;"><span>            // Update switchVar and jump to the end of loop
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">new</span> <span style="color:#5f5fff">StoreInst</span>(
+</span></span><span style="display:flex;"><span>                sel,
+</span></span><span style="display:flex;"><span>                <span style="color:#ec0000">new</span> LoadInst(switchVarAddr<span style="color:#ec0000">-&gt;</span>getAllocatedType(), switchVarAddr, <span style="color:#008900">&#34;&#34;</span>, i),
+</span></span><span style="display:flex;"><span>                i);
+</span></span><span style="display:flex;"><span>            BranchInst<span style="color:#ec0000">::</span>Create(loopEnd, i);
+</span></span><span style="display:flex;"><span>            <span style="color:#ec0000">continue</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    errs() <span style="color:#ec0000">&lt;&lt;</span> <span style="color:#008900">&#34;Fixing Stack</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>;
+</span></span><span style="display:flex;"><span>    fixStack(f);
+</span></span><span style="display:flex;"><span>    errs() <span style="color:#ec0000">&lt;&lt;</span> <span style="color:#008900">&#34;Fixed Stack</span><span style="color:#008900">\n</span><span style="color:#008900">&#34;</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="hikari测试-1">Hikari测试</h4>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>#include &lt;stdio.h&gt;
+</span></span><span style="display:flex;"><span><span style="color:#5f5fff">int</span> <span style="color:#5f5fff">main</span>(<span style="color:#5f5fff">int</span> argc, <span style="color:#5f5fff">char</span><span style="color:#ec0000">**</span> argv) {
+</span></span><span style="display:flex;"><span>    <span style="color:#ec0000">if</span> (argc <span style="color:#ec0000">==</span> <span style="color:#008900">1</span>) {
+</span></span><span style="display:flex;"><span>        puts(<span style="color:#008900">&#34;arg1&#34;</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>	<span style="color:#ec0000">return</span> <span style="color:#008900">0</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>未混淆IR</p>
+<pre tabindex="0"><code class="language-IR" data-lang="IR">define i32 @main(i32 %argc, i8** %argv) #0 {
+entry:
+  %retval = alloca i32, align 4
+  %argc.addr = alloca i32, align 4
+  %argv.addr = alloca i8**, align 8
+  store i32 0, i32* %retval, align 4
+  store i32 %argc, i32* %argc.addr, align 4
+  store i8** %argv, i8*** %argv.addr, align 8
+  %0 = load i32, i32* %argc.addr, align 4
+  %cmp = icmp eq i32 %0, 1
+  br i1 %cmp, label %if.then, label %if.end
+
+if.then:                                          ; preds = %entry
+  %call = call i32 @puts(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str, i32 0, i32 0))
+  br label %if.end
+
+if.end:                                           ; preds = %if.then, %entry
+  ret i32 0
+}
+</code></pre><pre class="mermaid">flowchart LR
+A([entry]) --> B([if.then])
+A([entry]) --> C([if.end])
+B([if.then]) --> C([if.end])
+C([if.end]) --> D([ret])
+</pre>
+<p>已混淆IR</p>
+<pre tabindex="0"><code class="language-IR" data-lang="IR">define i32 @main(i32 %argc, i8** %argv) #0 {
+entry:
+  %.reg2mem = alloca i32
+  %retval = alloca i32, align 4
+  %argc.addr = alloca i32, align 4
+  %argv.addr = alloca i8**, align 8
+  store i32 0, i32* %retval, align 4
+  store i32 %argc, i32* %argc.addr, align 4
+  store i8** %argv, i8*** %argv.addr, align 8
+  %0 = load i32, i32* %argc.addr, align 4
+  store i32 %0, i32* %.reg2mem
+  %switchVar = alloca i32
+  store i32 175153184, i32* %switchVar
+  br label %loopEntry
+
+loopEntry:                                        ; preds = %entry, %loopEnd
+  %switchVar1 = load i32, i32* %switchVar
+  switch i32 %switchVar1, label %switchDefault [
+    i32 175153184, label %first
+    i32 -210782820, label %if.then
+    i32 165052502, label %if.end
+  ]
+
+switchDefault:                                    ; preds = %loopEntry
+  br label %loopEnd
+
+first:                                            ; preds = %loopEntry
+  %.reload = load volatile i32, i32* %.reg2mem
+  %cmp = icmp eq i32 %.reload, 1
+  %1 = select i1 %cmp, i32 -210782820, i32 165052502
+  store i32 %1, i32* %switchVar
+  br label %loopEnd
+
+if.then:                                          ; preds = %loopEntry
+  %call = call i32 @puts(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str, i32 0, i32 0))
+  store i32 165052502, i32* %switchVar
+  br label %loopEnd
+
+if.end:                                           ; preds = %loopEntry
+  ret i32 0
+
+loopEnd:                                          ; preds = %if.then, %first, %switchDefault
+  br label %loopEntry
+}
+</code></pre><pre class="mermaid">flowchart LR
+A([entry]) --> B([loopEntry])
+B([loopEntry]) --> C([first])
+B([loopEntry]) --> D([if.then])
+B([loopEntry]) --> G([if.end])
+B([loopEntry]) --> E([switchDefault])
+C([first]) --> F([loopEnd])
+D([if.then]) --> F([loopEnd])
+E([switchDefault]) --> F([loopEnd])
+F([loopEnd]) --> B([loopEntry])
+G([if.end]) --> H([ret])
+</pre>
+<h4 id="hikari分析-1">Hikari分析</h4>
+<p>。。。未完待续</p>
+
+    
+    <script src="https://giscus.app/client.js"
+        data-repo="lich4/lich4.github.io"
+        data-repo-id="R_kgDOMTT_mw"
+        data-category=""
+        data-category-id="DIC_kwDOMTT_m84Cjbim"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="top"
+        data-theme="preferred_color_scheme"
+        data-lang="en"
+        data-loading="lazy"
+        crossorigin="anonymous"
+        async>
+</script>
+
     
   </div>
 
+  
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true });
+  </script>
   
 
 

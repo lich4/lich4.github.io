@@ -37,13 +37,6 @@
       <description>Python调用C++</description>
     </item>
     <item>
-      <title>使用C&#43;&#43;模板元实现字符串编译期加密</title>
-      <link>https://lich4.github.io/cpp_posts/20160715_string_enc/</link>
-      <pubDate>Fri, 15 Jul 2016 00:00:00 +0000</pubDate>
-      <guid>https://lich4.github.io/cpp_posts/20160715_string_enc/</guid>
-      <description>使用C++模板元实现字符串编译期加密</description>
-    </item>
-    <item>
       <title>重识new</title>
       <link>https://lich4.github.io/cpp_posts/20141012_relearn_new/</link>
       <pubDate>Sun, 12 Oct 2014 00:00:00 +0000</pubDate>
