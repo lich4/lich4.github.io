@@ -268,7 +268,7 @@ Host key verification failed.
 </code></pre><ul>
 <li>为避免每次登陆手机输入密码，按如下操作</li>
 </ul>
-<pre tabindex="0"><code>ssh-copy-id [email]root@127.0.0.1[/email] # 密码默认为alpine
+<pre tabindex="0"><code>ssh-copy-id root@127.0.0.1 # 密码默认为alpine
 </code></pre><h3 id="部署日志查看工具">部署日志查看工具</h3>
 <pre tabindex="0"><code>git clone https://github.com/rpetrich/deviceconsole.git
 </code></pre><p>使用XCode编译出deviceconsole并放到$PATH下，这样每次USB连接iPhone后执行deviceconsole就能看到日志(支持iOS12及以下系统)</p>

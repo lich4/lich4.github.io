@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN"
+  dir="ltr">
+
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+<link rel="icon" type="image/ico" href="https://lich4.github.io//favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://lich4.github.io//favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://lich4.github.io//favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://lich4.github.io//android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://lich4.github.io//apple-touch-icon.png">
+
+<meta name="description" content=""/>
+
+<title>
+    
+    JBDev下一代越狱开发工具 | 超哥的博客
+    
+</title>
+
+<link rel="canonical" href="https://lich4.github.io/ios_posts/20250327_jbdev/"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.cbcb816aefdb3b7380c5921cbb3b89d12f07742cb3f869754adb56da84f0d729.css" media="all">
+
+
+
+
+
+
+
+
+
+  </head>
+
+  
+
+  
+  
+  
+
+  <body class="light">
+
+    <div class="content">
+      <header>
+        
+
+<div class="header">
+
+    
+
+</div>
+
+      </header>
+
+      <main class="main">
+        
+
+
+
+
+
+<div class="breadcrumbs">
+    
+    <a href="/">Home</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a href="/ios_posts/">Ios_posts</a>
+    <span class="breadcrumbs-separator"> > </span>
+    
+    <a class="breadcrumbs-current" href="/ios_posts/20250327_jbdev/">JBDev下一代越狱开发工具</a>
+</div>
+
+
+
+<div >
+
+  <div class="single-intro-container">
+
+    
+
+    <h1 class="single-title">JBDev下一代越狱开发工具</h1>
+    
+    <p class="single-summary">JBDev下一代越狱开发工具</p>
+    
+
+    
+
+    <p class="single-readtime">
+      
+      
+      
+      <time datetime="2025-03-27T00:00:00&#43;00:00">March 27, 2025</time>
+      
+
+      
+    </p>
+
+  </div>
+
+  
+
+  
+  
+  
+
+  
+
+  
+  <aside class="toc">
+    <p><strong>Table of contents</strong></p>
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#简介">简介</a>
+      <ul>
+        <li><a href="#主要功能">主要功能</a></li>
+        <li><a href="#jbdev核心">JBDev核心</a></li>
+      </ul>
+    </li>
+    <li><a href="#jbdev开发越狱项目">JBDev开发越狱项目</a>
+      <ul>
+        <li><a href="#建立项目">建立项目</a></li>
+        <li><a href="#无根隐根配置">无根/隐根配置</a></li>
+      </ul>
+    </li>
+    <li><a href="#单独启动调试tweak">单独启动调试Tweak</a></li>
+    <li><a href="#jbdev开发巨魔项目">JBDev开发巨魔项目</a></li>
+    <li><a href="#jbdev编译">JBDev编译</a></li>
+  </ul>
+</nav>
+  </aside>
+  
+
+  
+
+  <div class="single-content">
+    <h2 id="背景">背景</h2>
+<p>  自越狱诞生以来，Theos一直是越狱开发的主流工具，大多数开发者使用Theos编译代码，再用lldb手动调试，之后出现了iOSOpenDev/MonkeyDev工具，提供了Xcode模板一定程度简化了开发过程。JBDev是开发-部署-调试一体化工具，项目地址<a href="https://github.com/lich4/JBDev">https://github.com/lich4/JBDev</a></p>
+<h2 id="简介">简介</h2>
+<p>JBDev用于Xcode越狱开发及巨魔开发，提供和普通App一样的开发体验，使用Xcode进行编译——安装——调试，已测试环境：</p>
+<ul>
+<li>Xcode12-15</li>
+<li>iOS12-16</li>
+<li>arm64/arm64e</li>
+<li>Checkra1n/Unc0ver/Taurine/Palera1n/Dopamine</li>
+<li>有根/无根/隐根</li>
+</ul>
+<h3 id="主要功能">主要功能</h3>
+<ul>
+<li>支持越狱(有根/无根/隐根)App开发&amp;源码级调试</li>
+<li>支持巨魔App开发&amp;源码级调试</li>
+<li>支持Xcode调试任意进程</li>
+</ul>
+<blockquote>
+<p>注意事项</p>
+</blockquote>
+<ul>
+<li>JBDev只能用于越狱设备上调试</li>
+<li>使用JBDev越狱开发时，打包功能依赖于Theos</li>
+<li>使用JBDev巨魔开发时，确保已安装TrollStore</li>
+</ul>
+<blockquote>
+<p>常见项目类型调试方式一览</p>
+</blockquote>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: left">项目类型</th>
+          <th style="text-align: left">Xcode调试</th>
+          <th style="text-align: left">调试类型</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: left">越狱App</td>
+          <td style="text-align: left">JBDev</td>
+          <td style="text-align: left">启动调试/附加调试/等待调试</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">越狱Tweak/Tool</td>
+          <td style="text-align: left">JBDev</td>
+          <td style="text-align: left">附加调试/等待调试</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">巨魔App</td>
+          <td style="text-align: left">JBDev</td>
+          <td style="text-align: left">启动调试/附加调试/等待调试</td>
+      </tr>
+      <tr>
+          <td style="text-align: left">非越狱App</td>
+          <td style="text-align: left">MonkeyDev</td>
+          <td style="text-align: left">启动调试/附加调试/等待调试</td>
+      </tr>
+  </tbody>
+</table>
+<p>注：</p>
+<ul>
+<li>启动调试，使用Xcode启动App并使其等待调试器附加</li>
+<li>附加调试，进程已启动情况下附加调试，lldb使用方式<code>debugserver --attach=[pid|name]</code>，Xcode同理</li>
+<li>等待调试，等待进程启动并自动附加调试，lldb使用方式<code>debugserver -waitfor=[name]</code>，Xcode同理</li>
+</ul>
+<h3 id="jbdev核心">JBDev核心</h3>
+<blockquote>
+<p>JBDev核心文件</p>
+</blockquote>
+<ul>
+<li><code>jbdev.plist</code>，控制JBDev在iOS端行为配置文件，开发阶段需随App一起打包，字段如下</li>
+<li>
+<ul>
+<li><code>type</code>: 指定JBDev以何种方式打包安装，可指定<code>app/jailbreak/trollstore</code></li>
+</ul>
+</li>
+<li><code>jbdev.build.sh</code>，控制JBDev打包的脚本</li>
+</ul>
+<blockquote>
+<p>JBDev核心设置(环境变量)</p>
+</blockquote>
+<ul>
+<li><code>THEOS</code>，用于JBDev定位Theos以便打包</li>
+<li><code>JBDEV_PACKAGE</code>，应用于App类型Target，用于控制最终打包&amp;安装&amp;调试</li>
+</ul>
+<h2 id="jbdev开发越狱项目">JBDev开发越狱项目</h2>
+<p>详细实例见JBDevJBTest</p>
+<h3 id="建立项目">建立项目</h3>
+<p>以下配置不依赖于iOSOpenDev/MonkeyDev</p>
+<blockquote>
+<p>使用Xcode建立等同于<code>theos/application</code>的项目</p>
+</blockquote>
+<ul>
+<li>File - New - Target - iOS - App</li>
+<li>此为主Target，用于JBDev交互打包/安装/调试</li>
+</ul>
+<blockquote>
+<p>使用Xcode建立等同于<code>theos/tweak</code>的项目</p>
+</blockquote>
+<ul>
+<li>File - New - Target - macOS - Library</li>
+<li>Build Settings - <code>Base SDK</code>设置为<code>iOS</code>，同时部署Device设置为iOS设备</li>
+</ul>
+<blockquote>
+<p>使用Xcode建立等同于<code>theos/tool</code>的项目</p>
+</blockquote>
+<ul>
+<li>File - New - Target - macOS - CommandLineTool</li>
+<li>Build Settings - <code>Base SDK</code>设置为<code>iOS</code>，同时部署Device设置为iOS设备</li>
+</ul>
+<blockquote>
+<p>配置文件</p>
+</blockquote>
+<ul>
+<li>所有需要ldid签名的Target在自身目录下添加plist文件</li>
+<li>将<code>jbdev.build.sh</code>放在<code>.xcodeproj</code>同级目录</li>
+<li>将<code>jbdev.plist</code>放在<code>.xcodeproj</code>同级目录，设置<code>type</code>为<code>jailbreak</code></li>
+</ul>
+<blockquote>
+<p>配置<code>Build Settings</code></p>
+</blockquote>
+<ul>
+<li>所有Target调整<code>Installation Directory</code></li>
+<li>Project新增<code>CODE_SIGNING_ALLOWED</code>，设置为NO</li>
+<li>Project新增<code>THEOS</code>，设置为theos路径</li>
+<li>主Target新增<code>JBDEV_PACKAGE</code>，设置为YES(此变量控制是否打包)</li>
+</ul>
+<blockquote>
+<p>配置<code>Build Phase</code></p>
+</blockquote>
+<ul>
+<li>所有Target添加<code>Run Script</code>最后执行，设置为<code>bash jbdev.build.sh</code></li>
+<li>主Target将其他项目设置为依赖项</li>
+</ul>
+<h3 id="无根隐根配置">无根/隐根配置</h3>
+<blockquote>
+<p>Theos支持为有根/无根/隐根提供layout扩展</p>
+</blockquote>
+<ul>
+<li><code>layout_root</code>目录，存放有根与无根/隐根文件diff</li>
+<li><code>layout_rootless</code>目录，存放无根与有根/隐根文件diff</li>
+<li><code>layout_roothide</code>目录，存放隐根与有根/无根文件diff</li>
+</ul>
+<blockquote>
+<p>常用diff文件如下</p>
+</blockquote>
+<ul>
+<li><code>layout*/DEBIAN/control</code>，</li>
+<li>
+<ul>
+<li>有根<code>Architecture</code>为<code>iphoneos-arm</code></li>
+</ul>
+</li>
+<li>
+<ul>
+<li>无根<code>Architecture</code>为<code>iphoneos-arm64</code></li>
+</ul>
+</li>
+<li>
+<ul>
+<li>隐根<code>Architecture</code>为<code>iphoneos-arm64e</code></li>
+</ul>
+</li>
+<li><code>layout*/DEBIAN/{preinst,postinst,extrainst_,prerm,postrm}</code></li>
+<li><code>layout*/Library/LaunchDaemons/*.plist</code></li>
+</ul>
+<blockquote>
+<p>注意事项</p>
+</blockquote>
+<ul>
+<li><code>layout/DEBIAN/control</code>的<code>Architecture</code>和<code>Xcode Build Settings</code>的<code>Architecture</code>没有关系，有根包的实际arch可以为<code>armv7/arm64/arm64e</code>，无根包/隐根包的实际arch可以为<code>arm64/arm64e</code></li>
+<li>必须在<code>layout/DEBIAN</code>的<code>postinst</code>或<code>extrainst_</code>中执行<code>uicache</code>否则因系统App未注册而安装失败</li>
+</ul>
+<h4 id="有根无根隐根编译切换">有根/无根/隐根编译切换</h4>
+<p>此方式每次可编译有根/无根/隐根中的一种，操作方式如下</p>
+<blockquote>
+<p>通用</p>
+</blockquote>
+<ul>
+<li>Tweak设置<code>Runpath Search Paths</code> <code>Header Search Paths</code> <code>Framework Search Paths</code></li>
+<li>Tweak链接<code>libsubstrate.tbd</code></li>
+</ul>
+<blockquote>
+<p>有根</p>
+</blockquote>
+<ul>
+<li>所有Target的<code>Build Settings</code>的<code>THEOS_PACKAGE_SCHEME</code>删除</li>
+</ul>
+<blockquote>
+<p>无根</p>
+</blockquote>
+<ul>
+<li>所有Target的<code>Build Settings</code>的<code>THEOS_PACKAGE_SCHEME</code>设置为<code>rootless</code></li>
+<li><code>Preprocessor Macros</code>中设置<code>THEOS_PACKAGE_SCHEME_ROOTLESS</code></li>
+</ul>
+<blockquote>
+<p>隐根</p>
+</blockquote>
+<ul>
+<li>所有Target的<code>Build Settings</code>的<code>THEOS_PACKAGE_SCHEME</code>设置为<code>roothide</code></li>
+<li><code>Preprocessor Macros</code>中设置<code>THEOS_PACKAGE_SCHEME_ROOTHIDE</code></li>
+<li>Tweak链接<code>libroothide.tbd</code></li>
+</ul>
+<h2 id="单独启动调试tweak">单独启动调试Tweak</h2>
+<p>详细实例见JBDevTweakTest。由于JBDev可以调试任意App，因此可以源码级调试注入App的Tweak。原理如下：</p>
+<ul>
+<li>建立一个和目标App的BundleID相同的空App(<code>FakeApp</code>)</li>
+<li>Xcode执行打包安装调试，JBDev跳过安装</li>
+<li>目标App启动，开始调试Tweak</li>
+</ul>
+<blockquote>
+<p>使用Xcode建立<code>FakeApp</code></p>
+</blockquote>
+<ul>
+<li>File - New - Target - iOS - App</li>
+</ul>
+<blockquote>
+<p>配置文件</p>
+</blockquote>
+<ul>
+<li>将<code>jbdev.build.sh</code>放在<code>.xcodeproj</code>同级目录</li>
+<li>将<code>jbdev.plist</code>放在<code>.xcodeproj</code>同级目录，设置<code>type</code>为<code>jailbreak</code></li>
+</ul>
+<blockquote>
+<p>配置<code>Build Settings</code></p>
+</blockquote>
+<ul>
+<li>所有Target新增<code>CODE_SIGNING_ALLOWED</code>，设置为NO</li>
+<li><code>FakeApp</code>新增<code>JBDEV_PACKAGE</code>，设置为YES(此变量控制是否打包)</li>
+<li><code>FakeApp</code>新增<code>JBDEV_NO_COPY</code>，防止安装FakeApp本身</li>
+</ul>
+<blockquote>
+<p>配置<code>Build Phase</code></p>
+</blockquote>
+<ul>
+<li>所有Target添加<code>Run Script</code>最后执行，设置为<code>bash jbdev.build.sh</code></li>
+<li><code>FakeApp</code>将Tweak设置为依赖项</li>
+</ul>
+<blockquote>
+<p>注意</p>
+</blockquote>
+<ul>
+<li><code>SpringBoard</code>不属于App类型，不可调试</li>
+<li>由于Xcode不支持非源码下断点，因此不支持调试logos语法的Tweak，如果谁有黑科技可以实现强制下断点请在issue里提交</li>
+</ul>
+<h2 id="jbdev开发巨魔项目">JBDev开发巨魔项目</h2>
+<p>详细实例见JBDevTSTest。前置条件：iOS系统需要能越狱且能使用巨魔</p>
+<blockquote>
+<p>使用Xcode建立普通iOS-App的项目</p>
+</blockquote>
+<ul>
+<li>File - New - Target - iOS - App</li>
+</ul>
+<blockquote>
+<p>配置文件</p>
+</blockquote>
+<ul>
+<li>在自身Target目录下添加需要签名的plist文件</li>
+<li>将<code>jbdev.build.sh</code>放在<code>.xcodeproj</code>同级目录</li>
+<li>将<code>jbdev.plist</code>放在<code>.xcodeproj</code>同级目录，设置<code>type</code>为<code>trollstore</code></li>
+</ul>
+<blockquote>
+<p>配置<code>Build Settings</code></p>
+</blockquote>
+<ul>
+<li>Target新增<code>CODE_SIGNING_ALLOWED</code>，设置为NO</li>
+<li>Target新增<code>JBDEV_PACKAGE</code>，设置为YES(此变量控制是否打包)</li>
+</ul>
+<blockquote>
+<p>配置<code>Build Phase</code></p>
+</blockquote>
+<ul>
+<li>所有Target添加<code>Run Script</code>最后执行，设置为<code>bash jbdev.build.sh</code></li>
+</ul>
+<blockquote>
+<p>注意事项</p>
+</blockquote>
+<ul>
+<li>巨魔App开发，由于纯巨魔环境与越狱环境有较大差异，因此后续需要在纯巨魔环境进一步测试</li>
+</ul>
+<h2 id="jbdev编译">JBDev编译</h2>
+<div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#ec0000">cd</span> JBDev
+</span></span><span style="display:flex;"><span>make clean; make package
+</span></span><span style="display:flex;"><span>make clean; make package <span style="color:#ec0000">THEOS_PACKAGE_SCHEME</span><span style="color:#ec0000">=</span>rootless
+</span></span><span style="display:flex;"><span>make clean; make package <span style="color:#ec0000">THEOS_PACKAGE_SCHEME</span><span style="color:#ec0000">=</span>roothide
+</span></span></code></pre></div>
+    
+    <script src="https://giscus.app/client.js"
+        data-repo="lich4/lich4.github.io"
+        data-repo-id="R_kgDOMTT_mw"
+        data-category=""
+        data-category-id="DIC_kwDOMTT_m84Cjbim"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="top"
+        data-theme="light"
+        data-lang="en"
+        data-loading="lazy"
+        crossorigin="anonymous"
+        async>
+</script>
+
+    
+  </div>
+
+  
+
+
+  
+
+  
+  
+
+<div class="single-pagination">
+    <hr />
+
+    <div class="flex">
+
+        <div class="single-pagination-prev">
+            
+            <div class="single-pagination-container-prev">
+                <div class="single-pagination-text">←</div>
+                <div class="single-pagination-text">
+                    <a href="/ios_posts/20230715_debug_ios_with_xcode/">
+                        XCode调试越狱iOS任意进程
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="single-pagination-next">
+            
+        </div>
+
+    </div>
+
+    <hr />
+</div>
+
+
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+      </main>
+    </div>
+
+    <footer>
+      
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+
+    </footer>
+    
+  </body>
+
+  <script>
+
+  function isAuto() {
+    return document.body.classList.contains("auto");
+  }
+
+  function setTheme() {
+    if (!isAuto()) {
+      return
+    }
+
+    document.body.classList.remove("auto");
+    let cls = "light";
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      cls = "dark";
+    }
+
+    document.body.classList.add(cls);
+  }
+
+  function invertBody() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
+  if (isAuto()) {
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(invertBody);
+  }
+
+  setTheme();
+
+</script>
+
+</html>

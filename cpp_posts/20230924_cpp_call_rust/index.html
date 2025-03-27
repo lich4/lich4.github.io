@@ -226,8 +226,8 @@ void rust_call_cpp() {
 </span></span></code></pre></div><p>deploy.sh</p>
 <div class="highlight"><pre tabindex="0" style="color:#757575;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>#!/bin/sh
 </span></span><span style="display:flex;"><span>ldid -Starget.plist target/aarch64-apple-ios/debug/helloworld
-</span></span><span style="display:flex;"><span>ssh <span style="color:#ec0000">[</span>email<span style="color:#ec0000">]</span>root@127.0.0.1<span style="color:#ec0000">[</span>/email<span style="color:#ec0000">]</span> <span style="color:#008900">&#34;rm -f /usr/bin/helloworld&#34;</span>
-</span></span><span style="display:flex;"><span>scp target/aarch64-apple-ios/debug/helloworld <span style="color:#ec0000">[</span>email<span style="color:#ec0000">]</span>root@127.0.0.1<span style="color:#ec0000">[</span>/email<span style="color:#ec0000">]</span>:/usr/bin/
+</span></span><span style="display:flex;"><span>ssh root@127.0.0.1 <span style="color:#008900">&#34;rm -f /usr/bin/helloworld&#34;</span>
+</span></span><span style="display:flex;"><span>scp target/aarch64-apple-ios/debug/helloworld root@127.0.0.1:/usr/bin/
 </span></span></code></pre></div><p>target.plist</p>
 <pre tabindex="0"><code class="language-plist" data-lang="plist">&lt;!DOCTYPE plist PUBLIC &#34;-//Apple//DTD PLIST 1.0//EN http://www.apple.com/DTDs/PropertyList-1.0.dtd&#34;&gt;
 &lt;plist version=&#34;1.0&#34;&gt;

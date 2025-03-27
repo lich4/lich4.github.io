@@ -6,8 +6,15 @@
     <description>Recent content in Home on 超哥的博客</description>
     <generator>Hugo</generator>
     <language>zh-CN</language>
-    <lastBuildDate>Mon, 26 Aug 2024 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 27 Mar 2025 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://lich4.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>JBDev下一代越狱开发工具</title>
+      <link>https://lich4.github.io/ios_posts/20250327_jbdev/</link>
+      <pubDate>Thu, 27 Mar 2025 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/ios_posts/20250327_jbdev/</guid>
+      <description>JBDev下一代越狱开发工具</description>
+    </item>
     <item>
       <title>OLLVM学习</title>
       <link>https://lich4.github.io/cpp_posts/20240826_ollvm/</link>
@@ -595,6 +602,13 @@
       <pubDate>Sat, 01 Jan 2011 00:00:00 +0000</pubDate>
       <guid>https://lich4.github.io/cpp_posts/20110101_viterbi/</guid>
       <description>卷积码的viterbi译码</description>
+    </item>
+    <item>
+      <title>测试</title>
+      <link>https://lich4.github.io/cpp_posts/20250101_test/</link>
+      <pubDate>Sat, 01 Jan 2000 00:00:00 +0000</pubDate>
+      <guid>https://lich4.github.io/cpp_posts/20250101_test/</guid>
+      <description>测试</description>
     </item>
   </channel>
 </rss>

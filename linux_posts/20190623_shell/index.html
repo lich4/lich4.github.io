@@ -144,11 +144,8 @@
         <li><a href="#文件操作">文件操作</a></li>
         <li><a href="#系统">系统</a></li>
         <li><a href="#网络">网络</a></li>
-        <li><a href="#awk">awk</a></li>
-        <li><a href="#sed">sed</a></li>
-        <li><a href="#find">find</a></li>
-        <li><a href="#grep">grep</a></li>
-        <li><a href="#vim">vim</a></li>
+        <li><a href="#文本编辑">文本编辑</a></li>
+        <li><a href="#窗口操作">窗口操作</a></li>
       </ul>
     </li>
     <li><a href="#shell语法">shell语法</a>
@@ -261,19 +258,20 @@ ssh
 chmod chmod ug=rwx,o=x file 赋予属主和用户组读写执行权限，其他用户只有执行权限
 chmod +rwx /path/to/my/file  在原始权限上增加user/group/other的读写执行权限
 chmod +x 1.sh 有了执行权限才可以直接运行&#39;./1.sh&#39;
-</code></pre><h3 id="awk">awk</h3>
+</code></pre><h4 id="查找">查找</h4>
+<h4 id="awk">awk</h4>
 <p>截取文本列</p>
 <pre tabindex="0"><code>ps aux | grep -v grep | awk &#39;{print $1}&#39;
-</code></pre><h3 id="sed">sed</h3>
+</code></pre><h4 id="sed">sed</h4>
 <p>正则替换</p>
 <pre tabindex="0"><code>echo This is a dog | sed &#39;s/This/aaa/&#39;
 </code></pre><p>截取文本行</p>
 <pre tabindex="0"><code>echo -e &#34;1\n2&#34; | sed -n &#39;2p&#39;
-</code></pre><h3 id="find">find</h3>
+</code></pre><h4 id="find">find</h4>
 <pre tabindex="0"><code>find .     递归列出当前目录及所有子目录，和ls区别是ls只列当前目录
 find /path -name &#34;1.txt&#34;  在指定目录及所有子目录查找文件
 find /tmp -exec ls {} \; 对所有找到的文件执行ls操作
-</code></pre><h3 id="grep">grep</h3>
+</code></pre><h4 id="grep">grep</h4>
 <pre tabindex="0"><code>-E 使用郑泽
 -i 忽略大小写
 -v 反选
@@ -283,7 +281,8 @@ echo aabb | grep -E [a-z]{4}
 echo aabb1122 | grep 
 grep -nwr 字符串 目录
 ps aux | grep 进程 | grep -v grep
-</code></pre><h3 id="vim">vim</h3>
+</code></pre><h3 id="文本编辑">文本编辑</h3>
+<h4 id="vim">vim</h4>
 <pre tabindex="0"><code>^ 行首
 $ 行尾
 gg 首行
@@ -299,7 +298,19 @@ a 编辑模式
 :命令模式
 :wq 写入文件并退出
 :q! 放弃保存并推出
-</code></pre><h2 id="shell语法">shell语法</h2>
+</code></pre><h3 id="窗口操作">窗口操作</h3>
+<h4 id="tmux">tmux</h4>
+<p>以下命令需要先执行<code>ctrl+b</code>:</p>
+<ul>
+<li>&lsquo;&quot;&rsquo; 上下分屏</li>
+<li>&lsquo;%&rsquo; 左右分屏</li>
+<li>&lsquo;c&rsquo; 创建新窗口</li>
+<li>&lsquo;&amp;&rsquo; 关闭当前窗口</li>
+<li>数字 切指定窗口</li>
+<li>&lsquo;p&rsquo; 上一窗口</li>
+<li>&rsquo;n&rsquo; 下一窗口</li>
+</ul>
+<h2 id="shell语法">shell语法</h2>
 <h3 id="解释器说明">解释器说明</h3>
 <p>一般shell脚本第一行为<code>#!/bin/bash</code>，这个标记告诉系统，该文件的默认解释器是bash，则效果等同于:<code>./test.sh -&gt; bash ./test.sh</code>，同理如果使用了标记<code>#!/usr/bin/pyhon</code>，则效果等同于:<code>./1.py -&gt; python 1.py</code></p>
 <h3 id="注释">注释</h3>
